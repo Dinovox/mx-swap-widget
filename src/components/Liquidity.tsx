@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '../ui/Card';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useWidgetNavigate } from '../hooks/useWidgetNavigate';
 import useLoadTranslations from '../hooks/useLoadTranslations';
 import { useGetAccount } from '@multiversx/sdk-dapp/out/react/account/useGetAccount';
 import { useGetNetworkConfig } from '@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig';
@@ -33,7 +33,7 @@ export const Liquidity = () => {
   const { apiUrl, routes } = useSwapConfig();
   const { t } = useTranslation('swap');
   useLoadTranslations('swap');
-  const navigate = useNavigate();
+  const navigate = useWidgetNavigate();
   const { address } = useGetAccount();
   const { network } = useGetNetworkConfig();
 

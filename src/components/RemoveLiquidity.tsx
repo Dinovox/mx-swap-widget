@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useWidgetNavigate } from '../hooks/useWidgetNavigate';
+import { useWidgetSearchParams } from '../hooks/useWidgetSearchParams';
 import { ArrowLeft, ArrowDown } from 'lucide-react';
 import { useGetAccount } from '@multiversx/sdk-dapp/out/react/account/useGetAccount';
 import { useGetNetworkConfig } from '@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig';
@@ -25,7 +26,7 @@ export const RemoveLiquidity = () => {
   const { t } = useTranslation();
   const { address } = useGetAccount();
   const { network } = useGetNetworkConfig();
-  const navigate = useNavigate();
+  const navigate = useWidgetNavigate();
 
   const [pools, setPools] = useState<PoolInfo[]>([]);
   const [tokens, setTokens] = useState<Record<string, DexToken>>({});
@@ -33,7 +34,7 @@ export const RemoveLiquidity = () => {
   const [poolsLoading, setPoolsLoading] = useState(true);
   const [lpTotalMinted, setLpTotalMinted] = useState<string | null>(null);
   const [lpAmountInput, setLpAmountInput] = useState('');
-  const [searchParams] = useSearchParams();
+  const [searchParams] = useWidgetSearchParams();
 
   useEffect(() => {
     if (!apiUrl) return;

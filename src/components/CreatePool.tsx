@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useWidgetNavigate } from '../hooks/useWidgetNavigate';
+import { useWidgetSearchParams } from '../hooks/useWidgetSearchParams';
 import useLoadTranslations from '../hooks/useLoadTranslations';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { useGetAccount } from '@multiversx/sdk-dapp/out/react/account/useGetAccount';
@@ -24,8 +25,8 @@ export const CreatePool = () => {
   useLoadTranslations('swap');
   const { address } = useGetAccount();
   const { network } = useGetNetworkConfig();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useWidgetNavigate();
+  const [searchParams, setSearchParams] = useWidgetSearchParams();
 
   const [hubTokens, setHubTokens] = useState<DexToken[]>([]);
   const [tokensLoading, setTokensLoading] = useState(true);

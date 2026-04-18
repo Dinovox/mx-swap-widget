@@ -1,5 +1,7 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useWidgetNavigate } from '../hooks/useWidgetNavigate';
+import { useTranslation } from 'react-i18next';
+import useLoadTranslations from '../hooks/useLoadTranslations';
 import axios from 'axios';
 import BigNumber from 'bignumber.js';
 import { Card } from '../ui/Card';
@@ -35,7 +37,9 @@ function formatReserve(raw: string, decimals: number): string {
 
 export const Pools = () => {
   const { apiUrl, routes } = useSwapConfig();
-  const navigate = useNavigate();
+  const { t } = useTranslation('swap');
+  useLoadTranslations('swap');
+  const navigate = useWidgetNavigate();
 
   const [pools, setPools] = React.useState<PoolInfo[]>([]);
   const [tokenMap, setTokenMap] = React.useState<Record<string, TokenMeta>>({});
@@ -70,28 +74,28 @@ export const Pools = () => {
           <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4'>
             <div className='flex items-center gap-3'>
               <span className='text-xl'>🌊</span>
-              <span className='text-lg font-black tracking-tight'>Pools</span>
+              <span className='text-lg font-black tracking-tight'>{t('pools_title')}</span>
             </div>
             <div className='flex gap-1 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl shadow-inner w-full sm:w-auto overflow-x-auto'>
               <button
                 onClick={() => navigate(routes.swap)}
                 className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5 whitespace-nowrap'
               >
-                Swap
+                {t('tab_swap')}
               </button>
               <button
                 onClick={() => navigate(routes.liquidity)}
                 className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5 whitespace-nowrap'
               >
-                Liquidité
+                {t('tab_liquidity')}
               </button>
               <button className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-black rounded-lg bg-white dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all whitespace-nowrap'>
-                Pools
+                {t('pools_title')}
               </button>
             </div>
           </div>
         }
-        description={loading ? 'Chargement...' : `${pools.length} pool${pools.length !== 1 ? 's' : ''} active${pools.length !== 1 ? 's' : ''}`}
+        description={loading ? t('pools_loading_desc') : t('pools_count', { count: pools.length })}
       >
         <div className='flex gap-1 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl mt-4 w-fit'>
           {(['DinoVox', 'XExchange'] as DexFilter[]).map((dex) => (
@@ -114,7 +118,7 @@ export const Pools = () => {
               <div className='w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin' />
             </div>
           ) : pools.length === 0 ? (
-            <p className='text-center text-sm text-gray-500 dark:text-gray-400 py-8'>Aucune pool active trouvée.</p>
+            <p className='text-center text-sm text-gray-500 dark:text-gray-400 py-8'>{t('pools_empty')}</p>
           ) : (
             pools.map((pool) => {
               const tickerA = getTicker(pool.tokenA);
@@ -128,24 +132,24 @@ export const Pools = () => {
                   <div className='flex items-center justify-between mb-3'>
                     <div className='flex items-center gap-2'>
                       <span className='font-black text-gray-900 dark:text-white text-base'>{tickerA} / {tickerB}</span>
-                      <span className='text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 font-semibold border border-green-200 dark:border-green-800 uppercase'>Active</span>
+                      <span className='text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 font-semibold border border-green-200 dark:border-green-800 uppercase'>{t('pools_active')}</span>
                     </div>
                     {dexFilter === 'DinoVox' && (
                       <button
                         onClick={() => navigate(`${routes.addLiquidity}?tokenA=${pool.tokenA}&tokenB=${pool.tokenB}`)}
                         className='text-xs font-bold text-amber-500 hover:text-amber-600 transition'
                       >
-                        + Ajouter
+                        {t('pools_add')}
                       </button>
                     )}
                   </div>
                   <div className='grid grid-cols-2 gap-3'>
                     <div className='rounded-xl bg-white dark:bg-[#2a2a2a] border border-gray-100 dark:border-[#333] px-3 py-2'>
-                      <p className='text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5'>Réserve {tickerA}</p>
+                      <p className='text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5'>{t('pools_reserve')} {tickerA}</p>
                       <p className='font-bold text-gray-900 dark:text-white text-sm'>{resA} <span className='text-gray-400 font-medium'>{tickerA}</span></p>
                     </div>
                     <div className='rounded-xl bg-white dark:bg-[#2a2a2a] border border-gray-100 dark:border-[#333] px-3 py-2'>
-                      <p className='text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5'>Réserve {tickerB}</p>
+                      <p className='text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5'>{t('pools_reserve')} {tickerB}</p>
                       <p className='font-bold text-gray-900 dark:text-white text-sm'>{resB} <span className='text-gray-400 font-medium'>{tickerB}</span></p>
                     </div>
                   </div>
@@ -158,7 +162,7 @@ export const Pools = () => {
             onClick={() => navigate(routes.createPool)}
             className='w-full py-3 rounded-xl border-2 border-amber-500 text-amber-500 font-bold hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors mt-2'
           >
-            Créer une nouvelle pool
+            {t('pools_create')}
           </button>
         </div>
       </Card>

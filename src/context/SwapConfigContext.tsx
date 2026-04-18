@@ -24,6 +24,12 @@ export interface SwapConfig {
   wegldIdentifier: string;
   /** App route paths (defaults work out-of-the-box with dinotool routing) */
   routes?: Partial<SwapRoutes>;
+  /**
+   * Navigation function provided by the host app.
+   * When omitted the widget falls back to window.location.assign().
+   * Pass your router's navigate() here to get SPA-style navigation.
+   */
+  navigate?: (path: string) => void;
 }
 
 const DEFAULT_ROUTES: SwapRoutes = {
@@ -38,6 +44,7 @@ const DEFAULT_ROUTES: SwapRoutes = {
 /** Resolved config available inside components */
 export interface ResolvedSwapConfig extends SwapConfig {
   routes: SwapRoutes;
+  navigate?: (path: string) => void;
 }
 
 const DEFAULT_CONFIG: ResolvedSwapConfig = {

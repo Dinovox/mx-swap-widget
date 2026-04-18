@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useWidgetNavigate } from '../hooks/useWidgetNavigate';
+import { useWidgetSearchParams } from '../hooks/useWidgetSearchParams';
 import { ArrowLeft, Plus } from 'lucide-react';
 import useLoadTranslations from '../hooks/useLoadTranslations';
 import { useGetAccount } from '@multiversx/sdk-dapp/out/react/account/useGetAccount';
@@ -34,8 +35,8 @@ export const AddLiquidity = () => {
   useLoadTranslations('swap');
   const { address } = useGetAccount();
   const { network } = useGetNetworkConfig();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useWidgetNavigate();
+  const [searchParams, setSearchParams] = useWidgetSearchParams();
 
   const [tokens, setTokens] = useState<DexToken[]>([]);
   const [hubTokens, setHubTokens] = useState<DexToken[]>([]);

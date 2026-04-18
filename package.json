@@ -1,8 +1,15 @@
 {
-  "name": "@dinovox/swap-widget",
+  "name": "@dinovox/mx-swap-widget",
   "version": "0.1.0",
   "description": "DinoVox swap & liquidity widget for MultiversX dApps",
-  "keywords": ["multiversx", "dex", "swap", "liquidity", "react", "widget"],
+  "keywords": [
+    "multiversx",
+    "dex",
+    "swap",
+    "liquidity",
+    "react",
+    "widget"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -10,18 +17,20 @@
   },
   "homepage": "https://dinovox.com",
   "type": "module",
-  "main": "./dist/swap-widget.umd.js",
-  "module": "./dist/swap-widget.es.js",
+  "main": "./dist/mx-swap-widget.umd.js",
+  "module": "./dist/mx-swap-widget.es.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/swap-widget.es.js",
-      "require": "./dist/swap-widget.umd.js",
+      "import": "./dist/mx-swap-widget.es.js",
+      "require": "./dist/mx-swap-widget.umd.js",
       "types": "./dist/index.d.ts"
     },
     "./styles.css": "./dist/style.css"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "prepare": "npm run build",
     "build": "tsc --noEmit && vite build",
