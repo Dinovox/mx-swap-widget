@@ -30,6 +30,12 @@ export interface SwapConfig {
    * Pass your router's navigate() here to get SPA-style navigation.
    */
   navigate?: (path: string) => void;
+  /**
+   * Language code for widget UI (e.g. 'en', 'fr').
+   * Defaults to navigator.language. Pass your app's current language here
+   * to keep the widget in sync without requiring initReactI18next.
+   */
+  language?: string;
 }
 
 const DEFAULT_ROUTES: SwapRoutes = {

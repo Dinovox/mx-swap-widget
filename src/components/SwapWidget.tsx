@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { I18nextProvider } from 'react-i18next';
 import { useSwapConfig, SwapRoutes } from '../context/SwapConfigContext';
 import WidgetRouterContext from '../context/WidgetRouterContext';
+import widgetI18n from '../i18n';
 import { Swap } from './Swap';
 import { Liquidity } from './Liquidity';
 import { AddLiquidity } from './AddLiquidity';
@@ -48,7 +50,15 @@ interface SwapWidgetProps {
 }
 
 export const SwapWidget: React.FC<SwapWidgetProps> = ({ initialView = 'swap' }) => {
-  const { routes } = useSwapConfig();
+  const { routes, language } = useSwapConfig();
+
+  // Sync language from config or navigator into the widget's own i18n instance
+  useEffect(() => {
+    const lang = (language || (typeof navigator !== 'undefined' ? navigator.language : 'en') || 'en').split('-')[0];
+    if (widgetI18n.language !== lang && widgetI18n.isInitialized) {
+      widgetI18n.changeLanguage(lang);
+    }
+  }, [language]);
 
   const [{ view, params }, setRouterState] = useState<RouterState>(() => {
     const hashView = typeof window !== 'undefined'
@@ -129,8 +139,10 @@ export const SwapWidget: React.FC<SwapWidgetProps> = ({ initialView = 'swap' }) 
   };
 
   return (
-    <WidgetRouterContext.Provider value={{ params, navigate, setParams }}>
-      {renderView()}
-    </WidgetRouterContext.Provider>
+    <I18nextProvider i18n={widgetI18n}>
+      <WidgetRouterContext.Provider value={{ params, navigate, setParams }}>
+        {renderView()}
+      </WidgetRouterContext.Provider>
+    </I18nextProvider>
   );
 };
