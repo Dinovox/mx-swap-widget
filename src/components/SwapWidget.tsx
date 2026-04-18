@@ -50,7 +50,7 @@ interface SwapWidgetProps {
 }
 
 export const SwapWidget: React.FC<SwapWidgetProps> = ({ initialView = 'swap' }) => {
-  const { routes, language } = useSwapConfig();
+  const { routes, language, theme } = useSwapConfig();
 
   // Sync language from config or navigator into the widget's own i18n instance
   useEffect(() => {
@@ -138,10 +138,14 @@ export const SwapWidget: React.FC<SwapWidgetProps> = ({ initialView = 'swap' }) 
     }
   };
 
+  const themeClass = theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : '';
+
   return (
     <I18nextProvider i18n={widgetI18n}>
       <WidgetRouterContext.Provider value={{ params, navigate, setParams }}>
-        {renderView()}
+        <div className={themeClass || undefined}>
+          {renderView()}
+        </div>
       </WidgetRouterContext.Provider>
     </I18nextProvider>
   );

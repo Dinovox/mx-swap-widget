@@ -36,6 +36,14 @@ export interface SwapConfig {
    * to keep the widget in sync without requiring initReactI18next.
    */
   language?: string;
+  /**
+   * Color theme for the widget.
+   * When omitted the widget inherits the host app's Tailwind dark mode
+   * (i.e. reacts to the `dark` class on `<html>`).
+   * Pass `'dark'` or `'light'` to pin the widget theme independently
+   * of the host app — useful for apps without their own theme toggle.
+   */
+  theme?: 'light' | 'dark';
 }
 
 const DEFAULT_ROUTES: SwapRoutes = {
