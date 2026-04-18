@@ -23,6 +23,7 @@
   },
   "files": ["dist"],
   "scripts": {
+    "prepare": "npm run build",
     "build": "tsc --noEmit && vite build",
     "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
     "dev": "vite build --watch"
