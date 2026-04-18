@@ -1,0 +1,50 @@
+{
+  "name": "@dinovox/swap-widget",
+  "version": "0.1.0",
+  "description": "DinoVox swap & liquidity widget for MultiversX dApps",
+  "keywords": ["multiversx", "dex", "swap", "liquidity", "react", "widget"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dinovox/mx-swap-widget.git"
+  },
+  "homepage": "https://dinovox.com",
+  "type": "module",
+  "main": "./dist/swap-widget.umd.js",
+  "module": "./dist/swap-widget.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/swap-widget.es.js",
+      "require": "./dist/swap-widget.umd.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./styles.css": "./dist/style.css"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
+    "dev": "vite build --watch"
+  },
+  "peerDependencies": {
+    "@multiversx/sdk-core": ">=15",
+    "@multiversx/sdk-dapp": ">=5",
+    "axios": ">=1",
+    "bignumber.js": ">=9",
+    "lucide-react": ">=0.400",
+    "react": ">=18",
+    "react-dom": ">=18",
+    "react-i18next": ">=15",
+    "react-router-dom": ">=6"
+  },
+  "devDependencies": {
+    "@types/react": "18.2.23",
+    "@types/react-dom": "18.2.8",
+    "@vitejs/plugin-react": "4.4.1",
+    "typescript": "5.2.2",
+    "vite": "5.4.9",
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-node-polyfills": "0.22.0"
+  }
+}
