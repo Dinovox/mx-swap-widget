@@ -4,5 +4,5 @@
 @import "tailwindcss/theme" layer(theme);
 @import "tailwindcss/utilities" layer(utilities);
 
-/* Dark mode: triggered by .dark on any ancestor element */
-@custom-variant dark (&:is(.dark *));
+/* Dark mode: triggered by .dark on any ancestor, unless a .light ancestor overrides it */
+@custom-variant dark (&:is(.dark *):not(:is(.light *)));
