@@ -17,6 +17,7 @@ import { TokenSelect } from "../ui/TokenSelect";
 import bigToHex from "../helpers/bigToHex";
 import BigNumber from "bignumber.js";
 import { useSwapConfig } from "../context/SwapConfigContext";
+import { getThemePalette } from "../ui/themePalette";
 import type {
   SwapToken,
   QuoteHop,
@@ -65,7 +66,9 @@ export const Swap = () => {
     wrapContract: WRAP_CONTRACT,
     wegldIdentifier: wegld_identifier,
     routes,
+    theme,
   } = useSwapConfig();
+  const p = getThemePalette(theme);
   const { t } = useTranslation("swap");
   useLoadTranslations("swap");
   const { address } = useGetAccount();
@@ -596,8 +599,8 @@ export const Swap = () => {
               <span className="text-lg font-black tracking-tight">Swap</span>
             </div>
             {/* Tabs: Swap / Liquidité */}
-            <div className="flex gap-1.5 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl shadow-inner w-full xs:w-auto">
-              <button className="flex-1 xs:flex-initial px-4 sm:px-6 py-2 text-sm font-black rounded-lg bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all">
+            <div style={p.tabBar} className="flex gap-1.5 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl shadow-inner w-full xs:w-auto">
+              <button style={p.activeTab} className="flex-1 xs:flex-initial px-4 sm:px-6 py-2 text-sm font-black rounded-lg bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all">
                 {t("tab_swap")}
               </button>
               <button
@@ -613,7 +616,7 @@ export const Swap = () => {
       >
         <div className="space-y-2 mt-4">
           {/* ---- Token In ---- */}
-          <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4">
+          <div style={p.inner} className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
@@ -670,6 +673,7 @@ export const Swap = () => {
                   setAmountOut("");
                   setQuote(null);
                 }}
+                style={p.input}
                 className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-colors ${
                   insufficientBalance
                     ? "border-red-400 dark:border-red-500 focus:ring-red-400"
@@ -690,6 +694,7 @@ export const Swap = () => {
           <div className="flex justify-center -my-0.5 relative z-10">
             <button
               onClick={invertTokens}
+              style={p.invertBtn}
               className="rounded-full p-2 bg-[#ffffff] dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] shadow-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
             >
               <ArrowUpDown className="h-4 w-4 text-amber-500" />
@@ -697,7 +702,7 @@ export const Swap = () => {
           </div>
 
           {/* ---- Token Out ---- */}
-          <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4">
+          <div style={p.inner} className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
@@ -752,6 +757,7 @@ export const Swap = () => {
                   setAmountIn("");
                   setQuote(null);
                 }}
+                style={p.input}
                 className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-colors ${
                   activeField === "out"
                     ? "border-amber-400 dark:border-amber-500 focus:ring-amber-500"
@@ -770,7 +776,7 @@ export const Swap = () => {
 
           {/* ---- Quote details ---- */}
           {!isWrapUnwrap && quote && !quoteLoading && (
-            <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] px-4 py-3 space-y-2.5 text-sm">
+            <div style={p.quoteSection} className="rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] px-4 py-3 space-y-2.5 text-sm">
               <div className="flex justify-between items-center">
                 <span className="text-gray-500 dark:text-gray-400">
                   {t("price_impact")}
@@ -1096,6 +1102,7 @@ export const Swap = () => {
           <button
             onClick={isWrapUnwrap ? handleWrapUnwrap : handleSwap}
             disabled={!canSwap}
+            style={theme === 'mid' ? { background: 'linear-gradient(135deg, #BD37EC, #1F67FF)', border: 'none' } : {}}
             className={`dinoButton orange w-full !py-3 text-base ${
               !tokenIn || !tokenOut
                 ? "!bg-orange-400 dark:!bg-orange-500 !border-orange-600 dark:!border-orange-700 !text-orange-950 dark:!text-orange-950 font-bold !opacity-100 hover:!bg-orange-500 hover:!border-orange-700 dark:hover:!bg-orange-400"

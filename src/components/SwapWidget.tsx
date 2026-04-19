@@ -171,6 +171,7 @@ export const SwapWidget: React.FC<SwapWidgetProps> = ({
   const themeClass =
     theme === "dark" ? "dark"
     : theme === "light" ? "light"
+    : theme === "mid" ? "dark"   // mid uses dark CSS cascade + inline overrides
     : hostDark ? "dark"
     : "";
 

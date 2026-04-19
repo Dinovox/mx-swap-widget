@@ -154,7 +154,7 @@ export declare interface SwapConfig {
      * Pass `'dark'` or `'light'` to pin the widget theme independently
      * of the host app — useful for apps without their own theme toggle.
      */
-    theme?: 'light' | 'dark';
+    theme?: 'light' | 'dark' | 'mid';
 }
 
 export declare const SwapConfigProvider: default_2.FC<{
