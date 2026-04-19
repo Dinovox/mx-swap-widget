@@ -90,7 +90,7 @@ export const Liquidity = () => {
               <button onClick={() => navigate(routes.swap)} className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5'>
                 Swap
               </button>
-              <button className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-black rounded-lg bg-white dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all'>
+              <button className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-black rounded-lg bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all'>
                 {t('tab_liquidity')}
               </button>
               <button onClick={() => navigate(routes.pools)} className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5'>
@@ -119,7 +119,7 @@ export const Liquidity = () => {
                 const estimatedA = new BigNumber(pos.balance).multipliedBy(pos.pool.reserveA).dividedBy(safeTotalSupply).shiftedBy(-pos.decimalsA).toFixed(6, BigNumber.ROUND_DOWN);
                 const estimatedB = new BigNumber(pos.balance).multipliedBy(pos.pool.reserveB).dividedBy(safeTotalSupply).shiftedBy(-pos.decimalsB).toFixed(6, BigNumber.ROUND_DOWN);
                 return (
-                  <div key={pos.pool.address} className='rounded-2xl border border-gray-200 dark:border-[#333] bg-white dark:bg-[#2a2a2a] p-4'>
+                  <div key={pos.pool.address} className='rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#2a2a2a] p-4'>
                     <div className='flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 mb-3'>
                       <div className='min-w-0'>
                         <div className='flex items-center gap-2 mb-0.5'>

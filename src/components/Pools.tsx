@@ -89,7 +89,7 @@ export const Pools = () => {
               >
                 {t('tab_liquidity')}
               </button>
-              <button className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-black rounded-lg bg-white dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all whitespace-nowrap'>
+              <button className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-black rounded-lg bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all whitespace-nowrap'>
                 {t('pools_title')}
               </button>
             </div>
@@ -104,7 +104,7 @@ export const Pools = () => {
               onClick={() => setDexFilter(dex)}
               className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
                 dexFilter === dex
-                  ? 'bg-white dark:bg-[#2a2a2a] text-amber-500 shadow-md'
+                  ? 'bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md'
                   : 'text-gray-400 hover:text-gray-700 dark:hover:text-white'
               }`}
             >
@@ -144,11 +144,11 @@ export const Pools = () => {
                     )}
                   </div>
                   <div className='grid grid-cols-2 gap-3'>
-                    <div className='rounded-xl bg-white dark:bg-[#2a2a2a] border border-gray-100 dark:border-[#333] px-3 py-2'>
+                    <div className='rounded-xl bg-[#ffffff] dark:bg-[#2a2a2a] border border-gray-100 dark:border-[#333] px-3 py-2'>
                       <p className='text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5'>{t('pools_reserve')} {tickerA}</p>
                       <p className='font-bold text-gray-900 dark:text-white text-sm'>{resA} <span className='text-gray-400 font-medium'>{tickerA}</span></p>
                     </div>
-                    <div className='rounded-xl bg-white dark:bg-[#2a2a2a] border border-gray-100 dark:border-[#333] px-3 py-2'>
+                    <div className='rounded-xl bg-[#ffffff] dark:bg-[#2a2a2a] border border-gray-100 dark:border-[#333] px-3 py-2'>
                       <p className='text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5'>{t('pools_reserve')} {tickerB}</p>
                       <p className='font-bold text-gray-900 dark:text-white text-sm'>{resB} <span className='text-gray-400 font-medium'>{tickerB}</span></p>
                     </div>

@@ -32,7 +32,7 @@
     "dist"
   ],
   "scripts": {
-    "prepare": "npm run build",
+    "prepare": "[ -f dist/mx-swap-widget.es.js ] && echo 'dist already built, skipping' || npm run build",
     "build": "tsc --noEmit && vite build",
     "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
     "dev": "vite build --watch"
@@ -49,9 +49,11 @@
     "react-router-dom": ">=6"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
     "@types/react": "18.2.23",
     "@types/react-dom": "18.2.8",
     "@vitejs/plugin-react": "4.4.1",
+    "postcss": "^8.5.10",
     "typescript": "5.2.2",
     "vite": "5.4.9",
     "vite-plugin-dts": "^4.5.4",

@@ -216,12 +216,12 @@ export const AddLiquidity = () => {
             <div className='flex items-center gap-3'>
               <TokenSelect value={tokenA} onChange={selectTokenA} tokens={hubTokens} exclude={tokenB?.identifier} loading={tokensLoading} />
               <input type='number' min='0' placeholder='0.0' value={amountA} onChange={e => handleAmountA(e.target.value)}
-                className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-white dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${aErr ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 dark:border-[#444] focus:ring-amber-500'}`} />
+                className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${aErr ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 dark:border-[#444] focus:ring-amber-500'}`} />
             </div>
           </div>
 
           <div className='flex justify-center -my-3 relative z-10'>
-            <div className='rounded-full p-1.5 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333]'><Plus className='w-4 h-4 text-amber-500' /></div>
+            <div className='rounded-full p-1.5 bg-[#ffffff] dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333]'><Plus className='w-4 h-4 text-amber-500' /></div>
           </div>
 
           <div className='rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4'>
@@ -237,7 +237,7 @@ export const AddLiquidity = () => {
             <div className='flex items-center gap-3'>
               <TokenSelect value={tokenB} onChange={selectTokenB} tokens={tokenBChoices} exclude={tokenA?.identifier} loading={tokensLoading || (allWalletTokensRaw.length > 0 && walletTokens.length === 0)} />
               <input type='number' min='0' placeholder='0.0' value={amountB} onChange={e => handleAmountB(e.target.value)}
-                className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-white dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${bErr ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 dark:border-[#444] focus:ring-amber-500'}`} />
+                className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${bErr ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 dark:border-[#444] focus:ring-amber-500'}`} />
             </div>
           </div>
 
@@ -254,7 +254,7 @@ export const AddLiquidity = () => {
           )}
 
           {pool && lpPreview !== null && (
-            <div className='rounded-2xl border border-gray-200 dark:border-[#333] bg-white dark:bg-[#1a1a1a] p-4 mt-4 space-y-2'>
+            <div className='rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] p-4 mt-4 space-y-2'>
               <div className='flex justify-between text-sm'><span className='text-gray-500'>{t('add_lp_preview')}</span><span className='font-bold text-amber-500'>{new BigNumber(lpPreview.toString()).shiftedBy(-18).toFixed(6)} LP</span></div>
               {refundA > 0n && <div className='flex justify-between text-xs'><span className='text-gray-500'>{t('add_refund', { ticker: tokenA?.ticker })}</span><span className='font-medium text-gray-700 dark:text-gray-300'>{new BigNumber(refundA.toString()).shiftedBy(-(tokenA?.decimals ?? 18)).toFixed(6)}</span></div>}
               {refundB > 0n && <div className='flex justify-between text-xs'><span className='text-gray-500'>{t('add_refund', { ticker: tokenB?.ticker })}</span><span className='font-medium text-gray-700 dark:text-gray-300'>{new BigNumber(refundB.toString()).shiftedBy(-(tokenB?.decimals ?? 18)).toFixed(6)}</span></div>}

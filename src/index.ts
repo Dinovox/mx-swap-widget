@@ -1,3 +1,6 @@
+// Styles — extracted to dist/style.css during lib build
+import './widget.css';
+
 // Components
 export { SwapWidget } from "./components/SwapWidget";
 export { Swap } from "./components/Swap";

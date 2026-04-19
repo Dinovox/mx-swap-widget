@@ -1,6 +1,7 @@
 import React from 'react';
 import type { PropsWithChildren } from 'react';
 import { Info } from 'lucide-react';
+import { useSwapConfig } from '../context/SwapConfigContext';
 
 interface CardProps extends PropsWithChildren {
   id?: string;
@@ -12,12 +13,22 @@ interface CardProps extends PropsWithChildren {
 }
 
 export const Card = ({ id, title, children, description, reference, className = '', onClick }: CardProps) => {
+  const { theme } = useSwapConfig();
   const borderClass = className.includes('border') ? '' : 'border border-gray-100 dark:border-[#333]';
+
+  // When theme is explicitly pinned, apply styles via inline style to avoid host CSS interference.
+  // When theme is undefined, rely on the CSS cascade (dark class on SwapWidget wrapper).
+  const pinnedStyle: React.CSSProperties =
+    theme === 'dark' ? { backgroundColor: '#111', color: '#fff' }
+    : theme === 'light' ? { backgroundColor: '#ffffff', color: '#111' }
+    : {};
+
   return (
     <div
       id={id}
       onClick={onClick}
-      className={`flex flex-col bg-white dark:bg-[#111] p-6 rounded-2xl shadow-sm transition-all ${borderClass} ${className}`}
+      style={pinnedStyle}
+      className={`flex flex-col bg-[#ffffff] dark:bg-[#111] p-6 rounded-2xl shadow-sm transition-all ${borderClass} ${className}`}
     >
       <div className='flex items-start justify-between gap-3'>
         <h2 className='text-xl font-black tracking-tight text-gray-900 dark:text-white uppercase'>

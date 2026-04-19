@@ -148,12 +148,12 @@ export const CreatePool = () => {
           <div>
             <label className='text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1 block'>{t('create_lp_name')}</label>
             <input type='text' value={lpName} onChange={e => setLpName(e.target.value)} disabled={disabled || !!existingPool}
-              className={`w-full rounded-xl border bg-white dark:bg-[#2a2a2a] px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${!isValidName && lpName.length > 0 ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 dark:border-[#444] focus:ring-amber-500'}`} />
+              className={`w-full rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${!isValidName && lpName.length > 0 ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 dark:border-[#444] focus:ring-amber-500'}`} />
           </div>
           <div>
             <label className='text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1 block'>{t('create_lp_ticker')}</label>
             <input type='text' value={lpTicker} onChange={e => setLpTicker(e.target.value.toUpperCase())} disabled={disabled || !!existingPool}
-              className={`w-full rounded-xl border bg-white dark:bg-[#2a2a2a] px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${!isValidTicker && lpTicker.length > 0 ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 dark:border-[#444] focus:ring-amber-500'}`} />
+              className={`w-full rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${!isValidTicker && lpTicker.length > 0 ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 dark:border-[#444] focus:ring-amber-500'}`} />
           </div>
         </div>
 

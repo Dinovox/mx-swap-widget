@@ -1,0 +1,8 @@
+/* Tailwind utilities only — no preflight reset to avoid conflicts with host app.
+   !important ensures widget styles are never overridden by the host app's CSS. */
+/* Tailwind utilities only — no preflight reset to avoid conflicts with host app */
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+
+/* Dark mode: triggered by .dark on any ancestor element */
+@custom-variant dark (&:is(.dark *));
