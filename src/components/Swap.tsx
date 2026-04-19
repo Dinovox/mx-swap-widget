@@ -15,6 +15,7 @@ import { useGetUserESDT } from "../hooks/useGetUserEsdt";
 import { Card } from "../ui/Card";
 import { TokenSelect } from "../ui/TokenSelect";
 import bigToHex from "../helpers/bigToHex";
+import strToHex from "../helpers/strToHex";
 import BigNumber from "bignumber.js";
 import { useSwapConfig } from "../context/SwapConfigContext";
 import { getThemePalette } from "../ui/themePalette";
@@ -41,8 +42,6 @@ const EGLD_TOKEN: SwapToken = {
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
 /* ------------------------------------------------------------------ */
-
-const strToHex = (s: string) => Buffer.from(s, "utf8").toString("hex");
 
 /** Apply slippage to a raw amountOut string */
 const applySlippage = (rawAmount: string, slippage: number): bigint =>

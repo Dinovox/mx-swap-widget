@@ -26,9 +26,17 @@ export interface PoolInfo {
   isActive: boolean;
 }
 
+/** Pool with liquidity data — fields required for add/remove liquidity operations */
+export interface LiquidityPool extends Required<Pick<PoolInfo, 'lpToken' | 'reserveA' | 'reserveB' | 'lpSupply'>> {
+  address: string;
+  tokenA: string;
+  tokenB: string;
+  isActive: boolean;
+}
+
 /** User's LP position for a specific pool */
 export interface UserPosition {
-  pool: PoolInfo;
+  pool: LiquidityPool;
   balance: string;
   lpTotalSupply: string;
   decimalsA: number;

@@ -6,25 +6,7 @@ import axios from 'axios';
 import BigNumber from 'bignumber.js';
 import { Card } from '../ui/Card';
 import { useSwapConfig } from '../context/SwapConfigContext';
-
-type DexFilter = 'DinoVox' | 'XExchange';
-
-interface PoolInfo {
-  address: string;
-  tokenA: string;
-  tokenB: string;
-  lpToken: string;
-  reserveA: string;
-  reserveB: string;
-  lpSupply: string;
-  isActive: boolean;
-}
-
-interface TokenMeta {
-  identifier: string;
-  ticker: string;
-  decimals: number;
-}
+import type { DexFilter, LiquidityPool, TokenMeta } from '../types';
 
 function formatReserve(raw: string, decimals: number): string {
   const bn = new BigNumber(raw).shiftedBy(-decimals);
@@ -41,7 +23,7 @@ export const Pools = () => {
   useLoadTranslations('swap');
   const navigate = useWidgetNavigate();
 
-  const [pools, setPools] = React.useState<PoolInfo[]>([]);
+  const [pools, setPools] = React.useState<LiquidityPool[]>([]);
   const [tokenMap, setTokenMap] = React.useState<Record<string, TokenMeta>>({});
   const [loading, setLoading] = React.useState(true);
   const [dexFilter, setDexFilter] = React.useState<DexFilter>('DinoVox');
@@ -53,7 +35,7 @@ export const Pools = () => {
       axios.get(`${apiUrl}/pools`, { params: { dexType: dexFilter } }),
       axios.get(`${apiUrl}/tokens`),
     ]).then(([poolsRes, tokensRes]) => {
-      const activePools: PoolInfo[] = (poolsRes.data.pools || []).filter((p: PoolInfo) => p.isActive);
+      const activePools: LiquidityPool[] = (poolsRes.data.pools || []).filter((p: LiquidityPool) => p.isActive);
       setPools(activePools);
       const map: Record<string, TokenMeta> = {};
       for (const t of (tokensRes.data.tokens || [])) {

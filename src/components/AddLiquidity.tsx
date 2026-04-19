@@ -14,13 +14,10 @@ import { useGetUserESDT } from '../hooks/useGetUserEsdt';
 import { Card } from '../ui/Card';
 import { TokenSelect } from '../ui/TokenSelect';
 import bigToHex from '../helpers/bigToHex';
+import strToHex from '../helpers/strToHex';
 import { useSwapConfig } from '../context/SwapConfigContext';
 import BigNumber from 'bignumber.js';
-
-interface DexToken { identifier: string; ticker: string; poolCount: number; decimals: number; logoUrl?: string | null; }
-interface PoolInfo { address: string; tokenA: string; tokenB: string; lpToken: string; reserveA: string; reserveB: string; lpSupply: string; isActive: boolean; }
-
-const strToHex = (s: string) => Buffer.from(s, 'utf8').toString('hex');
+import type { DexToken, PoolInfo, LiquidityPool } from '../types';
 
 function intSqrt(n: bigint): bigint {
   if (n < 2n) return n;
@@ -50,7 +47,7 @@ export const AddLiquidity = () => {
   const [amountA, setAmountA] = useState('');
   const [amountB, setAmountB] = useState('');
   const lastEdited = useRef<'A' | 'B'>('A');
-  const [pool, setPool] = useState<PoolInfo | null>(null);
+  const [pool, setPool] = useState<LiquidityPool | null>(null);
   const [poolLoading, setPoolLoading] = useState(false);
   const [lpTotalMinted, setLpTotalMinted] = useState<string | null>(null);
   const [lpPreview, setLpPreview] = useState<bigint | null>(null);
@@ -121,7 +118,7 @@ export const AddLiquidity = () => {
     axios.get(`${apiUrl}/pools`).then(async (res) => {
       const pools: PoolInfo[] = res.data.pools || [];
       const found = pools.find(p => (p.tokenA === tokenA.identifier && p.tokenB === tokenB.identifier) || (p.tokenA === tokenB.identifier && p.tokenB === tokenA.identifier));
-      setPool(found || null);
+      setPool((found as LiquidityPool) || null);
       if (found?.lpToken && network?.apiAddress) {
         try {
           const lpRes = await axios.get(`/tokens/${found.lpToken}`, { baseURL: network.apiAddress });

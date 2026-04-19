@@ -13,13 +13,10 @@ import { signAndSendTransactions } from '../helpers/signAndSendTransactions';
 import { useGetUserESDT } from '../hooks/useGetUserEsdt';
 import { Card } from '../ui/Card';
 import bigToHex from '../helpers/bigToHex';
+import strToHex from '../helpers/strToHex';
 import { useSwapConfig } from '../context/SwapConfigContext';
 import BigNumber from 'bignumber.js';
-
-interface DexToken { identifier: string; ticker: string; decimals: number; }
-interface PoolInfo { address: string; tokenA: string; tokenB: string; lpToken: string; reserveA: string; reserveB: string; lpSupply: string; isActive: boolean; }
-
-const strToHex = (s: string) => Buffer.from(s, 'utf8').toString('hex');
+import type { DexToken, LiquidityPool } from '../types';
 
 export const RemoveLiquidity = () => {
   const { apiUrl, routes } = useSwapConfig();
@@ -28,7 +25,7 @@ export const RemoveLiquidity = () => {
   const { network } = useGetNetworkConfig();
   const navigate = useWidgetNavigate();
 
-  const [pools, setPools] = useState<PoolInfo[]>([]);
+  const [pools, setPools] = useState<LiquidityPool[]>([]);
   const [tokens, setTokens] = useState<Record<string, DexToken>>({});
   const [selectedPoolAddress, setSelectedPoolAddress] = useState<string>('');
   const [poolsLoading, setPoolsLoading] = useState(true);
@@ -51,10 +48,10 @@ export const RemoveLiquidity = () => {
     if (!apiUrl) return;
     setPoolsLoading(true);
     axios.get(`${apiUrl}/pools`).then((res) => {
-      const activePools = (res.data.pools || []).filter((p: PoolInfo) => p.isActive);
+      const activePools = (res.data.pools || []).filter((p: LiquidityPool) => p.isActive);
       setPools(activePools);
       const qPool = searchParams.get('pool');
-      if (qPool && activePools.some((p: PoolInfo) => p.address === qPool)) setSelectedPoolAddress(qPool);
+      if (qPool && activePools.some((p: LiquidityPool) => p.address === qPool)) setSelectedPoolAddress(qPool);
     }).catch(console.error).finally(() => setPoolsLoading(false));
   }, [apiUrl, searchParams]);
 

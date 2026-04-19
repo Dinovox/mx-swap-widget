@@ -13,11 +13,8 @@ import { signAndSendTransactions } from '../helpers/signAndSendTransactions';
 import { useGetUserESDT } from '../hooks/useGetUserEsdt';
 import { TokenSelect } from '../ui/TokenSelect';
 import { useSwapConfig } from '../context/SwapConfigContext';
-
-interface DexToken { identifier: string; ticker: string; decimals: number; logoUrl?: string | null; }
-interface PoolInfo { address: string; tokenA: string; tokenB: string; isActive: boolean; }
-
-const strToHex = (s: string) => Buffer.from(s, 'utf8').toString('hex');
+import strToHex from '../helpers/strToHex';
+import type { DexToken, PoolInfo } from '../types';
 
 export const CreatePool = () => {
   const { apiUrl, factoryAddress, routes } = useSwapConfig();

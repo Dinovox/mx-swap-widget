@@ -1,62 +1,62 @@
 import { jsx as h, jsxs as w, Fragment as dt } from "react/jsx-runtime";
-import Be, { createContext as ir, useContext as sr, useEffect as ie, useState as F, useRef as ut, useCallback as At } from "react";
-import { initReactI18next as Nr, useTranslation as Ye, I18nextProvider as vr } from "react-i18next";
+import Be, { createContext as er, useContext as tr, useEffect as ie, useState as F, useRef as ut, useCallback as Ct } from "react";
+import { initReactI18next as yr, useTranslation as Je, I18nextProvider as wr } from "react-i18next";
 import pe from "axios";
-import { Info as Lr, ArrowUpDown as Sr, Plus as Br, ArrowLeft as Tt, ArrowDown as Er, CheckCircle as Cr } from "lucide-react";
+import { Info as _r, ArrowUpDown as kr, Plus as Nr, ArrowLeft as At, ArrowDown as vr, CheckCircle as Lr } from "lucide-react";
 import { useGetAccount as pt } from "@multiversx/sdk-dapp/out/react/account/useGetAccount";
-import { useGetAccountInfo as ar } from "@multiversx/sdk-dapp/out/react/account/useGetAccountInfo";
-import { useGetNetworkConfig as Je } from "@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig";
-import { Address as qe, Transaction as tt } from "@multiversx/sdk-core";
+import { useGetAccountInfo as rr } from "@multiversx/sdk-dapp/out/react/account/useGetAccountInfo";
+import { useGetNetworkConfig as Xe } from "@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig";
+import { Address as Oe, Transaction as tt } from "@multiversx/sdk-core";
 import { GAS_PRICE as rt } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
-import { getAccountProvider as $r } from "@multiversx/sdk-dapp/out/providers/helpers/accountProvider";
-import { TransactionManager as Ar } from "@multiversx/sdk-dapp/out/managers/TransactionManager";
-import { useGetPendingTransactions as Ir } from "@multiversx/sdk-dapp/out/react/transactions/useGetPendingTransactions";
+import { getAccountProvider as Sr } from "@multiversx/sdk-dapp/out/providers/helpers/accountProvider";
+import { TransactionManager as Br } from "@multiversx/sdk-dapp/out/managers/TransactionManager";
+import { useGetPendingTransactions as Er } from "@multiversx/sdk-dapp/out/react/transactions/useGetPendingTransactions";
 import B from "bignumber.js";
-const or = {
+const nr = {
   swap: "/swap",
   liquidity: "/liquidity",
   addLiquidity: "/liquidity/add",
   removeLiquidity: "/liquidity/remove",
   createPool: "/liquidity/create",
   pools: "/liquidity/pools"
-}, lr = {
+}, ir = {
   apiUrl: "https://dex.dinovox.com/api/v1",
   routerAddress: "erd1qqqqqqqqqqqqqpgq67xp5hv48n5vy5d8990uq8kpx99h7rfkfm8s2zqqxn",
   aggregatorAddress: "erd1qqqqqqqqqqqqqpgqly98mw70swxc403a7r63mr7pkzh9uhazfm8suv22ak",
   factoryAddress: "erd1qqqqqqqqqqqqqpgqq5852gnes6xxka35lw42prqwtv6a0znhfm8sn3h9n3",
   wrapContract: "erd1qqqqqqqqqqqqqpgqhe8t5jewej70zupmh44jurgn29psua5l2jps3ntjj3",
   wegldIdentifier: "WEGLD-bd4d79",
-  routes: or
-}, cr = ir(lr), zo = ({ config: l, children: e }) => {
+  routes: nr
+}, sr = er(ir), Wo = ({ config: l, children: e }) => {
   const n = {
-    ...lr,
+    ...ir,
     ...l,
-    routes: { ...or, ...l == null ? void 0 : l.routes }
+    routes: { ...nr, ...l == null ? void 0 : l.routes }
   };
-  return /* @__PURE__ */ h(cr.Provider, { value: n, children: e });
-}, We = () => sr(cr), dr = ir(null), ur = () => sr(dr), q = (l) => typeof l == "string", at = () => {
+  return /* @__PURE__ */ h(sr.Provider, { value: n, children: e });
+}, Ge = () => tr(sr), ar = er(null), or = () => tr(ar), q = (l) => typeof l == "string", at = () => {
   let l, e;
   const n = new Promise((i, s) => {
     l = i, e = s;
   });
   return n.resolve = l, n.reject = e, n;
-}, Ot = (l) => l == null ? "" : String(l), Tr = (l, e, n) => {
+}, Dt = (l) => l == null ? "" : String(l), Cr = (l, e, n) => {
   l.forEach((i) => {
     e[i] && (n[i] = e[i]);
   });
-}, Fr = /###/g, Ut = (l) => l && l.includes("###") ? l.replace(Fr, ".") : l, jt = (l) => !l || q(l), lt = (l, e, n) => {
+}, $r = /###/g, qt = (l) => l && l.includes("###") ? l.replace($r, ".") : l, Ot = (l) => !l || q(l), lt = (l, e, n) => {
   const i = q(e) ? e.split(".") : e;
   let s = 0;
   for (; s < i.length - 1; ) {
-    if (jt(l)) return {};
-    const o = Ut(i[s]);
+    if (Ot(l)) return {};
+    const o = qt(i[s]);
     !l[o] && n && (l[o] = new n()), Object.prototype.hasOwnProperty.call(l, o) ? l = l[o] : l = {}, ++s;
   }
-  return jt(l) ? {} : {
+  return Ot(l) ? {} : {
     obj: l,
-    k: Ut(i[s])
+    k: qt(i[s])
   };
-}, Mt = (l, e, n) => {
+}, Ut = (l, e, n) => {
   const {
     obj: i,
     k: s
@@ -69,7 +69,7 @@ const or = {
   for (; p.obj === void 0 && c.length; )
     o = `${c[c.length - 1]}.${o}`, c = c.slice(0, c.length - 1), p = lt(l, c, Object), p != null && p.obj && typeof p.obj[`${p.k}.${o}`] < "u" && (p.obj = void 0);
   p.obj[`${p.k}.${o}`] = n;
-}, Rr = (l, e, n, i) => {
+}, Ar = (l, e, n, i) => {
   const {
     obj: s,
     k: o
@@ -82,22 +82,22 @@ const or = {
   } = lt(l, e);
   if (n && Object.prototype.hasOwnProperty.call(n, i))
     return n[i];
-}, Pr = (l, e, n) => {
+}, Ir = (l, e, n) => {
   const i = bt(l, n);
   return i !== void 0 ? i : bt(e, n);
-}, fr = (l, e, n) => {
+}, lr = (l, e, n) => {
   for (const i in e)
-    i !== "__proto__" && i !== "constructor" && (i in l ? q(l[i]) || l[i] instanceof String || q(e[i]) || e[i] instanceof String ? n && (l[i] = e[i]) : fr(l[i], e[i], n) : l[i] = e[i]);
+    i !== "__proto__" && i !== "constructor" && (i in l ? q(l[i]) || l[i] instanceof String || q(e[i]) || e[i] instanceof String ? n && (l[i] = e[i]) : lr(l[i], e[i], n) : l[i] = e[i]);
   return l;
-}, He = (l) => l.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"), Dr = {
+}, ze = (l) => l.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"), Tr = {
   "&": "&amp;",
   "<": "&lt;",
   ">": "&gt;",
   '"': "&quot;",
   "'": "&#39;",
   "/": "&#x2F;"
-}, qr = (l) => q(l) ? l.replace(/[&<>"'\/]/g, (e) => Dr[e]) : l;
-class Or {
+}, Fr = (l) => q(l) ? l.replace(/[&<>"'\/]/g, (e) => Tr[e]) : l;
+class Rr {
   constructor(e) {
     this.capacity = e, this.regExpMap = /* @__PURE__ */ new Map(), this.regExpQueue = [];
   }
@@ -109,18 +109,18 @@ class Or {
     return this.regExpQueue.length === this.capacity && this.regExpMap.delete(this.regExpQueue.shift()), this.regExpMap.set(e, i), this.regExpQueue.push(e), i;
   }
 }
-const Ur = [" ", ",", "?", "!", ";"], jr = new Or(20), Mr = (l, e, n) => {
+const Pr = [" ", ",", "?", "!", ";"], Dr = new Rr(20), qr = (l, e, n) => {
   e = e || "", n = n || "";
-  const i = Ur.filter((c) => !e.includes(c) && !n.includes(c));
+  const i = Pr.filter((c) => !e.includes(c) && !n.includes(c));
   if (i.length === 0) return !0;
-  const s = jr.getRegExp(`(${i.map((c) => c === "?" ? "\\?" : c).join("|")})`);
+  const s = Dr.getRegExp(`(${i.map((c) => c === "?" ? "\\?" : c).join("|")})`);
   let o = !s.test(l);
   if (!o) {
     const c = l.indexOf(n);
     c > 0 && !s.test(l.substring(0, c)) && (o = !0);
   }
   return o;
-}, It = (l, e, n = ".") => {
+}, $t = (l, e, n = ".") => {
   if (!l) return;
   if (l[e])
     return Object.prototype.hasOwnProperty.call(l, e) ? l[e] : void 0;
@@ -140,7 +140,7 @@ const Ur = [" ", ",", "?", "!", ";"], jr = new Or(20), Mr = (l, e, n) => {
     s = c;
   }
   return s;
-}, ft = (l) => l == null ? void 0 : l.replace(/_/g, "-"), Vr = {
+}, ft = (l) => l == null ? void 0 : l.replace(/_/g, "-"), Or = {
   type: "logger",
   log(l) {
     this.output("log", l);
@@ -161,7 +161,7 @@ class yt {
     this.init(e, n);
   }
   init(e, n = {}) {
-    this.prefix = n.prefix || "i18next:", this.logger = e || Vr, this.options = n, this.debug = n.debug;
+    this.prefix = n.prefix || "i18next:", this.logger = e || Or, this.options = n, this.debug = n.debug;
   }
   log(...e) {
     return this.forward(e, "log", "", !0);
@@ -188,7 +188,7 @@ class yt {
     return e = e || this.options, e.prefix = e.prefix || this.prefix, new yt(this.logger, e);
   }
 }
-var Ve = new yt();
+var We = new yt();
 class _t {
   constructor() {
     this.observers = {};
@@ -225,7 +225,7 @@ class _t {
     });
   }
 }
-class Vt extends _t {
+class jt extends _t {
   constructor(e, n = {
     ns: ["translation"],
     defaultNS: "translation"
@@ -245,14 +245,14 @@ class Vt extends _t {
     let p;
     e.includes(".") ? p = e.split(".") : (p = [e, n], i && (Array.isArray(i) ? p.push(...i) : q(i) && o ? p.push(...i.split(o)) : p.push(i)));
     const f = bt(this.data, p);
-    return !f && !n && !i && e.includes(".") && (e = p[0], n = p[1], i = p.slice(2).join(".")), f || !c || !q(i) ? f : It((u = (m = this.data) == null ? void 0 : m[e]) == null ? void 0 : u[n], i, o);
+    return !f && !n && !i && e.includes(".") && (e = p[0], n = p[1], i = p.slice(2).join(".")), f || !c || !q(i) ? f : $t((u = (m = this.data) == null ? void 0 : m[e]) == null ? void 0 : u[n], i, o);
   }
   addResource(e, n, i, s, o = {
     silent: !1
   }) {
     const c = o.keySeparator !== void 0 ? o.keySeparator : this.options.keySeparator;
     let p = [e, n];
-    i && (p = p.concat(c ? i.split(c) : i)), e.includes(".") && (p = e.split("."), s = n, n = p[1]), this.addNamespaces(n), Mt(this.data, p, s), o.silent || this.emit("added", e, n, i, s);
+    i && (p = p.concat(c ? i.split(c) : i)), e.includes(".") && (p = e.split("."), s = n, n = p[1]), this.addNamespaces(n), Ut(this.data, p, s), o.silent || this.emit("added", e, n, i, s);
   }
   addResources(e, n, i, s = {
     silent: !1
@@ -270,10 +270,10 @@ class Vt extends _t {
     let p = [e, n];
     e.includes(".") && (p = e.split("."), s = i, i = n, n = p[1]), this.addNamespaces(n);
     let f = bt(this.data, p) || {};
-    c.skipCopy || (i = JSON.parse(JSON.stringify(i))), s ? fr(f, i, o) : f = {
+    c.skipCopy || (i = JSON.parse(JSON.stringify(i))), s ? lr(f, i, o) : f = {
       ...f,
       ...i
-    }, Mt(this.data, p, f), c.silent || this.emit("added", e, n, i);
+    }, Ut(this.data, p, f), c.silent || this.emit("added", e, n, i);
   }
   removeResourceBundle(e, n) {
     this.hasResourceBundle(e, n) && delete this.data[e][n], this.removeNamespaces(n), this.emit("removed", e, n);
@@ -295,7 +295,7 @@ class Vt extends _t {
     return this.data;
   }
 }
-var pr = {
+var cr = {
   processors: {},
   addPostProcessor(l) {
     this.processors[l.name] = l;
@@ -307,19 +307,19 @@ var pr = {
     }), e;
   }
 };
-const hr = Symbol("i18next/PATH_KEY");
-function Wr() {
+const dr = Symbol("i18next/PATH_KEY");
+function Ur() {
   const l = [], e = /* @__PURE__ */ Object.create(null);
   let n;
   return e.get = (i, s) => {
     var o;
-    return (o = n == null ? void 0 : n.revoke) == null || o.call(n), s === hr ? l : (l.push(s), n = Proxy.revocable(i, e), n.proxy);
+    return (o = n == null ? void 0 : n.revoke) == null || o.call(n), s === dr ? l : (l.push(s), n = Proxy.revocable(i, e), n.proxy);
   }, Proxy.revocable(/* @__PURE__ */ Object.create(null), e).proxy;
 }
 function et(l, e) {
   const {
-    [hr]: n
-  } = l(Wr()), i = (e == null ? void 0 : e.keySeparator) ?? ".", s = (e == null ? void 0 : e.nsSeparator) ?? ":";
+    [dr]: n
+  } = l(Ur()), i = (e == null ? void 0 : e.keySeparator) ?? ".", s = (e == null ? void 0 : e.nsSeparator) ?? ":";
   if (n.length > 1 && s) {
     const o = e == null ? void 0 : e.ns, c = Array.isArray(o) ? o : null;
     if (c && c.length > 1 && c.slice(1).includes(n[0]))
@@ -327,10 +327,10 @@ function et(l, e) {
   }
   return n.join(i);
 }
-const Lt = (l) => !q(l) && typeof l != "boolean" && typeof l != "number";
+const vt = (l) => !q(l) && typeof l != "boolean" && typeof l != "number";
 class wt extends _t {
   constructor(e, n = {}) {
-    super(), Tr(["resourceStore", "languageUtils", "pluralResolver", "interpolator", "backendConnector", "i18nFormat", "utils"], e, this), this.options = n, this.options.keySeparator === void 0 && (this.options.keySeparator = "."), this.logger = Ve.create("translator"), this.checkedLoadedFor = {};
+    super(), Cr(["resourceStore", "languageUtils", "pluralResolver", "interpolator", "backendConnector", "i18nFormat", "utils"], e, this), this.options = n, this.options.keySeparator === void 0 && (this.options.keySeparator = "."), this.logger = We.create("translator"), this.checkedLoadedFor = {};
   }
   changeLanguage(e) {
     e && (this.language = e);
@@ -344,7 +344,7 @@ class wt extends _t {
     if (e == null) return !1;
     const s = this.resolve(e, i);
     if ((s == null ? void 0 : s.res) === void 0) return !1;
-    const o = Lt(s.res);
+    const o = vt(s.res);
     return !(i.returnObjects === !1 && o);
   }
   extractFromKey(e, n) {
@@ -352,7 +352,7 @@ class wt extends _t {
     i === void 0 && (i = ":");
     const s = n.keySeparator !== void 0 ? n.keySeparator : this.options.keySeparator;
     let o = n.ns || this.options.defaultNS || [];
-    const c = i && e.includes(i), p = !this.options.userDefinedKeySeparator && !n.keySeparator && !this.options.userDefinedNsSeparator && !n.nsSeparator && !Mr(e, i, s);
+    const c = i && e.includes(i), p = !this.options.userDefinedKeySeparator && !n.keySeparator && !this.options.userDefinedNsSeparator && !n.nsSeparator && !qr(e, i, s);
     if (c && !p) {
       const f = e.match(this.interpolator.nestingRegexp);
       if (f && f.length > 0)
@@ -412,7 +412,7 @@ class wt extends _t {
     }) : "", ae = U && !s.ordinal && s.count === 0, A = ae && s[`defaultValue${this.options.pluralSeparator}zero`] || s[`defaultValue${ee}`] || s[`defaultValue${C}`] || s.defaultValue;
     let O = x;
     R && !x && L && (O = A);
-    const ge = Lt(O), me = Object.prototype.toString.apply(O);
+    const ge = vt(O), me = Object.prototype.toString.apply(O);
     if (R && O && ge && !E.includes(me) && !(q(D) && Array.isArray(O))) {
       if (!s.returnObjects && !this.options.returnObjects) {
         this.options.returnedObjectHandler || this.logger.warn("accessing an object - but returnObjects options is not enabled!");
@@ -429,7 +429,7 @@ class wt extends _t {
             const Y = `${W}${c}${P}`;
             L && !x ? T[P] = this.translate(Y, {
               ...s,
-              defaultValue: Lt(A) ? A[P] : void 0,
+              defaultValue: vt(A) ? A[P] : void 0,
               joinArrays: !1,
               ns: f
             }) : T[P] = this.translate(Y, {
@@ -510,7 +510,7 @@ class wt extends _t {
       !i.lng && s && s.res && (i.lng = this.language || s.usedLng), i.nest !== !1 && (e = this.interpolator.nest(e, (..._) => (o == null ? void 0 : o[0]) === _[0] && !i.context ? (this.logger.warn(`It seems you are nesting recursively key: ${_[0]} in key: ${n[0]}`), null) : this.translate(..._, n), i)), i.interpolation && this.interpolator.reset();
     }
     const c = i.postProcess || this.options.postProcess, p = q(c) ? [c] : c;
-    return e != null && (p != null && p.length) && i.applyPostProcessor !== !1 && (e = pr.handle(p, e, n, this.options && this.options.postProcessPassResolved ? {
+    return e != null && (p != null && p.length) && i.applyPostProcessor !== !1 && (e = cr.handle(p, e, n, this.options && this.options.postProcessPassResolved ? {
       i18nResolved: {
         ...s,
         usedParams: this.getUsedParamsDetails(i)
@@ -591,9 +591,9 @@ class wt extends _t {
     return !1;
   }
 }
-class Wt {
+class Mt {
   constructor(e) {
-    this.options = e, this.supportedLngs = this.options.supportedLngs || !1, this.logger = Ve.create("languageUtils");
+    this.options = e, this.supportedLngs = this.options.supportedLngs || !1, this.logger = We.create("languageUtils");
   }
   getScriptPartFromCode(e) {
     if (e = ft(e), !e || !e.includes("-")) return null;
@@ -651,22 +651,22 @@ class Wt {
     }), s;
   }
 }
-const Gt = {
+const Vt = {
   zero: 0,
   one: 1,
   two: 2,
   few: 3,
   many: 4,
   other: 5
-}, Ht = {
+}, Wt = {
   select: (l) => l === 1 ? "one" : "other",
   resolvedOptions: () => ({
     pluralCategories: ["one", "other"]
   })
 };
-class Gr {
+class jr {
   constructor(e, n = {}) {
-    this.languageUtils = e, this.options = n, this.logger = Ve.create("pluralResolver"), this.pluralRulesCache = {};
+    this.languageUtils = e, this.options = n, this.logger = We.create("pluralResolver"), this.pluralRulesCache = {};
   }
   clearCache() {
     this.pluralRulesCache = {};
@@ -685,8 +685,8 @@ class Gr {
       });
     } catch {
       if (typeof Intl > "u")
-        return this.logger.error("No Intl support, please use an Intl polyfill!"), Ht;
-      if (!e.match(/-|_/)) return Ht;
+        return this.logger.error("No Intl support, please use an Intl polyfill!"), Wt;
+      if (!e.match(/-|_/)) return Wt;
       const f = this.languageUtils.getLanguagePartFromCode(e);
       c = this.getRule(f, n);
     }
@@ -701,21 +701,21 @@ class Gr {
   }
   getSuffixes(e, n = {}) {
     let i = this.getRule(e, n);
-    return i || (i = this.getRule("dev", n)), i ? i.resolvedOptions().pluralCategories.sort((s, o) => Gt[s] - Gt[o]).map((s) => `${this.options.prepend}${n.ordinal ? `ordinal${this.options.prepend}` : ""}${s}`) : [];
+    return i || (i = this.getRule("dev", n)), i ? i.resolvedOptions().pluralCategories.sort((s, o) => Vt[s] - Vt[o]).map((s) => `${this.options.prepend}${n.ordinal ? `ordinal${this.options.prepend}` : ""}${s}`) : [];
   }
   getSuffix(e, n, i = {}) {
     const s = this.getRule(e, i);
     return s ? `${this.options.prepend}${i.ordinal ? `ordinal${this.options.prepend}` : ""}${s.select(n)}` : (this.logger.warn(`no plural rule found for: ${e}`), this.getSuffix("dev", n, i));
   }
 }
-const zt = (l, e, n, i = ".", s = !0) => {
-  let o = Pr(l, e, n);
-  return !o && s && q(n) && (o = It(l, n, i), o === void 0 && (o = It(e, n, i))), o;
-}, St = (l) => l.replace(/\$/g, "$$$$");
-class Kt {
+const Gt = (l, e, n, i = ".", s = !0) => {
+  let o = Ir(l, e, n);
+  return !o && s && q(n) && (o = $t(l, n, i), o === void 0 && (o = $t(e, n, i))), o;
+}, Lt = (l) => l.replace(/\$/g, "$$$$");
+class Ht {
   constructor(e = {}) {
     var n;
-    this.logger = Ve.create("interpolator"), this.options = e, this.format = ((n = e == null ? void 0 : e.interpolation) == null ? void 0 : n.format) || ((i) => i), this.init(e);
+    this.logger = We.create("interpolator"), this.options = e, this.format = ((n = e == null ? void 0 : e.interpolation) == null ? void 0 : n.format) || ((i) => i), this.init(e);
   }
   init(e = {}) {
     e.interpolation || (e.interpolation = {
@@ -740,7 +740,7 @@ class Kt {
       maxReplaces: E,
       alwaysFormat: D
     } = e.interpolation;
-    this.escape = n !== void 0 ? n : qr, this.escapeValue = i !== void 0 ? i : !0, this.useRawValueToEscape = s !== void 0 ? s : !1, this.prefix = o ? He(o) : c || "{{", this.suffix = p ? He(p) : f || "}}", this.formatSeparator = m || ",", this.unescapePrefix = u ? "" : y ? He(y) : "-", this.unescapeSuffix = this.unescapePrefix ? "" : u ? He(u) : "", this.nestingPrefix = S ? He(S) : _ || He("$t("), this.nestingSuffix = x ? He(x) : v || He(")"), this.nestingOptionsSeparator = k || ",", this.maxReplaces = E || 1e3, this.alwaysFormat = D !== void 0 ? D : !1, this.resetRegExp();
+    this.escape = n !== void 0 ? n : Fr, this.escapeValue = i !== void 0 ? i : !0, this.useRawValueToEscape = s !== void 0 ? s : !1, this.prefix = o ? ze(o) : c || "{{", this.suffix = p ? ze(p) : f || "}}", this.formatSeparator = m || ",", this.unescapePrefix = u ? "" : y ? ze(y) : "-", this.unescapeSuffix = this.unescapePrefix ? "" : u ? ze(u) : "", this.nestingPrefix = S ? ze(S) : _ || ze("$t("), this.nestingSuffix = x ? ze(x) : v || ze(")"), this.nestingOptionsSeparator = k || ",", this.maxReplaces = E || 1e3, this.alwaysFormat = D !== void 0 ? D : !1, this.resetRegExp();
   }
   reset() {
     this.options && this.init(this.options);
@@ -754,7 +754,7 @@ class Kt {
     let o, c, p;
     const f = this.options && this.options.interpolation && this.options.interpolation.defaultVariables || {}, m = (x) => {
       if (!x.includes(this.formatSeparator)) {
-        const D = zt(n, f, x, this.options.keySeparator, this.options.ignoreJSONStructure);
+        const D = Gt(n, f, x, this.options.keySeparator, this.options.ignoreJSONStructure);
         return this.alwaysFormat ? this.format(D, void 0, i, {
           ...s,
           ...n,
@@ -762,7 +762,7 @@ class Kt {
         }) : D;
       }
       const v = x.split(this.formatSeparator), k = v.shift().trim(), E = v.join(this.formatSeparator).trim();
-      return this.format(zt(n, f, k, this.options.keySeparator, this.options.ignoreJSONStructure), E, i, {
+      return this.format(Gt(n, f, k, this.options.keySeparator, this.options.ignoreJSONStructure), E, i, {
         ...s,
         ...n,
         interpolationkey: k
@@ -772,10 +772,10 @@ class Kt {
     const u = (s == null ? void 0 : s.missingInterpolationHandler) || this.options.missingInterpolationHandler, y = ((_ = s == null ? void 0 : s.interpolation) == null ? void 0 : _.skipOnVariables) !== void 0 ? s.interpolation.skipOnVariables : this.options.interpolation.skipOnVariables;
     return [{
       regex: this.regexpUnescape,
-      safeValue: (x) => St(x)
+      safeValue: (x) => Lt(x)
     }, {
       regex: this.regexp,
-      safeValue: (x) => this.escapeValue ? St(this.escape(x)) : St(x)
+      safeValue: (x) => this.escapeValue ? Lt(this.escape(x)) : Lt(x)
     }].forEach((x) => {
       for (p = 0; o = x.regex.exec(e); ) {
         const v = o[1].trim();
@@ -790,7 +790,7 @@ class Kt {
             continue;
           } else
             this.logger.warn(`missed to pass in variable ${v} for interpolating ${e}`), c = "";
-        else !q(c) && !this.useRawValueToEscape && (c = Ot(c));
+        else !q(c) && !this.useRawValueToEscape && (c = Dt(c));
         const k = x.safeValue(c);
         if (e = e.replace(o[0], k), y ? (x.regex.lastIndex += c.length, x.regex.lastIndex -= o[0].length) : x.regex.lastIndex = 0, p++, p >= this.maxReplaces)
           break;
@@ -802,7 +802,7 @@ class Kt {
     const p = (f, m) => {
       const u = this.nestingOptionsSeparator;
       if (!f.includes(u)) return f;
-      const y = f.split(new RegExp(`${He(u)}[ ]*{`));
+      const y = f.split(new RegExp(`${ze(u)}[ ]*{`));
       let S = `{${y[1]}`;
       f = y[0], S = this.interpolate(S, c);
       const _ = S.match(/'/g), x = S.match(/"/g);
@@ -824,7 +824,7 @@ class Kt {
       }, c = c.replace && !q(c.replace) ? c.replace : c, c.applyPostProcessor = !1, delete c.defaultValue;
       const m = /{.*}/.test(s[1]) ? s[1].lastIndexOf("}") + 1 : s[1].indexOf(this.formatSeparator);
       if (m !== -1 && (f = s[1].slice(m).split(this.formatSeparator).map((u) => u.trim()).filter(Boolean), s[1] = s[1].slice(0, m)), o = n(p.call(this, s[1].trim(), c), c), o && s[0] === e && !q(o)) return o;
-      q(o) || (o = Ot(o)), o || (this.logger.warn(`missed to resolve ${s[1]} for nesting ${e}`), o = ""), f.length && (o = f.reduce((u, y) => this.format(u, y, i.lng, {
+      q(o) || (o = Dt(o)), o || (this.logger.warn(`missed to resolve ${s[1]} for nesting ${e}`), o = ""), f.length && (o = f.reduce((u, y) => this.format(u, y, i.lng, {
         ...i,
         interpolationkey: s[1].trim()
       }), o.trim())), e = e.replace(s[0], o), this.regexp.lastIndex = 0;
@@ -832,7 +832,7 @@ class Kt {
     return e;
   }
 }
-const Hr = (l) => {
+const Mr = (l) => {
   let e = l.toLowerCase().trim();
   const n = {};
   if (l.includes("(")) {
@@ -850,7 +850,7 @@ const Hr = (l) => {
     formatName: e,
     formatOptions: n
   };
-}, Yt = (l) => {
+}, zt = (l) => {
   const e = {};
   return (n, i, s) => {
     let o = s;
@@ -862,16 +862,16 @@ const Hr = (l) => {
     let p = e[c];
     return p || (p = l(ft(i), s), e[c] = p), p(n);
   };
-}, zr = (l) => (e, n, i) => l(ft(n), i)(e);
-class Kr {
+}, Vr = (l) => (e, n, i) => l(ft(n), i)(e);
+class Wr {
   constructor(e = {}) {
-    this.logger = Ve.create("formatter"), this.options = e, this.init(e);
+    this.logger = We.create("formatter"), this.options = e, this.init(e);
   }
   init(e, n = {
     interpolation: {}
   }) {
     this.formatSeparator = n.interpolation.formatSeparator || ",";
-    const i = n.cacheInBuiltFormats ? Yt : zr;
+    const i = n.cacheInBuiltFormats ? zt : Vr;
     this.formats = {
       number: i((s, o) => {
         const c = new Intl.NumberFormat(s, {
@@ -910,7 +910,7 @@ class Kr {
     this.formats[e.toLowerCase().trim()] = n;
   }
   addCached(e, n) {
-    this.formats[e.toLowerCase().trim()] = Yt(n);
+    this.formats[e.toLowerCase().trim()] = zt(n);
   }
   format(e, n, i, s = {}) {
     if (!n || e == null) return e;
@@ -924,7 +924,7 @@ class Kr {
       const {
         formatName: m,
         formatOptions: u
-      } = Hr(f);
+      } = Mr(f);
       if (this.formats[m]) {
         let S = p;
         try {
@@ -944,13 +944,13 @@ class Kr {
     }, e);
   }
 }
-const Yr = (l, e) => {
+const Gr = (l, e) => {
   l.pending[e] !== void 0 && (delete l.pending[e], l.pendingCount--);
 };
-class Jr extends _t {
+class Hr extends _t {
   constructor(e, n, i, s = {}) {
     var o, c;
-    super(), this.backend = e, this.store = n, this.services = i, this.languageUtils = i.languageUtils, this.options = s, this.logger = Ve.create("backendConnector"), this.waitingReads = [], this.maxParallelReads = s.maxParallelReads || 10, this.readingCalls = 0, this.maxRetries = s.maxRetries >= 0 ? s.maxRetries : 5, this.retryTimeout = s.retryTimeout >= 1 ? s.retryTimeout : 350, this.state = {}, this.queue = [], (c = (o = this.backend) == null ? void 0 : o.init) == null || c.call(o, i, s.backend, s);
+    super(), this.backend = e, this.store = n, this.services = i, this.languageUtils = i.languageUtils, this.options = s, this.logger = We.create("backendConnector"), this.waitingReads = [], this.maxParallelReads = s.maxParallelReads || 10, this.readingCalls = 0, this.maxRetries = s.maxRetries >= 0 ? s.maxRetries : 5, this.retryTimeout = s.retryTimeout >= 1 ? s.retryTimeout : 350, this.state = {}, this.queue = [], (c = (o = this.backend) == null ? void 0 : o.init) == null || c.call(o, i, s.backend, s);
   }
   queueLoad(e, n, i, s) {
     const o = {}, c = {}, p = {}, f = {};
@@ -980,7 +980,7 @@ class Jr extends _t {
     }), this.state[e] = n ? -1 : 2, n && i && (this.state[e] = 0);
     const p = {};
     this.queue.forEach((f) => {
-      Rr(f.loaded, [o], c), Yr(f, e), n && f.errors.push(n), f.pendingCount === 0 && !f.done && (Object.keys(f.loaded).forEach((m) => {
+      Ar(f.loaded, [o], c), Gr(f, e), n && f.errors.push(n), f.pendingCount === 0 && !f.done && (Object.keys(f.loaded).forEach((m) => {
         p[m] || (p[m] = {});
         const u = f.loaded[m];
         u.length && u.forEach((y) => {
@@ -1079,7 +1079,7 @@ class Jr extends _t {
     }
   }
 }
-const Bt = () => ({
+const St = () => ({
   debug: !1,
   initAsync: !0,
   ns: ["translation"],
@@ -1134,17 +1134,17 @@ const Bt = () => ({
     skipOnVariables: !0
   },
   cacheInBuiltFormats: !0
-}), Jt = (l) => (q(l.ns) && (l.ns = [l.ns]), q(l.fallbackLng) && (l.fallbackLng = [l.fallbackLng]), q(l.fallbackNS) && (l.fallbackNS = [l.fallbackNS]), l.supportedLngs && !l.supportedLngs.includes("cimode") && (l.supportedLngs = l.supportedLngs.concat(["cimode"])), l), mt = () => {
-}, Xr = (l) => {
+}), Kt = (l) => (q(l.ns) && (l.ns = [l.ns]), q(l.fallbackLng) && (l.fallbackLng = [l.fallbackLng]), q(l.fallbackNS) && (l.fallbackNS = [l.fallbackNS]), l.supportedLngs && !l.supportedLngs.includes("cimode") && (l.supportedLngs = l.supportedLngs.concat(["cimode"])), l), mt = () => {
+}, zr = (l) => {
   Object.getOwnPropertyNames(Object.getPrototypeOf(l)).forEach((n) => {
     typeof l[n] == "function" && (l[n] = l[n].bind(l));
   });
 };
 class ct extends _t {
   constructor(e = {}, n) {
-    if (super(), this.options = Jt(e), this.services = {}, this.logger = Ve, this.modules = {
+    if (super(), this.options = Kt(e), this.services = {}, this.logger = We, this.modules = {
       external: []
-    }, Xr(this), n && !this.isInitialized && !e.isClone) {
+    }, zr(this), n && !this.isInitialized && !e.isClone) {
       if (!this.options.initAsync)
         return this.init(e, n), this;
       setTimeout(() => {
@@ -1154,28 +1154,28 @@ class ct extends _t {
   }
   init(e = {}, n) {
     this.isInitializing = !0, typeof e == "function" && (n = e, e = {}), e.defaultNS == null && e.ns && (q(e.ns) ? e.defaultNS = e.ns : e.ns.includes("translation") || (e.defaultNS = e.ns[0]));
-    const i = Bt();
+    const i = St();
     this.options = {
       ...i,
       ...this.options,
-      ...Jt(e)
+      ...Kt(e)
     }, this.options.interpolation = {
       ...i.interpolation,
       ...this.options.interpolation
     }, e.keySeparator !== void 0 && (this.options.userDefinedKeySeparator = e.keySeparator), e.nsSeparator !== void 0 && (this.options.userDefinedNsSeparator = e.nsSeparator), typeof this.options.overloadTranslationOptionHandler != "function" && (this.options.overloadTranslationOptionHandler = i.overloadTranslationOptionHandler);
     const s = (m) => m ? typeof m == "function" ? new m() : m : null;
     if (!this.options.isClone) {
-      this.modules.logger ? Ve.init(s(this.modules.logger), this.options) : Ve.init(null, this.options);
+      this.modules.logger ? We.init(s(this.modules.logger), this.options) : We.init(null, this.options);
       let m;
-      this.modules.formatter ? m = this.modules.formatter : m = Kr;
-      const u = new Wt(this.options);
-      this.store = new Vt(this.options.resources, this.options);
+      this.modules.formatter ? m = this.modules.formatter : m = Wr;
+      const u = new Mt(this.options);
+      this.store = new jt(this.options.resources, this.options);
       const y = this.services;
-      y.logger = Ve, y.resourceStore = this.store, y.languageUtils = u, y.pluralResolver = new Gr(u, {
+      y.logger = We, y.resourceStore = this.store, y.languageUtils = u, y.pluralResolver = new jr(u, {
         prepend: this.options.pluralSeparator
-      }), m && (y.formatter = s(m), y.formatter.init && y.formatter.init(y, this.options), this.options.interpolation.format = y.formatter.format.bind(y.formatter)), y.interpolator = new Kt(this.options), y.utils = {
+      }), m && (y.formatter = s(m), y.formatter.init && y.formatter.init(y, this.options), this.options.interpolation.format = y.formatter.format.bind(y.formatter)), y.interpolator = new Ht(this.options), y.utils = {
         hasLoadedNamespace: this.hasLoadedNamespace.bind(this)
-      }, y.backendConnector = new Jr(s(this.modules.backend), y.resourceStore, y, this.options), y.backendConnector.on("*", (S, ..._) => {
+      }, y.backendConnector = new Hr(s(this.modules.backend), y.resourceStore, y, this.options), y.backendConnector.on("*", (S, ..._) => {
         this.emit(S, ..._);
       }), this.modules.languageDetector && (y.languageDetector = s(this.modules.languageDetector), y.languageDetector.init && y.languageDetector.init(y, this.options.detection, this.options)), this.modules.i18nFormat && (y.i18nFormat = s(this.modules.i18nFormat), y.i18nFormat.init && y.i18nFormat.init(this)), this.translator = new wt(this.services, this.options), this.translator.on("*", (S, ..._) => {
         this.emit(S, ..._);
@@ -1228,7 +1228,7 @@ class ct extends _t {
   use(e) {
     if (!e) throw new Error("You are passing an undefined module! Please check the object you are passing to i18next.use()");
     if (!e.type) throw new Error("You are passing a wrong module! Please check the object you are passing to i18next.use()");
-    return e.type === "backend" && (this.modules.backend = e), (e.type === "logger" || e.log && e.warn && e.error) && (this.modules.logger = e), e.type === "languageDetector" && (this.modules.languageDetector = e), e.type === "i18nFormat" && (this.modules.i18nFormat = e), e.type === "postProcessor" && pr.addPostProcessor(e), e.type === "formatter" && (this.modules.formatter = e), e.type === "3rdParty" && this.modules.external.push(e), this;
+    return e.type === "backend" && (this.modules.backend = e), (e.type === "logger" || e.log && e.warn && e.error) && (this.modules.logger = e), e.type === "languageDetector" && (this.modules.languageDetector = e), e.type === "i18nFormat" && (this.modules.i18nFormat = e), e.type === "postProcessor" && cr.addPostProcessor(e), e.type === "formatter" && (this.modules.formatter = e), e.type === "3rdParty" && this.modules.external.push(e), this;
   }
   setResolvedLanguage(e) {
     if (!(!e || !this.languages) && !["cimode", "dev"].includes(e)) {
@@ -1332,7 +1332,7 @@ class ct extends _t {
       }
     } catch {
     }
-    const n = ["ar", "shu", "sqr", "ssh", "xaa", "yhd", "yud", "aao", "abh", "abv", "acm", "acq", "acw", "acx", "acy", "adf", "ads", "aeb", "aec", "afb", "ajp", "apc", "apd", "arb", "arq", "ars", "ary", "arz", "auz", "avl", "ayh", "ayl", "ayn", "ayp", "bbz", "pga", "he", "iw", "ps", "pbt", "pbu", "pst", "prp", "prd", "ug", "ur", "ydd", "yds", "yih", "ji", "yi", "hbo", "men", "xmn", "fa", "jpr", "peo", "pes", "prs", "dv", "sam", "ckb"], i = ((o = this.services) == null ? void 0 : o.languageUtils) || new Wt(Bt());
+    const n = ["ar", "shu", "sqr", "ssh", "xaa", "yhd", "yud", "aao", "abh", "abv", "acm", "acq", "acw", "acx", "acy", "adf", "ads", "aeb", "aec", "afb", "ajp", "apc", "apd", "arb", "arq", "ars", "ary", "arz", "auz", "avl", "ayh", "ayl", "ayn", "ayp", "bbz", "pga", "he", "iw", "ps", "pbt", "pbu", "pst", "prp", "prd", "ug", "ur", "ydd", "yds", "yih", "ji", "yi", "hbo", "men", "xmn", "fa", "jpr", "peo", "pes", "prs", "dv", "sam", "ckb"], i = ((o = this.services) == null ? void 0 : o.languageUtils) || new Mt(St());
     return e.toLowerCase().indexOf("-latn") > 1 ? "ltr" : n.includes(i.getLanguagePartFromCode(e)) || e.toLowerCase().indexOf("-arab") > 1 ? "rtl" : "ltr";
   }
   static createInstance(e = {}, n) {
@@ -1359,18 +1359,18 @@ class ct extends _t {
       }, f[m] = Object.keys(f[m]).reduce((u, y) => (u[y] = {
         ...f[m][y]
       }, u), f[m]), f), {});
-      o.store = new Vt(p, s), o.services.resourceStore = o.store;
+      o.store = new jt(p, s), o.services.resourceStore = o.store;
     }
     if (e.interpolation) {
       const f = {
-        ...Bt().interpolation,
+        ...St().interpolation,
         ...this.options.interpolation,
         ...e.interpolation
       }, m = {
         ...s,
         interpolation: f
       };
-      o.services.interpolator = new Kt(m);
+      o.services.interpolator = new Ht(m);
     }
     return o.translator = new wt(o.services, s), o.translator.on("*", (p, ...f) => {
       o.emit(p, ...f);
@@ -1388,7 +1388,7 @@ class ct extends _t {
     };
   }
 }
-const Ae = ct.createInstance(), Zr = Ae.createInstance;
+const Ae = ct.createInstance(), Kr = Ae.createInstance;
 Ae.dir;
 Ae.init;
 Ae.loadResources;
@@ -1402,253 +1402,570 @@ Ae.setDefaultNamespace;
 Ae.hasLoadedNamespace;
 Ae.loadNamespaces;
 Ae.loadLanguages;
-const Qr = "Swap your tokens at the best price", en = "Swap your tokens using DinoVox liquidity pools", tn = "Swap", rn = "Liquidity", nn = "You send", sn = "You receive", an = "Balance", on = "Calculating…", ln = "Insufficient balance", cn = "⚡ 1:1 conversion — EGLD → WEGLD via the wrap contract", dn = "⚡ 1:1 conversion — WEGLD → EGLD via the unwrap contract", un = "Price impact", fn = "Hops", pn = "Route", hn = "Slippage", gn = "Minimum received", mn = "This route has a high price impact — you are paying more than the market price for this token. Try reducing the swap amount for a better rate.", xn = "Add liquidity to this pair →", bn = "Connect your wallet", yn = "Signing…", wn = "Select tokens", _n = "Enter an amount", kn = "Insufficient balance", Nn = "Calculating…", vn = "Wrap", Ln = "Unwrap", Sn = "Quote unavailable", Bn = "Swap", En = "Arbitrage", Cn = "Estimated profit", $n = "No profitable arbitrage opportunity", An = "Opportunity too small to cover slippage", In = "Amount too low to get a quote", Tn = "No route available for this pair", Fn = "Amount exceeds available pool liquidity", Rn = "Unable to get a quote", Pn = "Swap in progress…", Dn = "Swap failed", qn = "Swap successful!", On = "Wrapping…", Un = "Wrap failed", jn = "Wrap successful!", Mn = "Unwrapping…", Vn = "Unwrap failed", Wn = "Unwrap successful!", Gn = "Choose a token", Hn = "Search…", zn = "Loading…", Kn = "No results", Yn = "Liquidity", Jn = "Manage your liquidity pairs", Xn = "Your active liquidity positions", Zn = "Your liquidity positions will appear here.", Qn = "Add liquidity", ei = "Add", ti = "Remove", ri = "Pools", ni = "Liquidity pools referenced by the router", ii = "Loading...", si = "{{count}} active pool", ai = "{{count}} active pools", oi = "No active pools found.", li = "Reserve", ci = "Active", di = "+ Add", ui = "Create a new pool", fi = "CREATE", pi = "New Pool", hi = "Token 1", gi = "Token 2", mi = "Select", xi = "No token in wallet", bi = "LP Name (3-20 characters)", yi = "LP Ticker (3-10 uppercase)", wi = "Step 1: Create the SC Pair", _i = "Step 2: Issue LP Token (0.05 EGLD)", ki = "Transaction in progress…", Ni = "Waiting for transaction confirmation…", vi = "Pair created!", Li = "To activate the pool and make it usable, the LP token must be issued. Transaction cost: 0.05 EGLD.", Si = "Pool Active!", Bi = "The pool is ready to receive liquidity.", Ei = "Add liquidity", Ci = "Creating the pair...", $i = "Creation failed", Ai = "Pair created! Waiting for synchronization...", Ii = "Issuing LP Token...", Ti = "Issuance failed", Fi = "LP Token issued! Pool is now active.", Ri = "Add Liquidity", Pi = "Add liquidity to a pool", Di = "Add Liquidity", qi = "Deposit two tokens to provide liquidity and receive LP tokens", Oi = "First Token", Ui = "Second Token", ji = "Searching for pool…", Mi = "No pool found", Vi = "You must create this pool before adding liquidity. Activation requires 0.05 EGLD.", Wi = "Create pool", Gi = "LP Received (est.)", Hi = "Refund {{ticker}}", zi = "Minimum deposit too low for the first liquidity.", Ki = "Connect your wallet", Yi = "Pool does not exist", Ji = "Pool inactive", Xi = "Insufficient balance", Zi = "Enter amounts", Qi = "Amount too low", es = "Add Liquidity", ts = "Adding liquidity…", rs = "Adding liquidity failed", ns = "Liquidity added!", gr = {
-  subtitle: Qr,
-  card_description: en,
-  tab_swap: tn,
-  tab_liquidity: rn,
-  you_send: nn,
-  you_receive: sn,
-  balance: an,
-  calculating: on,
-  insufficient_balance: ln,
-  wrap_info: cn,
-  unwrap_info: dn,
-  price_impact: un,
-  hops: fn,
-  route: pn,
-  slippage: hn,
-  min_received: gn,
-  high_impact_warning: mn,
-  add_liquidity_cta: xn,
-  btn_connect: bn,
-  btn_signing: yn,
-  btn_select_tokens: wn,
-  btn_enter_amount: _n,
-  btn_insufficient: kn,
-  btn_calculating: Nn,
-  btn_wrap: vn,
-  btn_unwrap: Ln,
-  btn_quote_unavailable: Sn,
-  btn_swap: Bn,
-  btn_arb: En,
-  arb_profit: Cn,
-  arb_no_opportunity: $n,
-  arb_slippage_too_high: An,
-  error_amount_too_low: In,
-  error_no_route: Tn,
-  error_insufficient_liquidity: Fn,
-  error_quote: Rn,
-  processing: Pn,
-  error_tx: Dn,
-  success_tx: qn,
-  processing_wrap: On,
-  error_wrap: Un,
-  success_wrap: jn,
-  processing_unwrap: Mn,
-  error_unwrap: Vn,
-  success_unwrap: Wn,
-  token_select: Gn,
-  token_search: Hn,
-  token_loading: zn,
-  token_no_results: Kn,
-  liquidity_title: Yn,
-  liquidity_subtitle: Jn,
-  liquidity_card_desc: Xn,
-  liquidity_empty: Zn,
-  liquidity_add: Qn,
-  liquidity_add_btn: ei,
-  liquidity_remove_btn: ti,
-  pools_title: ri,
-  pools_subtitle: ni,
-  pools_loading_desc: ii,
-  pools_count_one: si,
-  pools_count_other: ai,
-  pools_empty: oi,
-  pools_reserve: li,
-  pools_active: ci,
-  pools_add: di,
-  pools_create: ui,
-  create_title: fi,
-  create_subtitle: pi,
-  create_token1: hi,
-  create_token2: gi,
-  create_select: mi,
-  create_no_wallet_token: xi,
-  create_lp_name: bi,
-  create_lp_ticker: yi,
-  create_step1: wi,
-  create_step2: _i,
-  create_tx_pending: ki,
-  create_tx_waiting: Ni,
-  create_pair_done: vi,
-  create_pair_desc: Li,
-  create_pool_active: Si,
-  create_pool_ready: Bi,
-  create_add_liquidity: Ei,
-  create_processing_pair: Ci,
-  create_error_pair: $i,
-  create_success_pair: Ai,
-  create_processing_lp: Ii,
-  create_error_lp: Ti,
-  create_success_lp: Fi,
-  add_title: Ri,
-  add_subtitle: Pi,
-  add_card_title: Di,
-  add_card_desc: qi,
-  add_token1: Oi,
-  add_token2: Ui,
-  add_pool_searching: ji,
-  add_no_pool_title: Mi,
-  add_no_pool_desc: Vi,
-  add_no_pool_btn: Wi,
-  add_lp_preview: Gi,
-  add_refund: Hi,
-  add_min_deposit: zi,
-  add_btn_connect: Ki,
-  add_btn_no_pool: Yi,
-  add_btn_inactive: Ji,
-  add_btn_insufficient: Xi,
-  add_btn_enter_amount: Zi,
-  add_btn_min: Qi,
-  add_btn_submit: es,
-  add_processing: ts,
-  add_error: rs,
-  add_success: ns
-}, is = "Échangez vos tokens au meilleur prix", ss = "Échangez vos tokens en utilisant les pools de liquidité DinoVox", as = "Swap", os = "Liquidité", ls = "Vous envoyez", cs = "Vous recevez", ds = "Balance", us = "Calcul…", fs = "Solde insuffisant", ps = "⚡ Conversion 1:1 — EGLD → WEGLD via le contrat de wrap", hs = "⚡ Conversion 1:1 — WEGLD → EGLD via le contrat de unwrap", gs = "Price impact", ms = "Hops", xs = "Route", bs = "Slippage", ys = "Minimum reçu", ws = "Cette route a un fort impact de prix — vous payez ce token plus cher que son prix de marché. Essayez de réduire le montant échangé pour un meilleur taux.", _s = "Ajouter de la liquidité sur cette paire →", ks = "Connectez votre wallet", Ns = "Signature…", vs = "Sélectionnez les tokens", Ls = "Entrez un montant", Ss = "Solde insuffisant", Bs = "Calcul en cours…", Es = "Wrapper", Cs = "Unwrapper", $s = "Quote indisponible", As = "Swap", Is = "Arbitrage", Ts = "Profit estimé", Fs = "Aucune opportunité d'arbitrage rentable", Rs = "Opportunité trop petite pour couvrir le slippage", Ps = "Montant insuffisant pour obtenir un quote", Ds = "Pas de route disponible pour cette paire", qs = "Montant supérieur à la liquidité disponible dans les pools", Os = "Impossible d'obtenir un quote", Us = "Swap en cours…", js = "Le swap a échoué", Ms = "Swap réussi !", Vs = "Wrap en cours…", Ws = "Le wrap a échoué", Gs = "Wrap réussi !", Hs = "Unwrap en cours…", zs = "L'unwrap a échoué", Ks = "Unwrap réussi !", Ys = "Choisir un token", Js = "Rechercher…", Xs = "Chargement…", Zs = "Aucun résultat", Qs = "Liquidité", ea = "Gérer vos paires de liquidité", ta = "Vos positions de liquidité actives", ra = "Vos positions de liquidité apparaîtront ici.", na = "Ajouter de la liquidité", ia = "Ajouter", sa = "Retirer", aa = "Pools", oa = "Les pools de liquidité référencées par le routeur", la = "Chargement...", ca = "{{count}} pool active", da = "{{count}} pools actives", ua = "Aucune pool active trouvée.", fa = "Réserve", pa = "Active", ha = "+ Ajouter", ga = "Créer une nouvelle pool", ma = "CRÉER", xa = "Nouvelle Pool", ba = "Token 1", ya = "Token 2", wa = "Sélectionner", _a = "Aucun token en portefeuille", ka = "Nom LP (3-20 caractères)", Na = "Ticker LP (3-10 majuscules)", va = "Étape 1 : Créer la Pair SC", La = "Étape 2 : Émettre le LP Token (0.05 EGLD)", Sa = "Transaction en cours…", Ba = "En attente de confirmation de la transaction…", Ea = "La pair est créée !", Ca = "Pour activer la pool et la rendre utilisable, le token LP doit être émis. Coût de la transaction : 0.05 EGLD.", $a = "Pool Active !", Aa = "La pool est prête à recevoir de la liquidité.", Ia = "Ajouter de la liquidité", Ta = "Création de la pair en cours...", Fa = "Création échouée", Ra = "Pair créée ! En attente de synchronisation...", Pa = "Émission du LP Token...", Da = "Émission échouée", qa = "Le LP Token a été émis ! Pool active.", Oa = "Ajouter de la liquidité", Ua = "Ajouter de la liquidité à une pool", ja = "Ajouter Liquidité", Ma = "Déposez deux tokens pour fournir de la liquidité et recevoir des LP tokens", Va = "Premier Token", Wa = "Deuxième Token", Ga = "Recherche de la pool en cours…", Ha = "Aucune pool trouvée", za = "Vous devez créer cette pool avant de pouvoir y ajouter de la liquidité. L'activation requiert 0.05 EGLD.", Ka = "Créer la pool", Ya = "LP Reçus (est.)", Ja = "Remboursement {{ticker}}", Xa = "Dépôt minimum insuffisant pour la première liquidité.", Za = "Connectez votre wallet", Qa = "Pool inexistante", eo = "Pool inactive", to = "Solde insuffisant", ro = "Renseignez un montant", no = "Montant trop faible", io = "Ajouter Liquidité", so = "Ajout de liquidité en cours…", ao = "L'ajout a échoué", oo = "Liquidité ajoutée !", mr = {
-  subtitle: is,
-  card_description: ss,
-  tab_swap: as,
-  tab_liquidity: os,
-  you_send: ls,
-  you_receive: cs,
-  balance: ds,
-  calculating: us,
-  insufficient_balance: fs,
-  wrap_info: ps,
-  unwrap_info: hs,
-  price_impact: gs,
-  hops: ms,
-  route: xs,
-  slippage: bs,
-  min_received: ys,
-  high_impact_warning: ws,
-  add_liquidity_cta: _s,
-  btn_connect: ks,
-  btn_signing: Ns,
-  btn_select_tokens: vs,
-  btn_enter_amount: Ls,
-  btn_insufficient: Ss,
-  btn_calculating: Bs,
-  btn_wrap: Es,
-  btn_unwrap: Cs,
-  btn_quote_unavailable: $s,
-  btn_swap: As,
-  btn_arb: Is,
-  arb_profit: Ts,
-  arb_no_opportunity: Fs,
-  arb_slippage_too_high: Rs,
-  error_amount_too_low: Ps,
-  error_no_route: Ds,
-  error_insufficient_liquidity: qs,
-  error_quote: Os,
-  processing: Us,
-  error_tx: js,
-  success_tx: Ms,
-  processing_wrap: Vs,
-  error_wrap: Ws,
-  success_wrap: Gs,
-  processing_unwrap: Hs,
-  error_unwrap: zs,
-  success_unwrap: Ks,
-  token_select: Ys,
-  token_search: Js,
-  token_loading: Xs,
-  token_no_results: Zs,
-  liquidity_title: Qs,
-  liquidity_subtitle: ea,
-  liquidity_card_desc: ta,
-  liquidity_empty: ra,
-  liquidity_add: na,
-  liquidity_add_btn: ia,
-  liquidity_remove_btn: sa,
-  pools_title: aa,
-  pools_subtitle: oa,
-  pools_loading_desc: la,
-  pools_count_one: ca,
-  pools_count_other: da,
-  pools_empty: ua,
-  pools_reserve: fa,
-  pools_active: pa,
-  pools_add: ha,
-  pools_create: ga,
-  create_title: ma,
-  create_subtitle: xa,
-  create_token1: ba,
-  create_token2: ya,
-  create_select: wa,
-  create_no_wallet_token: _a,
-  create_lp_name: ka,
-  create_lp_ticker: Na,
-  create_step1: va,
-  create_step2: La,
-  create_tx_pending: Sa,
-  create_tx_waiting: Ba,
-  create_pair_done: Ea,
-  create_pair_desc: Ca,
-  create_pool_active: $a,
-  create_pool_ready: Aa,
-  create_add_liquidity: Ia,
-  create_processing_pair: Ta,
-  create_error_pair: Fa,
-  create_success_pair: Ra,
-  create_processing_lp: Pa,
-  create_error_lp: Da,
-  create_success_lp: qa,
-  add_title: Oa,
-  add_subtitle: Ua,
-  add_card_title: ja,
-  add_card_desc: Ma,
-  add_token1: Va,
-  add_token2: Wa,
-  add_pool_searching: Ga,
-  add_no_pool_title: Ha,
-  add_no_pool_desc: za,
-  add_no_pool_btn: Ka,
-  add_lp_preview: Ya,
-  add_refund: Ja,
-  add_min_deposit: Xa,
-  add_btn_connect: Za,
-  add_btn_no_pool: Qa,
-  add_btn_inactive: eo,
-  add_btn_insufficient: to,
-  add_btn_enter_amount: ro,
-  add_btn_min: no,
-  add_btn_submit: io,
-  add_processing: so,
-  add_error: ao,
-  add_success: oo
-}, ot = Zr();
-ot.use(Nr).init({
+const Yr = "Swap your tokens at the best price", Jr = "Swap your tokens using DinoVox liquidity pools", Xr = "Swap", Zr = "Liquidity", Qr = "You send", en = "You receive", tn = "Balance", rn = "Calculating…", nn = "Insufficient balance", sn = "⚡ 1:1 conversion — EGLD → WEGLD via the wrap contract", an = "⚡ 1:1 conversion — WEGLD → EGLD via the unwrap contract", on = "Price impact", ln = "Hops", cn = "Route", dn = "Slippage", un = "Minimum received", fn = "This route has a high price impact — you are paying more than the market price for this token. Try reducing the swap amount for a better rate.", pn = "Add liquidity to this pair →", hn = "Connect your wallet", gn = "Signing…", mn = "Select tokens", xn = "Enter an amount", bn = "Insufficient balance", yn = "Calculating…", wn = "Wrap", _n = "Unwrap", kn = "Quote unavailable", Nn = "Swap", vn = "Arbitrage", Ln = "Estimated profit", Sn = "No profitable arbitrage opportunity", Bn = "Opportunity too small to cover slippage", En = "Amount too low to get a quote", Cn = "No route available for this pair", $n = "Amount exceeds available pool liquidity", An = "Unable to get a quote", In = "Swap in progress…", Tn = "Swap failed", Fn = "Swap successful!", Rn = "Wrapping…", Pn = "Wrap failed", Dn = "Wrap successful!", qn = "Unwrapping…", On = "Unwrap failed", Un = "Unwrap successful!", jn = "Choose a token", Mn = "Search…", Vn = "Loading…", Wn = "No results", Gn = "Liquidity", Hn = "Manage your liquidity pairs", zn = "Your active liquidity positions", Kn = "Your liquidity positions will appear here.", Yn = "Add liquidity", Jn = "Add", Xn = "Remove", Zn = "Pools", Qn = "Liquidity pools referenced by the router", ei = "Loading...", ti = "{{count}} active pool", ri = "{{count}} active pools", ni = "No active pools found.", ii = "Reserve", si = "Active", ai = "+ Add", oi = "Create a new pool", li = "CREATE", ci = "New Pool", di = "Token 1", ui = "Token 2", fi = "Select", pi = "No token in wallet", hi = "LP Name (3-20 characters)", gi = "LP Ticker (3-10 uppercase)", mi = "Step 1: Create the SC Pair", xi = "Step 2: Issue LP Token (0.05 EGLD)", bi = "Transaction in progress…", yi = "Waiting for transaction confirmation…", wi = "Pair created!", _i = "To activate the pool and make it usable, the LP token must be issued. Transaction cost: 0.05 EGLD.", ki = "Pool Active!", Ni = "The pool is ready to receive liquidity.", vi = "Add liquidity", Li = "Creating the pair...", Si = "Creation failed", Bi = "Pair created! Waiting for synchronization...", Ei = "Issuing LP Token...", Ci = "Issuance failed", $i = "LP Token issued! Pool is now active.", Ai = "Add Liquidity", Ii = "Add liquidity to a pool", Ti = "Add Liquidity", Fi = "Deposit two tokens to provide liquidity and receive LP tokens", Ri = "First Token", Pi = "Second Token", Di = "Searching for pool…", qi = "No pool found", Oi = "You must create this pool before adding liquidity. Activation requires 0.05 EGLD.", Ui = "Create pool", ji = "LP Received (est.)", Mi = "Refund {{ticker}}", Vi = "Minimum deposit too low for the first liquidity.", Wi = "Connect your wallet", Gi = "Pool does not exist", Hi = "Pool inactive", zi = "Insufficient balance", Ki = "Enter amounts", Yi = "Amount too low", Ji = "Add Liquidity", Xi = "Adding liquidity…", Zi = "Adding liquidity failed", Qi = "Liquidity added!", ur = {
+  subtitle: Yr,
+  card_description: Jr,
+  tab_swap: Xr,
+  tab_liquidity: Zr,
+  you_send: Qr,
+  you_receive: en,
+  balance: tn,
+  calculating: rn,
+  insufficient_balance: nn,
+  wrap_info: sn,
+  unwrap_info: an,
+  price_impact: on,
+  hops: ln,
+  route: cn,
+  slippage: dn,
+  min_received: un,
+  high_impact_warning: fn,
+  add_liquidity_cta: pn,
+  btn_connect: hn,
+  btn_signing: gn,
+  btn_select_tokens: mn,
+  btn_enter_amount: xn,
+  btn_insufficient: bn,
+  btn_calculating: yn,
+  btn_wrap: wn,
+  btn_unwrap: _n,
+  btn_quote_unavailable: kn,
+  btn_swap: Nn,
+  btn_arb: vn,
+  arb_profit: Ln,
+  arb_no_opportunity: Sn,
+  arb_slippage_too_high: Bn,
+  error_amount_too_low: En,
+  error_no_route: Cn,
+  error_insufficient_liquidity: $n,
+  error_quote: An,
+  processing: In,
+  error_tx: Tn,
+  success_tx: Fn,
+  processing_wrap: Rn,
+  error_wrap: Pn,
+  success_wrap: Dn,
+  processing_unwrap: qn,
+  error_unwrap: On,
+  success_unwrap: Un,
+  token_select: jn,
+  token_search: Mn,
+  token_loading: Vn,
+  token_no_results: Wn,
+  liquidity_title: Gn,
+  liquidity_subtitle: Hn,
+  liquidity_card_desc: zn,
+  liquidity_empty: Kn,
+  liquidity_add: Yn,
+  liquidity_add_btn: Jn,
+  liquidity_remove_btn: Xn,
+  pools_title: Zn,
+  pools_subtitle: Qn,
+  pools_loading_desc: ei,
+  pools_count_one: ti,
+  pools_count_other: ri,
+  pools_empty: ni,
+  pools_reserve: ii,
+  pools_active: si,
+  pools_add: ai,
+  pools_create: oi,
+  create_title: li,
+  create_subtitle: ci,
+  create_token1: di,
+  create_token2: ui,
+  create_select: fi,
+  create_no_wallet_token: pi,
+  create_lp_name: hi,
+  create_lp_ticker: gi,
+  create_step1: mi,
+  create_step2: xi,
+  create_tx_pending: bi,
+  create_tx_waiting: yi,
+  create_pair_done: wi,
+  create_pair_desc: _i,
+  create_pool_active: ki,
+  create_pool_ready: Ni,
+  create_add_liquidity: vi,
+  create_processing_pair: Li,
+  create_error_pair: Si,
+  create_success_pair: Bi,
+  create_processing_lp: Ei,
+  create_error_lp: Ci,
+  create_success_lp: $i,
+  add_title: Ai,
+  add_subtitle: Ii,
+  add_card_title: Ti,
+  add_card_desc: Fi,
+  add_token1: Ri,
+  add_token2: Pi,
+  add_pool_searching: Di,
+  add_no_pool_title: qi,
+  add_no_pool_desc: Oi,
+  add_no_pool_btn: Ui,
+  add_lp_preview: ji,
+  add_refund: Mi,
+  add_min_deposit: Vi,
+  add_btn_connect: Wi,
+  add_btn_no_pool: Gi,
+  add_btn_inactive: Hi,
+  add_btn_insufficient: zi,
+  add_btn_enter_amount: Ki,
+  add_btn_min: Yi,
+  add_btn_submit: Ji,
+  add_processing: Xi,
+  add_error: Zi,
+  add_success: Qi
+}, es = "Échangez vos tokens au meilleur prix", ts = "Échangez vos tokens en utilisant les pools de liquidité DinoVox", rs = "Swap", ns = "Liquidité", is = "Vous envoyez", ss = "Vous recevez", as = "Balance", os = "Calcul…", ls = "Solde insuffisant", cs = "⚡ Conversion 1:1 — EGLD → WEGLD via le contrat de wrap", ds = "⚡ Conversion 1:1 — WEGLD → EGLD via le contrat de unwrap", us = "Price impact", fs = "Hops", ps = "Route", hs = "Slippage", gs = "Minimum reçu", ms = "Cette route a un fort impact de prix — vous payez ce token plus cher que son prix de marché. Essayez de réduire le montant échangé pour un meilleur taux.", xs = "Ajouter de la liquidité sur cette paire →", bs = "Connectez votre wallet", ys = "Signature…", ws = "Sélectionnez les tokens", _s = "Entrez un montant", ks = "Solde insuffisant", Ns = "Calcul en cours…", vs = "Wrapper", Ls = "Unwrapper", Ss = "Quote indisponible", Bs = "Swap", Es = "Arbitrage", Cs = "Profit estimé", $s = "Aucune opportunité d'arbitrage rentable", As = "Opportunité trop petite pour couvrir le slippage", Is = "Montant insuffisant pour obtenir un quote", Ts = "Pas de route disponible pour cette paire", Fs = "Montant supérieur à la liquidité disponible dans les pools", Rs = "Impossible d'obtenir un quote", Ps = "Swap en cours…", Ds = "Le swap a échoué", qs = "Swap réussi !", Os = "Wrap en cours…", Us = "Le wrap a échoué", js = "Wrap réussi !", Ms = "Unwrap en cours…", Vs = "L'unwrap a échoué", Ws = "Unwrap réussi !", Gs = "Choisir un token", Hs = "Rechercher…", zs = "Chargement…", Ks = "Aucun résultat", Ys = "Liquidité", Js = "Gérer vos paires de liquidité", Xs = "Vos positions de liquidité actives", Zs = "Vos positions de liquidité apparaîtront ici.", Qs = "Ajouter de la liquidité", ea = "Ajouter", ta = "Retirer", ra = "Pools", na = "Les pools de liquidité référencées par le routeur", ia = "Chargement...", sa = "{{count}} pool active", aa = "{{count}} pools actives", oa = "Aucune pool active trouvée.", la = "Réserve", ca = "Active", da = "+ Ajouter", ua = "Créer une nouvelle pool", fa = "CRÉER", pa = "Nouvelle Pool", ha = "Token 1", ga = "Token 2", ma = "Sélectionner", xa = "Aucun token en portefeuille", ba = "Nom LP (3-20 caractères)", ya = "Ticker LP (3-10 majuscules)", wa = "Étape 1 : Créer la Pair SC", _a = "Étape 2 : Émettre le LP Token (0.05 EGLD)", ka = "Transaction en cours…", Na = "En attente de confirmation de la transaction…", va = "La pair est créée !", La = "Pour activer la pool et la rendre utilisable, le token LP doit être émis. Coût de la transaction : 0.05 EGLD.", Sa = "Pool Active !", Ba = "La pool est prête à recevoir de la liquidité.", Ea = "Ajouter de la liquidité", Ca = "Création de la pair en cours...", $a = "Création échouée", Aa = "Pair créée ! En attente de synchronisation...", Ia = "Émission du LP Token...", Ta = "Émission échouée", Fa = "Le LP Token a été émis ! Pool active.", Ra = "Ajouter de la liquidité", Pa = "Ajouter de la liquidité à une pool", Da = "Ajouter Liquidité", qa = "Déposez deux tokens pour fournir de la liquidité et recevoir des LP tokens", Oa = "Premier Token", Ua = "Deuxième Token", ja = "Recherche de la pool en cours…", Ma = "Aucune pool trouvée", Va = "Vous devez créer cette pool avant de pouvoir y ajouter de la liquidité. L'activation requiert 0.05 EGLD.", Wa = "Créer la pool", Ga = "LP Reçus (est.)", Ha = "Remboursement {{ticker}}", za = "Dépôt minimum insuffisant pour la première liquidité.", Ka = "Connectez votre wallet", Ya = "Pool inexistante", Ja = "Pool inactive", Xa = "Solde insuffisant", Za = "Renseignez un montant", Qa = "Montant trop faible", eo = "Ajouter Liquidité", to = "Ajout de liquidité en cours…", ro = "L'ajout a échoué", no = "Liquidité ajoutée !", fr = {
+  subtitle: es,
+  card_description: ts,
+  tab_swap: rs,
+  tab_liquidity: ns,
+  you_send: is,
+  you_receive: ss,
+  balance: as,
+  calculating: os,
+  insufficient_balance: ls,
+  wrap_info: cs,
+  unwrap_info: ds,
+  price_impact: us,
+  hops: fs,
+  route: ps,
+  slippage: hs,
+  min_received: gs,
+  high_impact_warning: ms,
+  add_liquidity_cta: xs,
+  btn_connect: bs,
+  btn_signing: ys,
+  btn_select_tokens: ws,
+  btn_enter_amount: _s,
+  btn_insufficient: ks,
+  btn_calculating: Ns,
+  btn_wrap: vs,
+  btn_unwrap: Ls,
+  btn_quote_unavailable: Ss,
+  btn_swap: Bs,
+  btn_arb: Es,
+  arb_profit: Cs,
+  arb_no_opportunity: $s,
+  arb_slippage_too_high: As,
+  error_amount_too_low: Is,
+  error_no_route: Ts,
+  error_insufficient_liquidity: Fs,
+  error_quote: Rs,
+  processing: Ps,
+  error_tx: Ds,
+  success_tx: qs,
+  processing_wrap: Os,
+  error_wrap: Us,
+  success_wrap: js,
+  processing_unwrap: Ms,
+  error_unwrap: Vs,
+  success_unwrap: Ws,
+  token_select: Gs,
+  token_search: Hs,
+  token_loading: zs,
+  token_no_results: Ks,
+  liquidity_title: Ys,
+  liquidity_subtitle: Js,
+  liquidity_card_desc: Xs,
+  liquidity_empty: Zs,
+  liquidity_add: Qs,
+  liquidity_add_btn: ea,
+  liquidity_remove_btn: ta,
+  pools_title: ra,
+  pools_subtitle: na,
+  pools_loading_desc: ia,
+  pools_count_one: sa,
+  pools_count_other: aa,
+  pools_empty: oa,
+  pools_reserve: la,
+  pools_active: ca,
+  pools_add: da,
+  pools_create: ua,
+  create_title: fa,
+  create_subtitle: pa,
+  create_token1: ha,
+  create_token2: ga,
+  create_select: ma,
+  create_no_wallet_token: xa,
+  create_lp_name: ba,
+  create_lp_ticker: ya,
+  create_step1: wa,
+  create_step2: _a,
+  create_tx_pending: ka,
+  create_tx_waiting: Na,
+  create_pair_done: va,
+  create_pair_desc: La,
+  create_pool_active: Sa,
+  create_pool_ready: Ba,
+  create_add_liquidity: Ea,
+  create_processing_pair: Ca,
+  create_error_pair: $a,
+  create_success_pair: Aa,
+  create_processing_lp: Ia,
+  create_error_lp: Ta,
+  create_success_lp: Fa,
+  add_title: Ra,
+  add_subtitle: Pa,
+  add_card_title: Da,
+  add_card_desc: qa,
+  add_token1: Oa,
+  add_token2: Ua,
+  add_pool_searching: ja,
+  add_no_pool_title: Ma,
+  add_no_pool_desc: Va,
+  add_no_pool_btn: Wa,
+  add_lp_preview: Ga,
+  add_refund: Ha,
+  add_min_deposit: za,
+  add_btn_connect: Ka,
+  add_btn_no_pool: Ya,
+  add_btn_inactive: Ja,
+  add_btn_insufficient: Xa,
+  add_btn_enter_amount: Za,
+  add_btn_min: Qa,
+  add_btn_submit: eo,
+  add_processing: to,
+  add_error: ro,
+  add_success: no
+}, ot = Kr();
+ot.use(yr).init({
   resources: {
-    en: { swap: gr },
-    fr: { swap: mr }
+    en: { swap: ur },
+    fr: { swap: fr }
   },
   lng: typeof navigator < "u" ? (navigator.language || "en").split("-")[0] : "en",
   fallbackLng: "en",
   interpolation: { escapeValue: !1 },
   react: { useSuspense: !1 }
 });
-var xr = {}, kt = {};
-kt.byteLength = uo;
-kt.toByteArray = po;
-kt.fromByteArray = mo;
-var Me = [], De = [], lo = typeof Uint8Array < "u" ? Uint8Array : Array, Et = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-for (var Ze = 0, co = Et.length; Ze < co; ++Ze)
-  Me[Ze] = Et[Ze], De[Et.charCodeAt(Ze)] = Ze;
-De[45] = 62;
-De[95] = 63;
-function br(l) {
+function st() {
+  const l = or(), e = Ge();
+  return l ? l.navigate : e.navigate ?? ((n) => {
+    window.location.assign(n);
+  });
+}
+function kt() {
+  const l = or();
+  if (l) {
+    const i = l.setParams ?? ((s, o) => {
+      const c = s(new URLSearchParams(window.location.search)), p = new URL(window.location.href);
+      p.search = c.toString(), o != null && o.replace ? window.history.replaceState({}, "", p.toString()) : window.history.pushState({}, "", p.toString());
+    });
+    return [l.params, i];
+  }
+  return [new URLSearchParams(window.location.search), (i, s) => {
+    const o = i(new URLSearchParams(window.location.search)), c = new URL(window.location.href);
+    c.search = o.toString(), s != null && s.replace ? window.history.replaceState({}, "", c.toString()) : window.history.pushState({}, "", c.toString());
+  }];
+}
+const io = {
+  en: ur,
+  fr
+}, ht = (l) => {
+  const { i18n: e } = Je();
+  ie(() => {
+    typeof (e == null ? void 0 : e.hasResourceBundle) == "function" && Object.entries(io).forEach(([n, i]) => {
+      e.hasResourceBundle(n, l) || e.addResourceBundle(n, l, i, !0, !1);
+    });
+  }, [l]);
+}, nt = async ({
+  transactions: l,
+  transactionsDisplayInfo: e
+}) => {
+  const n = Sr(), i = Br.getInstance(), s = await n.signTransactions(l), o = await i.send(s);
+  return await i.track(o, {
+    transactionsDisplayInfo: e
+  });
+}, Ye = (l, e) => {
+  const { network: n } = Xe(), [i, s] = F([]), { address: o } = rr(), c = (e == null ? void 0 : e.enabled) ?? !0, f = Er().length > 0, m = async () => {
+    if (!(!c || f || !o))
+      try {
+        if (l) {
+          const { data: _ } = await pe.get(`/accounts/${o}/tokens`, {
+            baseURL: n.apiAddress,
+            params: { size: 1e3, identifier: l }
+          });
+          s(_);
+          return;
+        }
+        const y = [];
+        let S = 0;
+        for (; ; ) {
+          const { data: _ } = await pe.get(`/accounts/${o}/tokens`, {
+            baseURL: n.apiAddress,
+            params: { size: 1e3, from: S }
+          });
+          if (y.push(..._), _.length < 1e3) break;
+          S += 1e3;
+        }
+        s(y);
+      } catch {
+        s([]);
+      }
+  };
+  return ie(() => {
+    if (!c || !o) {
+      s([]);
+      return;
+    }
+    m();
+  }, [o, f, l, c]), i;
+}, so = {
+  card: {
+    background: "linear-gradient(0deg, rgba(99,74,203,0.32), rgba(99,74,203,0.32)), linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 100%), #0a0614",
+    borderColor: "#695885",
+    color: "#ffffff"
+  },
+  inner: {
+    backgroundColor: "rgba(13,8,28,0.75)",
+    borderColor: "#695885"
+  },
+  input: {
+    backgroundColor: "rgba(8,4,18,0.9)",
+    color: "#ffffff",
+    borderColor: "#695885"
+  },
+  tokenBtn: {
+    backgroundColor: "rgba(8,4,18,0.9)",
+    color: "#ffffff",
+    borderColor: "#695885"
+  },
+  dropdown: {
+    backgroundColor: "#0d0820",
+    borderColor: "#695885"
+  },
+  searchInput: {
+    backgroundColor: "rgba(5,2,14,0.95)",
+    color: "#ffffff",
+    borderColor: "#695885"
+  },
+  invertBtn: {
+    backgroundColor: "rgba(8,4,18,0.9)",
+    borderColor: "#695885"
+  },
+  quoteSection: {
+    backgroundColor: "rgba(13,8,28,0.75)",
+    borderColor: "#695885"
+  },
+  tabBar: {
+    backgroundColor: "rgba(13,8,28,0.6)"
+  },
+  activeTab: {
+    background: "linear-gradient(135deg, rgba(189,55,236,0.3), rgba(31,103,255,0.3))",
+    color: "#BD37EC"
+  }
+}, ao = {
+  card: { backgroundColor: "#111", color: "#ffffff" },
+  inner: { backgroundColor: "#1e1e1e", borderColor: "#333" },
+  input: { backgroundColor: "#2a2a2a", color: "#ffffff", borderColor: "#444" },
+  tokenBtn: { backgroundColor: "#2a2a2a", color: "#ffffff", borderColor: "#444" },
+  dropdown: { backgroundColor: "#2a2a2a", borderColor: "#444" },
+  searchInput: { backgroundColor: "#1e1e1e", color: "#ffffff", borderColor: "#555" },
+  invertBtn: { backgroundColor: "#2a2a2a", borderColor: "#444" },
+  quoteSection: { backgroundColor: "#1a1a1a", borderColor: "#333" },
+  tabBar: { backgroundColor: "#1a1a1a" },
+  activeTab: { backgroundColor: "#2a2a2a", color: "#f59e0b" }
+}, oo = {
+  card: { backgroundColor: "#ffffff", color: "#111111" },
+  inner: { backgroundColor: "#f9fafb", borderColor: "#e5e7eb" },
+  input: { backgroundColor: "#ffffff", color: "#111111", borderColor: "#e5e7eb" },
+  tokenBtn: { backgroundColor: "#ffffff", color: "#111111", borderColor: "#e5e7eb" },
+  dropdown: { backgroundColor: "#ffffff", borderColor: "#e5e7eb" },
+  searchInput: { backgroundColor: "#f9fafb", color: "#111111", borderColor: "#e5e7eb" },
+  invertBtn: { backgroundColor: "#ffffff", borderColor: "#e5e7eb" },
+  quoteSection: { backgroundColor: "#ffffff", borderColor: "#e5e7eb" },
+  tabBar: { backgroundColor: "#f3f4f6" },
+  activeTab: { backgroundColor: "#ffffff", color: "#f59e0b" }
+}, lo = {
+  card: {},
+  inner: {},
+  input: {},
+  tokenBtn: {},
+  dropdown: {},
+  searchInput: {},
+  invertBtn: {},
+  quoteSection: {},
+  tabBar: {},
+  activeTab: {}
+};
+function It(l) {
+  return l === "mid" ? so : l === "dark" ? ao : l === "light" ? oo : lo;
+}
+const gt = ({ id: l, title: e, children: n, description: i, reference: s, className: o = "", onClick: c }) => {
+  const { theme: p } = Ge(), f = It(p), m = o.includes("border") ? "" : "border border-gray-100 dark:border-[#333]";
+  return /* @__PURE__ */ w(
+    "div",
+    {
+      id: l,
+      onClick: c,
+      style: f.card,
+      className: `flex flex-col bg-[#ffffff] dark:bg-[#111] p-6 rounded-2xl shadow-sm transition-all ${m} ${o}`,
+      children: [
+        /* @__PURE__ */ w("div", { className: "flex items-start justify-between gap-3", children: [
+          /* @__PURE__ */ h(
+            "h2",
+            {
+              className: "text-xl font-black tracking-tight text-gray-900 dark:text-white uppercase",
+              style: p ? { color: f.card.color } : {},
+              children: e
+            }
+          ),
+          s ? /* @__PURE__ */ h(
+            "a",
+            {
+              href: s,
+              target: "_blank",
+              rel: "noreferrer",
+              className: "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-white/10 transition-colors",
+              title: "More info",
+              children: /* @__PURE__ */ h(_r, { size: 14 })
+            }
+          ) : null
+        ] }),
+        i ? /* @__PURE__ */ h(
+          "p",
+          {
+            className: "mt-1.5 text-sm leading-relaxed text-gray-500 dark:text-gray-400 font-medium",
+            style: p === "mid" ? { color: "rgba(255,255,255,0.55)" } : {},
+            children: i
+          }
+        ) : null,
+        i && n ? /* @__PURE__ */ h(
+          "div",
+          {
+            className: "my-4 h-px bg-gray-100 dark:bg-[#333]",
+            style: p === "mid" ? { backgroundColor: "#695885" } : {}
+          }
+        ) : /* @__PURE__ */ h("div", { className: "mt-3" }),
+        n
+      ]
+    }
+  );
+};
+function Yt({ url: l, ticker: e }) {
+  const [n, i] = F(!1);
+  return !l || n ? /* @__PURE__ */ h("span", { className: "w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-[10px] font-bold text-amber-700 dark:text-amber-300 shrink-0", children: e.slice(0, 2) }) : /* @__PURE__ */ h(
+    "img",
+    {
+      src: l,
+      alt: e,
+      className: "w-6 h-6 rounded-full object-contain shrink-0",
+      onError: () => i(!0)
+    }
+  );
+}
+function it({
+  value: l,
+  onChange: e,
+  tokens: n,
+  exclude: i,
+  loading: s,
+  className: o = ""
+}) {
+  const { t: c } = Je("swap"), { theme: p } = Ge(), f = It(p), [m, u] = F(!1), [y, S] = F(""), _ = ut(null), x = ut(null), v = n.filter((k) => k.identifier !== i).filter((k) => {
+    if (!y) return !0;
+    const E = y.toLowerCase();
+    return k.ticker.toLowerCase().includes(E) || k.identifier.toLowerCase().includes(E);
+  });
+  return ie(() => {
+    if (!m) {
+      S("");
+      return;
+    }
+    setTimeout(() => {
+      var E;
+      return (E = x.current) == null ? void 0 : E.focus();
+    }, 50);
+    const k = (E) => {
+      _.current && !_.current.contains(E.target) && u(!1);
+    };
+    return document.addEventListener("mousedown", k), () => document.removeEventListener("mousedown", k);
+  }, [m]), /* @__PURE__ */ w("div", { ref: _, className: `relative flex-1 ${o}`, children: [
+    /* @__PURE__ */ w(
+      "button",
+      {
+        type: "button",
+        disabled: s,
+        onClick: () => u((k) => !k),
+        style: f.tokenBtn,
+        className: "w-full flex items-center gap-2 rounded-xl border border-gray-200 dark:border-[#444] bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50",
+        children: [
+          s ? /* @__PURE__ */ h("span", { className: "flex-1 text-left text-gray-400", children: c("token_loading") }) : l ? /* @__PURE__ */ w(dt, { children: [
+            /* @__PURE__ */ h(Yt, { url: l.logoUrl, ticker: l.ticker }),
+            /* @__PURE__ */ h("span", { className: "flex-1 text-left", children: l.ticker })
+          ] }) : /* @__PURE__ */ h("span", { className: "flex-1 text-left text-gray-400", children: c("token_select") }),
+          /* @__PURE__ */ h(
+            "svg",
+            {
+              className: `w-4 h-4 text-gray-400 transition-transform shrink-0 ${m ? "rotate-180" : ""}`,
+              fill: "none",
+              viewBox: "0 0 24 24",
+              stroke: "currentColor",
+              strokeWidth: 2,
+              children: /* @__PURE__ */ h("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M19 9l-7 7-7-7" })
+            }
+          )
+        ]
+      }
+    ),
+    m && /* @__PURE__ */ w(
+      "div",
+      {
+        style: f.dropdown,
+        className: "absolute z-50 mt-1 w-full rounded-xl border border-gray-200 dark:border-[#444] bg-[#ffffff] dark:bg-[#2a2a2a] shadow-lg overflow-hidden",
+        children: [
+          /* @__PURE__ */ h("div", { className: "px-2 pt-2 pb-1", children: /* @__PURE__ */ h(
+            "input",
+            {
+              ref: x,
+              type: "text",
+              value: y,
+              onChange: (k) => S(k.target.value),
+              placeholder: c("token_search"),
+              style: f.searchInput,
+              className: "w-full rounded-lg border border-gray-200 dark:border-[#555] bg-gray-50 dark:bg-[#1e1e1e] px-3 py-1.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            }
+          ) }),
+          /* @__PURE__ */ h("div", { className: "max-h-52 overflow-y-auto", children: v.length === 0 ? /* @__PURE__ */ h("p", { className: "px-3 py-3 text-sm text-gray-400 text-center", children: c("token_no_results") }) : v.map((k) => {
+            const E = (l == null ? void 0 : l.identifier) === k.identifier;
+            return /* @__PURE__ */ w(
+              "button",
+              {
+                type: "button",
+                onClick: () => {
+                  e(k), u(!1);
+                },
+                style: E ? p === "mid" ? { backgroundColor: "rgba(189,55,236,0.2)", color: "#BD37EC" } : {} : p === "mid" ? { color: "#ffffff" } : {},
+                className: `w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-amber-50 dark:hover:bg-[#333] ${E ? "bg-amber-50 dark:bg-[#333] text-amber-600 dark:text-amber-400" : "text-gray-900 dark:text-white"}`,
+                children: [
+                  /* @__PURE__ */ h(Yt, { url: k.logoUrl, ticker: k.ticker }),
+                  /* @__PURE__ */ h("span", { className: "flex-1 text-left", children: k.ticker }),
+                  /* @__PURE__ */ h("span", { className: "text-[10px] text-gray-400 font-normal", children: k.identifier.split("-")[1] ?? "" })
+                ]
+              },
+              k.identifier
+            );
+          }) })
+        ]
+      }
+    )
+  ] });
+}
+const Ke = (l) => {
+  let n = BigInt(l).toString(16);
+  return n.length % 2 && (n = "0" + n), n;
+};
+var pr = {}, Nt = {};
+Nt.byteLength = fo;
+Nt.toByteArray = ho;
+Nt.fromByteArray = xo;
+var Ve = [], qe = [], co = typeof Uint8Array < "u" ? Uint8Array : Array, Bt = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+for (var Qe = 0, uo = Bt.length; Qe < uo; ++Qe)
+  Ve[Qe] = Bt[Qe], qe[Bt.charCodeAt(Qe)] = Qe;
+qe[45] = 62;
+qe[95] = 63;
+function hr(l) {
   var e = l.length;
   if (e % 4 > 0)
     throw new Error("Invalid string. Length must be a multiple of 4");
@@ -1657,39 +1974,39 @@ function br(l) {
   var i = n === e ? 0 : 4 - n % 4;
   return [n, i];
 }
-function uo(l) {
-  var e = br(l), n = e[0], i = e[1];
+function fo(l) {
+  var e = hr(l), n = e[0], i = e[1];
   return (n + i) * 3 / 4 - i;
 }
-function fo(l, e, n) {
+function po(l, e, n) {
   return (e + n) * 3 / 4 - n;
 }
-function po(l) {
-  var e, n = br(l), i = n[0], s = n[1], o = new lo(fo(l, i, s)), c = 0, p = s > 0 ? i - 4 : i, f;
-  for (f = 0; f < p; f += 4)
-    e = De[l.charCodeAt(f)] << 18 | De[l.charCodeAt(f + 1)] << 12 | De[l.charCodeAt(f + 2)] << 6 | De[l.charCodeAt(f + 3)], o[c++] = e >> 16 & 255, o[c++] = e >> 8 & 255, o[c++] = e & 255;
-  return s === 2 && (e = De[l.charCodeAt(f)] << 2 | De[l.charCodeAt(f + 1)] >> 4, o[c++] = e & 255), s === 1 && (e = De[l.charCodeAt(f)] << 10 | De[l.charCodeAt(f + 1)] << 4 | De[l.charCodeAt(f + 2)] >> 2, o[c++] = e >> 8 & 255, o[c++] = e & 255), o;
-}
 function ho(l) {
-  return Me[l >> 18 & 63] + Me[l >> 12 & 63] + Me[l >> 6 & 63] + Me[l & 63];
+  var e, n = hr(l), i = n[0], s = n[1], o = new co(po(l, i, s)), c = 0, p = s > 0 ? i - 4 : i, f;
+  for (f = 0; f < p; f += 4)
+    e = qe[l.charCodeAt(f)] << 18 | qe[l.charCodeAt(f + 1)] << 12 | qe[l.charCodeAt(f + 2)] << 6 | qe[l.charCodeAt(f + 3)], o[c++] = e >> 16 & 255, o[c++] = e >> 8 & 255, o[c++] = e & 255;
+  return s === 2 && (e = qe[l.charCodeAt(f)] << 2 | qe[l.charCodeAt(f + 1)] >> 4, o[c++] = e & 255), s === 1 && (e = qe[l.charCodeAt(f)] << 10 | qe[l.charCodeAt(f + 1)] << 4 | qe[l.charCodeAt(f + 2)] >> 2, o[c++] = e >> 8 & 255, o[c++] = e & 255), o;
 }
-function go(l, e, n) {
+function go(l) {
+  return Ve[l >> 18 & 63] + Ve[l >> 12 & 63] + Ve[l >> 6 & 63] + Ve[l & 63];
+}
+function mo(l, e, n) {
   for (var i, s = [], o = e; o < n; o += 3)
-    i = (l[o] << 16 & 16711680) + (l[o + 1] << 8 & 65280) + (l[o + 2] & 255), s.push(ho(i));
+    i = (l[o] << 16 & 16711680) + (l[o + 1] << 8 & 65280) + (l[o + 2] & 255), s.push(go(i));
   return s.join("");
 }
-function mo(l) {
+function xo(l) {
   for (var e, n = l.length, i = n % 3, s = [], o = 16383, c = 0, p = n - i; c < p; c += o)
-    s.push(go(l, c, c + o > p ? p : c + o));
+    s.push(mo(l, c, c + o > p ? p : c + o));
   return i === 1 ? (e = l[n - 1], s.push(
-    Me[e >> 2] + Me[e << 4 & 63] + "=="
+    Ve[e >> 2] + Ve[e << 4 & 63] + "=="
   )) : i === 2 && (e = (l[n - 2] << 8) + l[n - 1], s.push(
-    Me[e >> 10] + Me[e >> 4 & 63] + Me[e << 2 & 63] + "="
+    Ve[e >> 10] + Ve[e >> 4 & 63] + Ve[e << 2 & 63] + "="
   )), s.join("");
 }
-var Ft = {};
+var Tt = {};
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
-Ft.read = function(l, e, n, i, s) {
+Tt.read = function(l, e, n, i, s) {
   var o, c, p = s * 8 - i - 1, f = (1 << p) - 1, m = f >> 1, u = -7, y = n ? s - 1 : 0, S = n ? -1 : 1, _ = l[e + y];
   for (y += S, o = _ & (1 << -u) - 1, _ >>= -u, u += p; u > 0; o = o * 256 + l[e + y], y += S, u -= 8)
     ;
@@ -1704,7 +2021,7 @@ Ft.read = function(l, e, n, i, s) {
   }
   return (_ ? -1 : 1) * c * Math.pow(2, o - i);
 };
-Ft.write = function(l, e, n, i, s, o) {
+Tt.write = function(l, e, n, i, s, o) {
   var c, p, f, m = o * 8 - s - 1, u = (1 << m) - 1, y = u >> 1, S = s === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0, _ = i ? 0 : o - 1, x = i ? 1 : -1, v = e < 0 || e === 0 && 1 / e < 0 ? 1 : 0;
   for (e = Math.abs(e), isNaN(e) || e === 1 / 0 ? (p = isNaN(e) ? 1 : 0, c = u) : (c = Math.floor(Math.log(e) / Math.LN2), e * (f = Math.pow(2, -c)) < 1 && (c--, f *= 2), c + y >= 1 ? e += S / f : e += S * Math.pow(2, 1 - y), e * f >= 2 && (c++, f /= 2), c + y >= u ? (p = 0, c = u) : c + y >= 1 ? (p = (e * f - 1) * Math.pow(2, s), c = c + y) : (p = e * Math.pow(2, y - 1) * Math.pow(2, s), c = 0)); s >= 8; l[n + _] = p & 255, _ += x, p /= 256, s -= 8)
     ;
@@ -1719,7 +2036,7 @@ Ft.write = function(l, e, n, i, s, o) {
  * @license  MIT
  */
 (function(l) {
-  const e = kt, n = Ft, i = typeof Symbol == "function" && typeof Symbol.for == "function" ? Symbol.for("nodejs.util.inspect.custom") : null;
+  const e = Nt, n = Tt, i = typeof Symbol == "function" && typeof Symbol.for == "function" ? Symbol.for("nodejs.util.inspect.custom") : null;
   l.Buffer = u, l.SlowBuffer = L, l.INSPECT_MAX_BYTES = 50;
   const s = 2147483647;
   l.kMaxLength = s;
@@ -2229,7 +2546,7 @@ Ft.write = function(l, e, n, i, s, o) {
     (!t || t < 0) && (t = 0), (!r || r < 0 || r > d) && (r = d);
     let g = "";
     for (let b = t; b < r; ++b)
-      g += Ue[a[b]];
+      g += je[a[b]];
     return g;
   }
   function xe(a, t, r) {
@@ -2365,24 +2682,24 @@ Ft.write = function(l, e, n, i, s, o) {
   }, u.prototype.writeUint32BE = u.prototype.writeUInt32BE = function(t, r, d) {
     return t = +t, r = r >>> 0, d || re(this, t, r, 4, 4294967295, 0), this[r] = t >>> 24, this[r + 1] = t >>> 16, this[r + 2] = t >>> 8, this[r + 3] = t & 255, r + 4;
   };
-  function Oe(a, t, r, d, g) {
-    Pe(t, d, g, a, r, 7);
+  function Ue(a, t, r, d, g) {
+    De(t, d, g, a, r, 7);
     let b = Number(t & BigInt(4294967295));
     a[r++] = b, b = b >> 8, a[r++] = b, b = b >> 8, a[r++] = b, b = b >> 8, a[r++] = b;
     let N = Number(t >> BigInt(32) & BigInt(4294967295));
     return a[r++] = N, N = N >> 8, a[r++] = N, N = N >> 8, a[r++] = N, N = N >> 8, a[r++] = N, r;
   }
-  function Te(a, t, r, d, g) {
-    Pe(t, d, g, a, r, 7);
+  function Fe(a, t, r, d, g) {
+    De(t, d, g, a, r, 7);
     let b = Number(t & BigInt(4294967295));
     a[r + 7] = b, b = b >> 8, a[r + 6] = b, b = b >> 8, a[r + 5] = b, b = b >> 8, a[r + 4] = b;
     let N = Number(t >> BigInt(32) & BigInt(4294967295));
     return a[r + 3] = N, N = N >> 8, a[r + 2] = N, N = N >> 8, a[r + 1] = N, N = N >> 8, a[r] = N, r + 8;
   }
   u.prototype.writeBigUInt64LE = ye(function(t, r = 0) {
-    return Oe(this, t, r, BigInt(0), BigInt("0xffffffffffffffff"));
+    return Ue(this, t, r, BigInt(0), BigInt("0xffffffffffffffff"));
   }), u.prototype.writeBigUInt64BE = ye(function(t, r = 0) {
-    return Te(this, t, r, BigInt(0), BigInt("0xffffffffffffffff"));
+    return Fe(this, t, r, BigInt(0), BigInt("0xffffffffffffffff"));
   }), u.prototype.writeIntLE = function(t, r, d, g) {
     if (t = +t, r = r >>> 0, !g) {
       const de = Math.pow(2, 8 * d - 1);
@@ -2412,9 +2729,9 @@ Ft.write = function(l, e, n, i, s, o) {
   }, u.prototype.writeInt32BE = function(t, r, d) {
     return t = +t, r = r >>> 0, d || re(this, t, r, 4, 2147483647, -2147483648), t < 0 && (t = 4294967295 + t + 1), this[r] = t >>> 24, this[r + 1] = t >>> 16, this[r + 2] = t >>> 8, this[r + 3] = t & 255, r + 4;
   }, u.prototype.writeBigInt64LE = ye(function(t, r = 0) {
-    return Oe(this, t, r, -BigInt("0x8000000000000000"), BigInt("0x7fffffffffffffff"));
+    return Ue(this, t, r, -BigInt("0x8000000000000000"), BigInt("0x7fffffffffffffff"));
   }), u.prototype.writeBigInt64BE = ye(function(t, r = 0) {
-    return Te(this, t, r, -BigInt("0x8000000000000000"), BigInt("0x7fffffffffffffff"));
+    return Fe(this, t, r, -BigInt("0x8000000000000000"), BigInt("0x7fffffffffffffff"));
   });
   function $(a, t, r, d, g, b) {
     if (r + d > a.length) throw new RangeError("Index out of range");
@@ -2479,7 +2796,7 @@ Ft.write = function(l, e, n, i, s, o) {
     return this;
   };
   const ne = {};
-  function Fe(a, t, r) {
+  function Re(a, t, r) {
     ne[a] = class extends r {
       constructor() {
         super(), Object.defineProperty(this, "message", {
@@ -2504,43 +2821,43 @@ Ft.write = function(l, e, n, i, s, o) {
       }
     };
   }
-  Fe(
+  Re(
     "ERR_BUFFER_OUT_OF_BOUNDS",
     function(a) {
       return a ? `${a} is outside of buffer bounds` : "Attempt to access memory outside buffer bounds";
     },
     RangeError
-  ), Fe(
+  ), Re(
     "ERR_INVALID_ARG_TYPE",
     function(a, t) {
       return `The "${a}" argument must be of type number. Received type ${typeof t}`;
     },
     TypeError
-  ), Fe(
+  ), Re(
     "ERR_OUT_OF_RANGE",
     function(a, t, r) {
       let d = `The value of "${a}" is out of range.`, g = r;
-      return Number.isInteger(r) && Math.abs(r) > 2 ** 32 ? g = je(String(r)) : typeof r == "bigint" && (g = String(r), (r > BigInt(2) ** BigInt(32) || r < -(BigInt(2) ** BigInt(32))) && (g = je(g)), g += "n"), d += ` It must be ${t}. Received ${g}`, d;
+      return Number.isInteger(r) && Math.abs(r) > 2 ** 32 ? g = Me(String(r)) : typeof r == "bigint" && (g = String(r), (r > BigInt(2) ** BigInt(32) || r < -(BigInt(2) ** BigInt(32))) && (g = Me(g)), g += "n"), d += ` It must be ${t}. Received ${g}`, d;
     },
     RangeError
   );
-  function je(a) {
+  function Me(a) {
     let t = "", r = a.length;
     const d = a[0] === "-" ? 1 : 0;
     for (; r >= d + 4; r -= 3)
       t = `_${a.slice(r - 3, r)}${t}`;
     return `${a.slice(0, r)}${t}`;
   }
-  function Re(a, t, r) {
+  function Pe(a, t, r) {
     we(t, "offset"), (a[t] === void 0 || a[t + r] === void 0) && Ne(t, a.length - (r + 1));
   }
-  function Pe(a, t, r, d, g, b) {
+  function De(a, t, r, d, g, b) {
     if (a > r || a < t) {
       const N = typeof t == "bigint" ? "n" : "";
       let H;
       throw t === 0 || t === BigInt(0) ? H = `>= 0${N} and < 2${N} ** ${(b + 1) * 8}${N}` : H = `>= -(2${N} ** ${(b + 1) * 8 - 1}${N}) and < 2 ** ${(b + 1) * 8 - 1}${N}`, new ne.ERR_OUT_OF_RANGE("value", H, a);
     }
-    Re(d, g, b);
+    Pe(d, g, b);
   }
   function we(a, t) {
     if (typeof a != "number")
@@ -2554,7 +2871,7 @@ Ft.write = function(l, e, n, i, s, o) {
     );
   }
   const Ce = /[^+/0-9A-Za-z-_]/g;
-  function Ge(a) {
+  function He(a) {
     if (a = a.split("=")[0], a = a.trim().replace(Ce, ""), a.length < 2) return "";
     for (; a.length % 4 !== 0; )
       a = a + "=";
@@ -2628,7 +2945,7 @@ Ft.write = function(l, e, n, i, s, o) {
     return b;
   }
   function V(a) {
-    return e.toByteArray(Ge(a));
+    return e.toByteArray(He(a));
   }
   function Q(a, t, r, d) {
     let g;
@@ -2642,7 +2959,7 @@ Ft.write = function(l, e, n, i, s, o) {
   function $e(a) {
     return a !== a;
   }
-  const Ue = function() {
+  const je = function() {
     const a = "0123456789abcdef", t = new Array(256);
     for (let r = 0; r < 16; ++r) {
       const d = r * 16;
@@ -2657,334 +2974,17 @@ Ft.write = function(l, e, n, i, s, o) {
   function ve() {
     throw new Error("BigInt not supported");
   }
-})(xr);
-const Nt = xr.Buffer;
-function st() {
-  const l = ur(), e = We();
-  return l ? l.navigate : e.navigate ?? ((n) => {
-    window.location.assign(n);
-  });
-}
-function vt() {
-  const l = ur();
-  if (l) {
-    const i = l.setParams ?? ((s, o) => {
-      const c = s(new URLSearchParams(window.location.search)), p = new URL(window.location.href);
-      p.search = c.toString(), o != null && o.replace ? window.history.replaceState({}, "", p.toString()) : window.history.pushState({}, "", p.toString());
-    });
-    return [l.params, i];
-  }
-  return [new URLSearchParams(window.location.search), (i, s) => {
-    const o = i(new URLSearchParams(window.location.search)), c = new URL(window.location.href);
-    c.search = o.toString(), s != null && s.replace ? window.history.replaceState({}, "", c.toString()) : window.history.pushState({}, "", c.toString());
-  }];
-}
-const xo = {
-  en: gr,
-  fr: mr
-}, ht = (l) => {
-  const { i18n: e } = Ye();
-  ie(() => {
-    typeof (e == null ? void 0 : e.hasResourceBundle) == "function" && Object.entries(xo).forEach(([n, i]) => {
-      e.hasResourceBundle(n, l) || e.addResourceBundle(n, l, i, !0, !1);
-    });
-  }, [l]);
-}, nt = async ({
-  transactions: l,
-  transactionsDisplayInfo: e
-}) => {
-  const n = $r(), i = Ar.getInstance(), s = await n.signTransactions(l), o = await i.send(s);
-  return await i.track(o, {
-    transactionsDisplayInfo: e
-  });
-}, Ke = (l, e) => {
-  const { network: n } = Je(), [i, s] = F([]), { address: o } = ar(), c = (e == null ? void 0 : e.enabled) ?? !0, f = Ir().length > 0, m = async () => {
-    if (!(!c || f || !o))
-      try {
-        if (l) {
-          const { data: _ } = await pe.get(`/accounts/${o}/tokens`, {
-            baseURL: n.apiAddress,
-            params: { size: 1e3, identifier: l }
-          });
-          s(_);
-          return;
-        }
-        const y = [];
-        let S = 0;
-        for (; ; ) {
-          const { data: _ } = await pe.get(`/accounts/${o}/tokens`, {
-            baseURL: n.apiAddress,
-            params: { size: 1e3, from: S }
-          });
-          if (y.push(..._), _.length < 1e3) break;
-          S += 1e3;
-        }
-        s(y);
-      } catch {
-        s([]);
-      }
-  };
-  return ie(() => {
-    if (!c || !o) {
-      s([]);
-      return;
-    }
-    m();
-  }, [o, f, l, c]), i;
-}, bo = {
-  card: {
-    background: "linear-gradient(0deg, rgba(99,74,203,0.32), rgba(99,74,203,0.32)), linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 100%), #0a0614",
-    borderColor: "#695885",
-    color: "#ffffff"
-  },
-  inner: {
-    backgroundColor: "rgba(13,8,28,0.75)",
-    borderColor: "#695885"
-  },
-  input: {
-    backgroundColor: "rgba(8,4,18,0.9)",
-    color: "#ffffff",
-    borderColor: "#695885"
-  },
-  tokenBtn: {
-    backgroundColor: "rgba(8,4,18,0.9)",
-    color: "#ffffff",
-    borderColor: "#695885"
-  },
-  dropdown: {
-    backgroundColor: "#0d0820",
-    borderColor: "#695885"
-  },
-  searchInput: {
-    backgroundColor: "rgba(5,2,14,0.95)",
-    color: "#ffffff",
-    borderColor: "#695885"
-  },
-  invertBtn: {
-    backgroundColor: "rgba(8,4,18,0.9)",
-    borderColor: "#695885"
-  },
-  quoteSection: {
-    backgroundColor: "rgba(13,8,28,0.75)",
-    borderColor: "#695885"
-  },
-  tabBar: {
-    backgroundColor: "rgba(13,8,28,0.6)"
-  },
-  activeTab: {
-    background: "linear-gradient(135deg, rgba(189,55,236,0.3), rgba(31,103,255,0.3))",
-    color: "#BD37EC"
-  }
-}, yo = {
-  card: { backgroundColor: "#111", color: "#ffffff" },
-  inner: { backgroundColor: "#1e1e1e", borderColor: "#333" },
-  input: { backgroundColor: "#2a2a2a", color: "#ffffff", borderColor: "#444" },
-  tokenBtn: { backgroundColor: "#2a2a2a", color: "#ffffff", borderColor: "#444" },
-  dropdown: { backgroundColor: "#2a2a2a", borderColor: "#444" },
-  searchInput: { backgroundColor: "#1e1e1e", color: "#ffffff", borderColor: "#555" },
-  invertBtn: { backgroundColor: "#2a2a2a", borderColor: "#444" },
-  quoteSection: { backgroundColor: "#1a1a1a", borderColor: "#333" },
-  tabBar: { backgroundColor: "#1a1a1a" },
-  activeTab: { backgroundColor: "#2a2a2a", color: "#f59e0b" }
-}, wo = {
-  card: { backgroundColor: "#ffffff", color: "#111111" },
-  inner: { backgroundColor: "#f9fafb", borderColor: "#e5e7eb" },
-  input: { backgroundColor: "#ffffff", color: "#111111", borderColor: "#e5e7eb" },
-  tokenBtn: { backgroundColor: "#ffffff", color: "#111111", borderColor: "#e5e7eb" },
-  dropdown: { backgroundColor: "#ffffff", borderColor: "#e5e7eb" },
-  searchInput: { backgroundColor: "#f9fafb", color: "#111111", borderColor: "#e5e7eb" },
-  invertBtn: { backgroundColor: "#ffffff", borderColor: "#e5e7eb" },
-  quoteSection: { backgroundColor: "#ffffff", borderColor: "#e5e7eb" },
-  tabBar: { backgroundColor: "#f3f4f6" },
-  activeTab: { backgroundColor: "#ffffff", color: "#f59e0b" }
-}, _o = {
-  card: {},
-  inner: {},
-  input: {},
-  tokenBtn: {},
-  dropdown: {},
-  searchInput: {},
-  invertBtn: {},
-  quoteSection: {},
-  tabBar: {},
-  activeTab: {}
-};
-function Rt(l) {
-  return l === "mid" ? bo : l === "dark" ? yo : l === "light" ? wo : _o;
-}
-const gt = ({ id: l, title: e, children: n, description: i, reference: s, className: o = "", onClick: c }) => {
-  const { theme: p } = We(), f = Rt(p), m = o.includes("border") ? "" : "border border-gray-100 dark:border-[#333]";
-  return /* @__PURE__ */ w(
-    "div",
-    {
-      id: l,
-      onClick: c,
-      style: f.card,
-      className: `flex flex-col bg-[#ffffff] dark:bg-[#111] p-6 rounded-2xl shadow-sm transition-all ${m} ${o}`,
-      children: [
-        /* @__PURE__ */ w("div", { className: "flex items-start justify-between gap-3", children: [
-          /* @__PURE__ */ h(
-            "h2",
-            {
-              className: "text-xl font-black tracking-tight text-gray-900 dark:text-white uppercase",
-              style: p ? { color: f.card.color } : {},
-              children: e
-            }
-          ),
-          s ? /* @__PURE__ */ h(
-            "a",
-            {
-              href: s,
-              target: "_blank",
-              rel: "noreferrer",
-              className: "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-white/10 transition-colors",
-              title: "More info",
-              children: /* @__PURE__ */ h(Lr, { size: 14 })
-            }
-          ) : null
-        ] }),
-        i ? /* @__PURE__ */ h(
-          "p",
-          {
-            className: "mt-1.5 text-sm leading-relaxed text-gray-500 dark:text-gray-400 font-medium",
-            style: p === "mid" ? { color: "rgba(255,255,255,0.55)" } : {},
-            children: i
-          }
-        ) : null,
-        i && n ? /* @__PURE__ */ h(
-          "div",
-          {
-            className: "my-4 h-px bg-gray-100 dark:bg-[#333]",
-            style: p === "mid" ? { backgroundColor: "#695885" } : {}
-          }
-        ) : /* @__PURE__ */ h("div", { className: "mt-3" }),
-        n
-      ]
-    }
-  );
-};
-function Xt({ url: l, ticker: e }) {
-  const [n, i] = F(!1);
-  return !l || n ? /* @__PURE__ */ h("span", { className: "w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-[10px] font-bold text-amber-700 dark:text-amber-300 shrink-0", children: e.slice(0, 2) }) : /* @__PURE__ */ h(
-    "img",
-    {
-      src: l,
-      alt: e,
-      className: "w-6 h-6 rounded-full object-contain shrink-0",
-      onError: () => i(!0)
-    }
-  );
-}
-function it({
-  value: l,
-  onChange: e,
-  tokens: n,
-  exclude: i,
-  loading: s,
-  className: o = ""
-}) {
-  const { t: c } = Ye("swap"), { theme: p } = We(), f = Rt(p), [m, u] = F(!1), [y, S] = F(""), _ = ut(null), x = ut(null), v = n.filter((k) => k.identifier !== i).filter((k) => {
-    if (!y) return !0;
-    const E = y.toLowerCase();
-    return k.ticker.toLowerCase().includes(E) || k.identifier.toLowerCase().includes(E);
-  });
-  return ie(() => {
-    if (!m) {
-      S("");
-      return;
-    }
-    setTimeout(() => {
-      var E;
-      return (E = x.current) == null ? void 0 : E.focus();
-    }, 50);
-    const k = (E) => {
-      _.current && !_.current.contains(E.target) && u(!1);
-    };
-    return document.addEventListener("mousedown", k), () => document.removeEventListener("mousedown", k);
-  }, [m]), /* @__PURE__ */ w("div", { ref: _, className: `relative flex-1 ${o}`, children: [
-    /* @__PURE__ */ w(
-      "button",
-      {
-        type: "button",
-        disabled: s,
-        onClick: () => u((k) => !k),
-        style: f.tokenBtn,
-        className: "w-full flex items-center gap-2 rounded-xl border border-gray-200 dark:border-[#444] bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50",
-        children: [
-          s ? /* @__PURE__ */ h("span", { className: "flex-1 text-left text-gray-400", children: c("token_loading") }) : l ? /* @__PURE__ */ w(dt, { children: [
-            /* @__PURE__ */ h(Xt, { url: l.logoUrl, ticker: l.ticker }),
-            /* @__PURE__ */ h("span", { className: "flex-1 text-left", children: l.ticker })
-          ] }) : /* @__PURE__ */ h("span", { className: "flex-1 text-left text-gray-400", children: c("token_select") }),
-          /* @__PURE__ */ h(
-            "svg",
-            {
-              className: `w-4 h-4 text-gray-400 transition-transform shrink-0 ${m ? "rotate-180" : ""}`,
-              fill: "none",
-              viewBox: "0 0 24 24",
-              stroke: "currentColor",
-              strokeWidth: 2,
-              children: /* @__PURE__ */ h("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M19 9l-7 7-7-7" })
-            }
-          )
-        ]
-      }
-    ),
-    m && /* @__PURE__ */ w(
-      "div",
-      {
-        style: f.dropdown,
-        className: "absolute z-50 mt-1 w-full rounded-xl border border-gray-200 dark:border-[#444] bg-[#ffffff] dark:bg-[#2a2a2a] shadow-lg overflow-hidden",
-        children: [
-          /* @__PURE__ */ h("div", { className: "px-2 pt-2 pb-1", children: /* @__PURE__ */ h(
-            "input",
-            {
-              ref: x,
-              type: "text",
-              value: y,
-              onChange: (k) => S(k.target.value),
-              placeholder: c("token_search"),
-              style: f.searchInput,
-              className: "w-full rounded-lg border border-gray-200 dark:border-[#555] bg-gray-50 dark:bg-[#1e1e1e] px-3 py-1.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            }
-          ) }),
-          /* @__PURE__ */ h("div", { className: "max-h-52 overflow-y-auto", children: v.length === 0 ? /* @__PURE__ */ h("p", { className: "px-3 py-3 text-sm text-gray-400 text-center", children: c("token_no_results") }) : v.map((k) => {
-            const E = (l == null ? void 0 : l.identifier) === k.identifier;
-            return /* @__PURE__ */ w(
-              "button",
-              {
-                type: "button",
-                onClick: () => {
-                  e(k), u(!1);
-                },
-                style: E ? p === "mid" ? { backgroundColor: "rgba(189,55,236,0.2)", color: "#BD37EC" } : {} : p === "mid" ? { color: "#ffffff" } : {},
-                className: `w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-amber-50 dark:hover:bg-[#333] ${E ? "bg-amber-50 dark:bg-[#333] text-amber-600 dark:text-amber-400" : "text-gray-900 dark:text-white"}`,
-                children: [
-                  /* @__PURE__ */ h(Xt, { url: k.logoUrl, ticker: k.ticker }),
-                  /* @__PURE__ */ h("span", { className: "flex-1 text-left", children: k.ticker }),
-                  /* @__PURE__ */ h("span", { className: "text-[10px] text-gray-400 font-normal", children: k.identifier.split("-")[1] ?? "" })
-                ]
-              },
-              k.identifier
-            );
-          }) })
-        ]
-      }
-    )
-  ] });
-}
-const ze = (l) => {
-  let n = BigInt(l).toString(16);
-  return n.length % 2 && (n = "0" + n), n;
-}, Zt = [5e-3, 0.01, 0.02], Qt = {
+})(pr);
+const bo = pr.Buffer, Te = (l) => bo.from(l, "utf8").toString("hex"), Jt = [5e-3, 0.01, 0.02], Xt = {
   identifier: "EGLD",
   ticker: "EGLD",
   poolCount: 0,
   decimals: 18,
   logoUrl: null
-}, er = (l) => Nt.from(l, "utf8").toString("hex"), ko = (l, e) => BigInt(
+}, yo = (l, e) => BigInt(
   new B(l).multipliedBy(1 - e).toFixed(0, B.ROUND_DOWN)
-), No = () => {
-  var Pt, Dt, qt;
+), wo = () => {
+  var Ft, Rt, Pt;
   const {
     apiUrl: l,
     routerAddress: e,
@@ -2993,9 +2993,9 @@ const ze = (l) => {
     wegldIdentifier: s,
     routes: o,
     theme: c
-  } = We(), p = Rt(c), { t: f } = Ye("swap");
+  } = Ge(), p = It(c), { t: f } = Je("swap");
   ht("swap");
-  const { address: m } = pt(), { account: u } = ar(), { network: y } = Je(), [S, _] = vt(), x = st(), [v, k] = F([]), [E, D] = F(/* @__PURE__ */ new Set()), [R, U] = F(!0), [L, ee] = F(null), [C, ae] = F(null), A = ut(!1), [O, ge] = F(""), [me, K] = F(""), [T, W] = F("in"), [P, Y] = F(null), [he, Ee] = F(!1), [ke, te] = F(null), [se, xe] = F(null), [J, re] = F(!1), [Oe, Te] = F(null), $ = !!(L && C && L.identifier === C.identifier), [G, M] = F(0.01), [ne, Fe] = F(!1), [je, Re] = F(null), Pe = ut(null), [we, Ne] = F(!1), Ce = (L == null ? void 0 : L.identifier) === "EGLD", Ge = Ke(
+  const { address: m } = pt(), { account: u } = rr(), { network: y } = Xe(), [S, _] = kt(), x = st(), [v, k] = F([]), [E, D] = F(/* @__PURE__ */ new Set()), [R, U] = F(!0), [L, ee] = F(null), [C, ae] = F(null), A = ut(!1), [O, ge] = F(""), [me, K] = F(""), [T, W] = F("in"), [P, Y] = F(null), [he, Ee] = F(!1), [ke, te] = F(null), [se, xe] = F(null), [J, re] = F(!1), [Ue, Fe] = F(null), $ = !!(L && C && L.identifier === C.identifier), [G, M] = F(0.01), [ne, Re] = F(!1), [Me, Pe] = F(null), De = ut(null), [we, Ne] = F(!1), Ce = (L == null ? void 0 : L.identifier) === "EGLD", He = Ye(
     Ce || L == null ? void 0 : L.identifier,
     { enabled: !!L && !Ce && !!m }
   );
@@ -3003,11 +3003,11 @@ const ze = (l) => {
     Ne(!!(L && m));
   }, [L == null ? void 0 : L.identifier]), ie(() => {
     Ne(!1);
-  }, [Ge]);
-  const Ie = Ce ? (u == null ? void 0 : u.balance) ?? null : ((Pt = Ge == null ? void 0 : Ge[0]) == null ? void 0 : Pt.balance) ?? null, j = Ie && L ? new B(Ie).shiftedBy(-L.decimals).toFixed(6, B.ROUND_DOWN) : null, z = !we && m && L ? Ie ?? "0" : Ie, V = T === "out" && P ? P.amountIn : T === "in" && O ? new B(O).shiftedBy((L == null ? void 0 : L.decimals) ?? 18).toFixed(0, B.ROUND_DOWN) : null, Q = z && V ? new B(V).isGreaterThan(z) : !1, oe = (C == null ? void 0 : C.identifier) === "EGLD", $e = Ke(
+  }, [He]);
+  const Ie = Ce ? (u == null ? void 0 : u.balance) ?? null : ((Ft = He == null ? void 0 : He[0]) == null ? void 0 : Ft.balance) ?? null, j = Ie && L ? new B(Ie).shiftedBy(-L.decimals).toFixed(6, B.ROUND_DOWN) : null, z = !we && m && L ? Ie ?? "0" : Ie, V = T === "out" && P ? P.amountIn : T === "in" && O ? new B(O).shiftedBy((L == null ? void 0 : L.decimals) ?? 18).toFixed(0, B.ROUND_DOWN) : null, Q = z && V ? new B(V).isGreaterThan(z) : !1, oe = (C == null ? void 0 : C.identifier) === "EGLD", $e = Ye(
     oe || C == null ? void 0 : C.identifier,
     { enabled: !!C && !oe && !!m }
-  ), Ue = oe ? (u == null ? void 0 : u.balance) ?? null : ((Dt = $e == null ? void 0 : $e[0]) == null ? void 0 : Dt.balance) ?? null, ye = Ue && C ? new B(Ue).shiftedBy(-C.decimals).toFixed(6, B.ROUND_DOWN) : null, ve = (L == null ? void 0 : L.identifier) === "EGLD" && (C == null ? void 0 : C.identifier) === s, a = (L == null ? void 0 : L.identifier) === s && (C == null ? void 0 : C.identifier) === "EGLD", t = ve || a, r = () => {
+  ), je = oe ? (u == null ? void 0 : u.balance) ?? null : ((Rt = $e == null ? void 0 : $e[0]) == null ? void 0 : Rt.balance) ?? null, ye = je && C ? new B(je).shiftedBy(-C.decimals).toFixed(6, B.ROUND_DOWN) : null, ve = (L == null ? void 0 : L.identifier) === "EGLD" && (C == null ? void 0 : C.identifier) === s, a = (L == null ? void 0 : L.identifier) === s && (C == null ? void 0 : C.identifier) === "EGLD", t = ve || a, r = () => {
     !Ie || !L || (W("in"), K(""), ge(
       new B(Ie).shiftedBy(-L.decimals).toFixed(L.decimals, B.ROUND_DOWN)
     ));
@@ -3020,14 +3020,14 @@ const ze = (l) => {
       var _e;
       const be = (I.data.tokens || []).filter((Le) => Le.identifier), X = be.find((Le) => Le.ticker === "WEGLD");
       k([
-        { ...Qt, logoUrl: (X == null ? void 0 : X.logoUrl) ?? null },
+        { ...Xt, logoUrl: (X == null ? void 0 : X.logoUrl) ?? null },
         ...be
       ]);
       const fe = (((_e = ce.data) == null ? void 0 : _e.hubTokens) ?? []).map(
         (Le) => Le.identifier
       );
       D(new Set(fe));
-    }).catch(() => k([Qt])).finally(() => U(!1)));
+    }).catch(() => k([Xt])).finally(() => U(!1)));
   }, [l]), ie(() => {
     if (v.length === 0 || A.current) return;
     A.current = !0;
@@ -3042,29 +3042,29 @@ const ze = (l) => {
       { replace: !0 }
     );
   }, [L, C]);
-  const d = At(async () => {
+  const d = Ct(async () => {
     var X, fe, _e, Le;
     if (t) {
-      Y(null), te(null), xe(null), Te(null);
+      Y(null), te(null), xe(null), Fe(null);
       return;
     }
     if (!L || !C) {
-      Y(null), te(null), xe(null), Te(null);
+      Y(null), te(null), xe(null), Fe(null);
       return;
     }
     if ($) {
-      Y(null), te(null), re(!0), Te(null);
+      Y(null), te(null), re(!0), Fe(null);
       try {
         const Se = {
           token: L.identifier,
           slippageBps: Math.round(G * 1e4)
         };
         O && Number(O) > 0 && (Se.amountIn = new B(O).shiftedBy(L.decimals).toFixed(0, B.ROUND_DOWN));
-        const { data: Xe } = await pe.get(`${l}/arb`, {
+        const { data: Ze } = await pe.get(`${l}/arb`, {
           params: Se
         });
-        xe(Xe), (!O || Number(O) <= 0) && ge(
-          new B(Xe.amountIn).shiftedBy(-L.decimals).toFixed(6, B.ROUND_DOWN)
+        xe(Ze), (!O || Number(O) <= 0) && ge(
+          new B(Ze.amountIn).shiftedBy(-L.decimals).toFixed(6, B.ROUND_DOWN)
         );
       } catch {
         xe(null);
@@ -3091,35 +3091,35 @@ const ze = (l) => {
       });
       Y(Se);
     } catch (Se) {
-      const Xe = (fe = (X = Se == null ? void 0 : Se.response) == null ? void 0 : X.data) == null ? void 0 : fe.code;
+      const Ze = (fe = (X = Se == null ? void 0 : Se.response) == null ? void 0 : X.data) == null ? void 0 : fe.code;
       te(
-        Xe === "AMOUNT_TOO_LOW" ? f("error_amount_too_low") : Xe === "NO_ROUTE" ? f("error_no_route") : Xe === "INSUFFICIENT_LIQUIDITY" ? f("error_insufficient_liquidity") : ((Le = (_e = Se == null ? void 0 : Se.response) == null ? void 0 : _e.data) == null ? void 0 : Le.message) ?? f("error_quote")
+        Ze === "AMOUNT_TOO_LOW" ? f("error_amount_too_low") : Ze === "NO_ROUTE" ? f("error_no_route") : Ze === "INSUFFICIENT_LIQUIDITY" ? f("error_insufficient_liquidity") : ((Le = (_e = Se == null ? void 0 : Se.response) == null ? void 0 : _e.data) == null ? void 0 : Le.message) ?? f("error_quote")
       ), Y(null);
     } finally {
       Ee(!1);
     }
   }, [L, C, O, me, T, $, t, G]);
-  ie(() => (Pe.current && clearTimeout(Pe.current), Pe.current = setTimeout(d, 300), () => {
-    Pe.current && clearTimeout(Pe.current);
+  ie(() => (De.current && clearTimeout(De.current), De.current = setTimeout(d, 300), () => {
+    De.current && clearTimeout(De.current);
   }), [d]);
   const g = () => {
     ee(C), ae(L), T === "in" ? (W("out"), K(O), ge("")) : (W("in"), ge(me), K("")), Y(null);
   }, b = async () => {
     if (!(!L || !m) && !($ && !se) && !(!$ && !P)) {
-      Re(null), Fe(!0);
+      Pe(null), Re(!0);
       try {
         const { tx: I } = $ ? se : P;
         if (![e, n].map(
           (X) => X.toLowerCase()
         ).includes(I.scAddress.toLowerCase())) {
-          Re(`Receiver refusé : ${I.scAddress}`);
+          Pe(`Receiver refusé : ${I.scAddress}`);
           return;
         }
         const be = new tt({
           value: BigInt(I.egldValue),
           data: new TextEncoder().encode(I.txData),
-          receiver: new qe(I.scAddress),
-          sender: new qe(m),
+          receiver: new Oe(I.scAddress),
+          sender: new Oe(m),
           gasLimit: BigInt(I.gasLimit),
           gasPrice: BigInt(rt),
           chainID: y.chainId,
@@ -3134,28 +3134,28 @@ const ze = (l) => {
           }
         }), ge(""), K(""), W("in"), Y(null), xe(null);
       } catch (I) {
-        Re((I == null ? void 0 : I.message) ?? "Erreur lors du swap");
+        Pe((I == null ? void 0 : I.message) ?? "Erreur lors du swap");
       } finally {
-        Fe(!1);
+        Re(!1);
       }
     }
-  }, N = T === "in" ? O : me, H = t ? N ? new B(N).toFixed(6, B.ROUND_DOWN) : "" : T === "out" ? me : $ && se ? new B(se.amountOut).shiftedBy(-((L == null ? void 0 : L.decimals) ?? 18)).toFixed(6, B.ROUND_DOWN) : P ? new B(P.amountOut).shiftedBy(-((C == null ? void 0 : C.decimals) ?? 18)).toFixed(6, B.ROUND_DOWN) : "", de = T === "out" && !t && P ? new B(P.amountIn).shiftedBy(-((L == null ? void 0 : L.decimals) ?? 18)).toFixed(6, B.ROUND_DOWN) : O, le = se ? new B(se.profit).shiftedBy(-((L == null ? void 0 : L.decimals) ?? 18)).toFixed(6, B.ROUND_DOWN) : null, ue = P && !t ? new B(ko(P.amountOut, G).toString()).shiftedBy(-((C == null ? void 0 : C.decimals) ?? 18)).toFixed(6, B.ROUND_DOWN) : null, Z = P ? (parseFloat(P.priceImpact) * 100).toFixed(2) : null, yr = Z ? parseFloat(Z) < 1 ? "text-green-600 dark:text-green-400" : parseFloat(Z) < 3 ? "text-amber-500 dark:text-amber-400" : "text-red-600 dark:text-red-400" : "", wr = t ? !!m && !ne && !Q && !!N && Number(N) > 0 : $ ? !!se && !!m && !ne && !J && !Oe && !Q : !!P && !!m && !ne && !he && !ke && !Q, _r = (C == null ? void 0 : C.identifier) === "EGLD", kr = async () => {
+  }, N = T === "in" ? O : me, H = t ? N ? new B(N).toFixed(6, B.ROUND_DOWN) : "" : T === "out" ? me : $ && se ? new B(se.amountOut).shiftedBy(-((L == null ? void 0 : L.decimals) ?? 18)).toFixed(6, B.ROUND_DOWN) : P ? new B(P.amountOut).shiftedBy(-((C == null ? void 0 : C.decimals) ?? 18)).toFixed(6, B.ROUND_DOWN) : "", de = T === "out" && !t && P ? new B(P.amountIn).shiftedBy(-((L == null ? void 0 : L.decimals) ?? 18)).toFixed(6, B.ROUND_DOWN) : O, le = se ? new B(se.profit).shiftedBy(-((L == null ? void 0 : L.decimals) ?? 18)).toFixed(6, B.ROUND_DOWN) : null, ue = P && !t ? new B(yo(P.amountOut, G).toString()).shiftedBy(-((C == null ? void 0 : C.decimals) ?? 18)).toFixed(6, B.ROUND_DOWN) : null, Z = P ? (parseFloat(P.priceImpact) * 100).toFixed(2) : null, gr = Z ? parseFloat(Z) < 1 ? "text-green-600 dark:text-green-400" : parseFloat(Z) < 3 ? "text-amber-500 dark:text-amber-400" : "text-red-600 dark:text-red-400" : "", mr = t ? !!m && !ne && !Q && !!N && Number(N) > 0 : $ ? !!se && !!m && !ne && !J && !Ue && !Q : !!P && !!m && !ne && !he && !ke && !Q, xr = (C == null ? void 0 : C.identifier) === "EGLD", br = async () => {
     const I = T === "out" ? me : O;
     if (!(!L || !m || !I || Number(I) <= 0)) {
-      Re(null), Fe(!0);
+      Pe(null), Re(!0);
       try {
-        const ce = new qe(m), be = BigInt(
+        const ce = new Oe(m), be = BigInt(
           new B(I).shiftedBy(18).toFixed(0, B.ROUND_DOWN)
-        ), X = new qe(i);
+        ), X = new Oe(i);
         let fe, _e, Le;
         ve ? (_e = X, Le = be, fe = "wrapEgld") : (_e = ce, Le = BigInt(0), fe = [
           "MultiESDTNFTTransfer",
           X.toHex(),
           "01",
-          er(s),
+          Te(s),
           "00",
-          ze(be),
-          er("unwrapEgld")
+          Ke(be),
+          Te("unwrapEgld")
         ].join("@"));
         const Se = new tt({
           value: Le,
@@ -3176,9 +3176,9 @@ const ze = (l) => {
           }
         }), ge(""), K(""), W("in");
       } catch (ce) {
-        Re((ce == null ? void 0 : ce.message) ?? "Erreur");
+        Pe((ce == null ? void 0 : ce.message) ?? "Erreur");
       } finally {
-        Fe(!1);
+        Re(!1);
       }
     }
   };
@@ -3276,7 +3276,7 @@ const ze = (l) => {
             onClick: g,
             style: p.invertBtn,
             className: "rounded-full p-2 bg-[#ffffff] dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] shadow-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors",
-            children: /* @__PURE__ */ h(Sr, { className: "h-4 w-4 text-amber-500" })
+            children: /* @__PURE__ */ h(kr, { className: "h-4 w-4 text-amber-500" })
           }
         ) }),
         /* @__PURE__ */ w("div", { style: p.inner, className: "rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4", children: [
@@ -3340,7 +3340,7 @@ const ze = (l) => {
         !t && P && !he && /* @__PURE__ */ w("div", { style: p.quoteSection, className: "rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] px-4 py-3 space-y-2.5 text-sm", children: [
           /* @__PURE__ */ w("div", { className: "flex justify-between items-center", children: [
             /* @__PURE__ */ h("span", { className: "text-gray-500 dark:text-gray-400", children: f("price_impact") }),
-            /* @__PURE__ */ w("span", { className: `font-semibold ${yr}`, children: [
+            /* @__PURE__ */ w("span", { className: `font-semibold ${gr}`, children: [
               Z,
               "%"
             ] })
@@ -3352,7 +3352,7 @@ const ze = (l) => {
           /* @__PURE__ */ w("div", { className: "pt-2 border-t border-gray-100 dark:border-[#2a2a2a]", children: [
             /* @__PURE__ */ h("p", { className: "text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-2", children: f("route") }),
             /* @__PURE__ */ w("div", { className: "flex items-center flex-wrap gap-0", children: [
-              /* @__PURE__ */ h("span", { className: "text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200", children: (L == null ? void 0 : L.ticker) ?? ((qt = P.route[0]) == null ? void 0 : qt.tokenIn) }),
+              /* @__PURE__ */ h("span", { className: "text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200", children: (L == null ? void 0 : L.ticker) ?? ((Pt = P.route[0]) == null ? void 0 : Pt.tokenIn) }),
               Ce && /* @__PURE__ */ w(Be.Fragment, { children: [
                 /* @__PURE__ */ w("div", { className: "flex flex-col items-center mx-1", children: [
                   /* @__PURE__ */ h("span", { className: "text-[9px] font-bold text-gray-400", children: "wrap" }),
@@ -3413,7 +3413,7 @@ const ze = (l) => {
                   /* @__PURE__ */ h("span", { className: "text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200", children: be })
                 ] }, ce);
               }),
-              _r && /* @__PURE__ */ w(Be.Fragment, { children: [
+              xr && /* @__PURE__ */ w(Be.Fragment, { children: [
                 /* @__PURE__ */ w("div", { className: "flex flex-col items-center mx-1", children: [
                   /* @__PURE__ */ h("span", { className: "text-[9px] font-bold text-gray-400", children: "unwrap" }),
                   /* @__PURE__ */ w("div", { className: "flex items-center gap-0.5", children: [
@@ -3457,7 +3457,7 @@ const ze = (l) => {
           ] }),
           /* @__PURE__ */ w("div", { className: "pt-2 border-t border-gray-100 dark:border-[#2a2a2a] flex items-center justify-between", children: [
             /* @__PURE__ */ h("span", { className: "text-gray-500 dark:text-gray-400", children: f("slippage") }),
-            /* @__PURE__ */ h("div", { className: "flex gap-1", children: Zt.map((I) => /* @__PURE__ */ w(
+            /* @__PURE__ */ h("div", { className: "flex gap-1", children: Jt.map((I) => /* @__PURE__ */ w(
               "button",
               {
                 onClick: () => M(I),
@@ -3545,7 +3545,7 @@ const ze = (l) => {
           ] }),
           /* @__PURE__ */ w("div", { className: "pt-2 border-t border-green-200 dark:border-green-800/50 flex items-center justify-between", children: [
             /* @__PURE__ */ h("span", { className: "text-green-700/70 dark:text-green-400/70", children: f("slippage") }),
-            /* @__PURE__ */ h("div", { className: "flex gap-1", children: Zt.map((I) => /* @__PURE__ */ w(
+            /* @__PURE__ */ h("div", { className: "flex gap-1", children: Jt.map((I) => /* @__PURE__ */ w(
               "button",
               {
                 onClick: () => M(I),
@@ -3560,30 +3560,30 @@ const ze = (l) => {
           ] })
         ] }),
         $ && J && /* @__PURE__ */ h("div", { className: "text-center text-xs text-gray-400 animate-pulse py-2", children: f("calculating") }),
-        (!t && !$ && ke || $ && Oe || je) && /* @__PURE__ */ h("div", { className: "rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-600 dark:text-red-400", children: $ ? Oe : ke ?? je }),
+        (!t && !$ && ke || $ && Ue || Me) && /* @__PURE__ */ h("div", { className: "rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-600 dark:text-red-400", children: $ ? Ue : ke ?? Me }),
         /* @__PURE__ */ h(
           "button",
           {
-            onClick: t ? kr : b,
-            disabled: !wr,
+            onClick: t ? br : b,
+            disabled: !mr,
             style: c === "mid" ? { background: "linear-gradient(135deg, #BD37EC, #1F67FF)", border: "none" } : {},
             className: `dinoButton orange w-full !py-3 text-base ${!L || !C ? "!bg-orange-400 dark:!bg-orange-500 !border-orange-600 dark:!border-orange-700 !text-orange-950 dark:!text-orange-950 font-bold !opacity-100 hover:!bg-orange-500 hover:!border-orange-700 dark:hover:!bg-orange-400" : "disabled:opacity-40 disabled:cursor-not-allowed"}`,
-            children: m ? ne ? f("btn_signing") : !L || !C ? f("btn_select_tokens") : Q ? f("btn_insufficient") : $ ? f(J ? "btn_calculating" : Oe ? "btn_quote_unavailable" : "btn_arb") : !O || Number(O) <= 0 ? f("btn_enter_amount") : f(he ? "btn_calculating" : t ? ve ? "btn_wrap" : "btn_unwrap" : ke ? "btn_quote_unavailable" : "btn_swap") : f("btn_connect")
+            children: m ? ne ? f("btn_signing") : !L || !C ? f("btn_select_tokens") : Q ? f("btn_insufficient") : $ ? f(J ? "btn_calculating" : Ue ? "btn_quote_unavailable" : "btn_arb") : !O || Number(O) <= 0 ? f("btn_enter_amount") : f(he ? "btn_calculating" : t ? ve ? "btn_wrap" : "btn_unwrap" : ke ? "btn_quote_unavailable" : "btn_swap") : f("btn_connect")
           }
         )
       ] })
     }
   ) });
-}, vo = () => {
-  const { apiUrl: l, routes: e } = We(), { t: n } = Ye("swap");
+}, _o = () => {
+  const { apiUrl: l, routes: e } = Ge(), { t: n } = Je("swap");
   ht("swap");
-  const i = st(), { address: s } = pt(), { network: o } = Je(), [c, p] = Be.useState([]), [f, m] = Be.useState(!0), [u, y] = Be.useState([]);
+  const i = st(), { address: s } = pt(), { network: o } = Xe(), [c, p] = Be.useState([]), [f, m] = Be.useState(!0), [u, y] = Be.useState([]);
   Be.useEffect(() => {
     l && (m(!0), pe.get(`${l}/pools`).then((_) => {
       p(_.data.pools || []);
     }).catch(console.error).finally(() => m(!1)));
   }, [l]);
-  const S = Ke(void 0, { enabled: !!s });
+  const S = Ye(void 0, { enabled: !!s });
   return Be.useEffect(() => {
     if (!S || S.length === 0 || c.length === 0 || !(o != null && o.apiAddress)) {
       y([]);
@@ -3676,19 +3676,19 @@ const ze = (l) => {
       ] }) })
     }
   ) });
-}, Ct = (l) => Nt.from(l, "utf8").toString("hex");
-function Lo(l) {
+};
+function ko(l) {
   if (l < 2n) return l;
   let e = l, n = (e + 1n) / 2n;
   for (; n < e; )
     e = n, n = (e + l / e) / 2n;
   return e;
 }
-const So = () => {
-  var Ge, Ie;
-  const { apiUrl: l, routes: e } = We(), { t: n } = Ye("swap");
+const No = () => {
+  var He, Ie;
+  const { apiUrl: l, routes: e } = Ge(), { t: n } = Je("swap");
   ht("swap");
-  const { address: i } = pt(), { network: s } = Je(), o = st(), [c, p] = vt(), [f, m] = F([]), [u, y] = F([]), [S, _] = F(!0), [x, v] = F(null), [k, E] = F(null), D = (j) => {
+  const { address: i } = pt(), { network: s } = Xe(), o = st(), [c, p] = kt(), [f, m] = F([]), [u, y] = F([]), [S, _] = F(!0), [x, v] = F(null), [k, E] = F(null), D = (j) => {
     v(j), p((z) => {
       const V = new URLSearchParams(z);
       return j ? V.set("tokenA", j.identifier) : V.delete("tokenA"), V;
@@ -3698,7 +3698,7 @@ const So = () => {
       const V = new URLSearchParams(z);
       return j ? V.set("tokenB", j.identifier) : V.delete("tokenB"), V;
     }, { replace: !0 });
-  }, [U, L] = F(""), [ee, C] = F(""), ae = ut("A"), [A, O] = F(null), [ge, me] = F(!1), [K, T] = F(null), [W, P] = F(null), [Y, he] = F(0n), [Ee, ke] = F(0n), [te, se] = F(/* @__PURE__ */ new Set()), xe = Ke(void 0, { enabled: !!i }), [J, re] = F([]), Oe = Be.useMemo(() => {
+  }, [U, L] = F(""), [ee, C] = F(""), ae = ut("A"), [A, O] = F(null), [ge, me] = F(!1), [K, T] = F(null), [W, P] = F(null), [Y, he] = F(0n), [Ee, ke] = F(0n), [te, se] = F(/* @__PURE__ */ new Set()), xe = Ye(void 0, { enabled: !!i }), [J, re] = F([]), Ue = Be.useMemo(() => {
     const j = J.length > 0 ? J : [];
     return k && !j.some((z) => z.identifier === k.identifier) ? [k, ...j] : j;
   }, [J, k]);
@@ -3719,7 +3719,7 @@ const So = () => {
     });
     re(j);
   }, [xe, te]);
-  const Te = Ke((x == null ? void 0 : x.identifier) ?? void 0, { enabled: !!x && !!i }), $ = Ke((k == null ? void 0 : k.identifier) ?? void 0, { enabled: !!k && !!i }), G = ((Ge = Te == null ? void 0 : Te[0]) == null ? void 0 : Ge.balance) ?? "0", M = ((Ie = $ == null ? void 0 : $[0]) == null ? void 0 : Ie.balance) ?? "0", ne = x && G ? new B(G).shiftedBy(-x.decimals).toFixed(6, B.ROUND_DOWN) : "0", Fe = k && M ? new B(M).shiftedBy(-k.decimals).toFixed(6, B.ROUND_DOWN) : "0";
+  const Fe = Ye((x == null ? void 0 : x.identifier) ?? void 0, { enabled: !!x && !!i }), $ = Ye((k == null ? void 0 : k.identifier) ?? void 0, { enabled: !!k && !!i }), G = ((He = Fe == null ? void 0 : Fe[0]) == null ? void 0 : He.balance) ?? "0", M = ((Ie = $ == null ? void 0 : $[0]) == null ? void 0 : Ie.balance) ?? "0", ne = x && G ? new B(G).shiftedBy(-x.decimals).toFixed(6, B.ROUND_DOWN) : "0", Re = k && M ? new B(M).shiftedBy(-k.decimals).toFixed(6, B.ROUND_DOWN) : "0";
   ie(() => {
     if (!l) return;
     _(!0), (async () => {
@@ -3731,7 +3731,7 @@ const So = () => {
           pe.get(`${l}/pools`).catch(() => ({ data: { pools: [] } }))
         ]), $e = (oe.data.pools || []).map((r) => r.lpToken).filter(Boolean);
         se(new Set($e));
-        const Ue = V.data.tokens || [], ye = ((z = Q.data) == null ? void 0 : z.hubTokens) || [], ve = ye.map((r) => r.identifier), a = [...Ue];
+        const je = V.data.tokens || [], ye = ((z = Q.data) == null ? void 0 : z.hubTokens) || [], ve = ye.map((r) => r.identifier), a = [...je];
         for (const r of ye) a.find((d) => d.identifier === r.identifier) || a.push({ ...r, poolCount: 0 });
         const t = a.map((r) => ({ identifier: r.identifier, ticker: r.ticker || r.identifier.split("-")[0], poolCount: r.poolCount ?? 0, decimals: r.decimals ?? 18, logoUrl: r.logoUrl ?? null }));
         m(t), y(t.filter((r) => ve.includes(r.identifier)));
@@ -3763,11 +3763,11 @@ const So = () => {
       else T(null);
     }).catch(console.error).finally(() => me(!1));
   }, [x, k]);
-  const je = (j) => {
+  const Me = (j) => {
     if (L(j), ae.current = "A", !A || !x || !k || !j) return;
     const z = A.tokenA === x.identifier, V = new B(z ? A.reserveA : A.reserveB), Q = new B(z ? A.reserveB : A.reserveA);
     V.isZero() || Q.isZero() || C(new B(j).shiftedBy(x.decimals).multipliedBy(Q).dividedBy(V).shiftedBy(-k.decimals).toFixed(6, B.ROUND_UP));
-  }, Re = (j) => {
+  }, Pe = (j) => {
     if (C(j), ae.current = "B", !A || !x || !k || !j) return;
     const z = A.tokenA === x.identifier, V = new B(z ? A.reserveA : A.reserveB), Q = new B(z ? A.reserveB : A.reserveA);
     V.isZero() || Q.isZero() || L(new B(j).shiftedBy(k.decimals).multipliedBy(V).dividedBy(Q).shiftedBy(-x.decimals).toFixed(6, B.ROUND_UP));
@@ -3779,24 +3779,24 @@ const So = () => {
     }
     const j = BigInt(new B(U).shiftedBy(x.decimals).toFixed(0)), z = BigInt(new B(ee).shiftedBy(k.decimals).toFixed(0)), V = A ? new B(A.reserveA) : new B(0), Q = A ? new B(A.reserveB) : new B(0);
     if (!(A && V.gt(0) && Q.gt(0))) {
-      P(Lo(j * z)), he(0n), ke(0n);
+      P(ko(j * z)), he(0n), ke(0n);
       return;
     }
-    const $e = A.tokenA === x.identifier, Ue = $e ? j : z, ye = $e ? z : j, ve = BigInt(V.toFixed(0)), a = BigInt(Q.toFixed(0)), t = BigInt(new B(K ?? "0").isZero() ? "1" : new B(K).toFixed(0)), r = ve > 0n ? Ue * t / ve : 0n, d = a > 0n ? ye * t / a : 0n;
+    const $e = A.tokenA === x.identifier, je = $e ? j : z, ye = $e ? z : j, ve = BigInt(V.toFixed(0)), a = BigInt(Q.toFixed(0)), t = BigInt(new B(K ?? "0").isZero() ? "1" : new B(K).toFixed(0)), r = ve > 0n ? je * t / ve : 0n, d = a > 0n ? ye * t / a : 0n;
     if (r <= d) {
       P(r);
-      const g = ve > 0n ? Ue * a / ve : 0n;
-      he(0n), ke($e ? ye - g : Ue - g);
+      const g = ve > 0n ? je * a / ve : 0n;
+      he(0n), ke($e ? ye - g : je - g);
     } else {
       P(d);
       const g = a > 0n ? ye * ve / a : 0n;
-      he($e ? Ue - g : ye - g), ke(0n);
+      he($e ? je - g : ye - g), ke(0n);
     }
   }, [U, ee, A, x, k, K]);
-  const Pe = async () => {
+  const De = async () => {
     if (!(!A || !x || !k || !i || !U || !ee))
       try {
-        const j = BigInt(new B(U).shiftedBy(x.decimals).toFixed(0)), z = BigInt(new B(ee).shiftedBy(k.decimals).toFixed(0)), V = new qe(i), Q = ["MultiESDTNFTTransfer", new qe(A.address).toHex(), "02", Ct(x.identifier), "00", ze(j), Ct(k.identifier), "00", ze(z), Ct("addLiquidity"), ze(0n), ze(0n)], oe = new tt({ value: 0n, data: new TextEncoder().encode(Q.join("@")), receiver: V, sender: V, gasLimit: 15000000n, gasPrice: BigInt(rt), chainID: s.chainId, version: 1 });
+        const j = BigInt(new B(U).shiftedBy(x.decimals).toFixed(0)), z = BigInt(new B(ee).shiftedBy(k.decimals).toFixed(0)), V = new Oe(i), Q = ["MultiESDTNFTTransfer", new Oe(A.address).toHex(), "02", Te(x.identifier), "00", Ke(j), Te(k.identifier), "00", Ke(z), Te("addLiquidity"), Ke(0n), Ke(0n)], oe = new tt({ value: 0n, data: new TextEncoder().encode(Q.join("@")), receiver: V, sender: V, gasLimit: 15000000n, gasPrice: BigInt(rt), chainID: s.chainId, version: 1 });
         await nt({ transactions: [oe], transactionsDisplayInfo: { processingMessage: n("add_processing"), errorMessage: n("add_error"), successMessage: n("add_success") } }), L(""), C("");
       } catch (j) {
         console.error(j);
@@ -3807,7 +3807,7 @@ const So = () => {
     {
       className: "border-2 border-cyan-500/20",
       title: /* @__PURE__ */ h("div", { className: "flex flex-col xs:flex-row items-start xs:items-center gap-3 w-full", children: /* @__PURE__ */ w("div", { className: "flex items-center gap-3", children: [
-        /* @__PURE__ */ h("button", { onClick: () => o(e.liquidity), className: "p-1.5 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition flex-shrink-0", children: /* @__PURE__ */ h(Tt, { className: "w-4 h-4 text-gray-600 dark:text-gray-300" }) }),
+        /* @__PURE__ */ h("button", { onClick: () => o(e.liquidity), className: "p-1.5 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition flex-shrink-0", children: /* @__PURE__ */ h(At, { className: "w-4 h-4 text-gray-600 dark:text-gray-300" }) }),
         /* @__PURE__ */ h("span", { className: "text-xl", children: "➕" }),
         /* @__PURE__ */ h("span", { className: "text-lg font-black tracking-tight whitespace-nowrap", children: n("add_card_title") })
       ] }) }),
@@ -3822,7 +3822,7 @@ const So = () => {
                 ": ",
                 /* @__PURE__ */ h("span", { className: "text-amber-500", children: ne })
               ] }),
-              x && G !== "0" && /* @__PURE__ */ h("button", { onClick: () => je(new B(G).shiftedBy(-x.decimals).toFixed(x.decimals, B.ROUND_DOWN)), className: "text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition", children: "MAX" })
+              x && G !== "0" && /* @__PURE__ */ h("button", { onClick: () => Me(new B(G).shiftedBy(-x.decimals).toFixed(x.decimals, B.ROUND_DOWN)), className: "text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition", children: "MAX" })
             ] })
           ] }),
           /* @__PURE__ */ w("div", { className: "flex items-center gap-3", children: [
@@ -3834,13 +3834,13 @@ const So = () => {
                 min: "0",
                 placeholder: "0.0",
                 value: U,
-                onChange: (j) => je(j.target.value),
+                onChange: (j) => Me(j.target.value),
                 className: `w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${we ? "border-red-400 focus:ring-red-400" : "border-gray-200 dark:border-[#444] focus:ring-amber-500"}`
               }
             )
           ] })
         ] }),
-        /* @__PURE__ */ h("div", { className: "flex justify-center -my-3 relative z-10", children: /* @__PURE__ */ h("div", { className: "rounded-full p-1.5 bg-[#ffffff] dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333]", children: /* @__PURE__ */ h(Br, { className: "w-4 h-4 text-amber-500" }) }) }),
+        /* @__PURE__ */ h("div", { className: "flex justify-center -my-3 relative z-10", children: /* @__PURE__ */ h("div", { className: "rounded-full p-1.5 bg-[#ffffff] dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333]", children: /* @__PURE__ */ h(Nr, { className: "w-4 h-4 text-amber-500" }) }) }),
         /* @__PURE__ */ w("div", { className: "rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4", children: [
           /* @__PURE__ */ w("div", { className: "flex items-center justify-between mb-3", children: [
             /* @__PURE__ */ h("p", { className: "text-[10px] font-semibold uppercase tracking-wider text-gray-400", children: n("add_token2") }),
@@ -3848,13 +3848,13 @@ const So = () => {
               /* @__PURE__ */ w("span", { className: "text-[10px] font-semibold uppercase tracking-wider text-gray-500", children: [
                 n("balance"),
                 ": ",
-                /* @__PURE__ */ h("span", { className: "text-amber-500", children: Fe })
+                /* @__PURE__ */ h("span", { className: "text-amber-500", children: Re })
               ] }),
-              k && M !== "0" && /* @__PURE__ */ h("button", { onClick: () => Re(new B(M).shiftedBy(-k.decimals).toFixed(k.decimals, B.ROUND_DOWN)), className: "text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition", children: "MAX" })
+              k && M !== "0" && /* @__PURE__ */ h("button", { onClick: () => Pe(new B(M).shiftedBy(-k.decimals).toFixed(k.decimals, B.ROUND_DOWN)), className: "text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition", children: "MAX" })
             ] })
           ] }),
           /* @__PURE__ */ w("div", { className: "flex items-center gap-3", children: [
-            /* @__PURE__ */ h(it, { value: k, onChange: R, tokens: Oe, exclude: x == null ? void 0 : x.identifier, loading: S || xe.length > 0 && J.length === 0 }),
+            /* @__PURE__ */ h(it, { value: k, onChange: R, tokens: Ue, exclude: x == null ? void 0 : x.identifier, loading: S || xe.length > 0 && J.length === 0 }),
             /* @__PURE__ */ h(
               "input",
               {
@@ -3862,7 +3862,7 @@ const So = () => {
                 min: "0",
                 placeholder: "0.0",
                 value: ee,
-                onChange: (j) => Re(j.target.value),
+                onChange: (j) => Pe(j.target.value),
                 className: `w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${Ne ? "border-red-400 focus:ring-red-400" : "border-gray-200 dark:border-[#444] focus:ring-amber-500"}`
               }
             )
@@ -3895,7 +3895,7 @@ const So = () => {
         /* @__PURE__ */ h(
           "button",
           {
-            onClick: Pe,
+            onClick: De,
             disabled: !A || !A.isActive || we || Ne || !U || !ee || W !== null && W < 1000n && !Ce,
             className: "dinoButton w-full !py-3 text-base mt-4 disabled:opacity-40 disabled:cursor-not-allowed",
             children: i ? A ? A.isActive ? we || Ne ? n("add_btn_insufficient") : !U || !ee ? n("add_btn_enter_amount") : W !== null && W < 1000n && !Ce ? n("add_btn_min") : n("add_btn_submit") : n("add_btn_inactive") : n("add_btn_no_pool") : n("add_btn_connect")
@@ -3904,8 +3904,8 @@ const So = () => {
       ] })
     }
   ) });
-}, Bo = (l) => {
-  const { network: e } = Je(), [n, i] = F({});
+}, vo = (l) => {
+  const { network: e } = Xe(), [n, i] = F({});
   return ie(() => {
     if (!l || l === "EGLD") return;
     const s = l === "EGLD" ? "EGLD-000000" : l, o = `esdt_${s}`, c = localStorage.getItem(o), p = Number(localStorage.getItem(`${o}_expire`));
@@ -3917,7 +3917,7 @@ const So = () => {
       i(f), localStorage.setItem(o, JSON.stringify(f)), localStorage.setItem(`${o}_expire`, String(Date.now() + 36e5));
     }).catch(() => i({}));
   }, [l, e.apiAddress]), n;
-}, $t = ({
+}, Et = ({
   amount: l,
   identifier: e,
   decimals: n,
@@ -3925,7 +3925,7 @@ const So = () => {
   showIdentifier: s = !0,
   nonce: o
 }) => {
-  const c = Bo(o && o > 0 ? "" : e), p = e === "EGLD" ? "EGLD" : (c == null ? void 0 : c.ticker) || e, f = n !== void 0 ? n : e === "EGLD" ? 18 : (c == null ? void 0 : c.decimals) || 0;
+  const c = vo(o && o > 0 ? "" : e), p = e === "EGLD" ? "EGLD" : (c == null ? void 0 : c.ticker) || e, f = n !== void 0 ? n : e === "EGLD" ? 18 : (c == null ? void 0 : c.decimals) || 0;
   if (l == null || isNaN(Number(l))) return /* @__PURE__ */ h(dt, { children: `0 ${p}` });
   const u = new B(l).div(new B(10).pow(f));
   let y;
@@ -3939,10 +3939,10 @@ const So = () => {
     }
     y = u.toNumber().toLocaleString(void 0, { minimumFractionDigits: S, maximumFractionDigits: S });
   }
-  return /* @__PURE__ */ h(dt, { children: `${y}${s ? " " + p : ""}${s && o && o > 0 ? `-${ze(BigInt(o))}` : ""}` });
-}, tr = (l) => Nt.from(l, "utf8").toString("hex"), Eo = () => {
+  return /* @__PURE__ */ h(dt, { children: `${y}${s ? " " + p : ""}${s && o && o > 0 ? `-${Ke(BigInt(o))}` : ""}` });
+}, Lo = () => {
   var K;
-  const { apiUrl: l, routes: e } = We(), { t: n } = Ye(), { address: i } = pt(), { network: s } = Je(), o = st(), [c, p] = F([]), [f, m] = F({}), [u, y] = F(""), [S, _] = F(!0), [x, v] = F(null), [k, E] = F(""), [D] = vt();
+  const { apiUrl: l, routes: e } = Ge(), { t: n } = Je(), { address: i } = pt(), { network: s } = Xe(), o = st(), [c, p] = F([]), [f, m] = F({}), [u, y] = F(""), [S, _] = F(!0), [x, v] = F(null), [k, E] = F(""), [D] = kt();
   ie(() => {
     l && pe.get(`${l}/tokens`).then((T) => {
       const W = {};
@@ -3969,18 +3969,18 @@ const So = () => {
       return v(((W = T.data) == null ? void 0 : W.minted) ?? null);
     }).catch(() => v(null));
   }, [R == null ? void 0 : R.lpToken, s == null ? void 0 : s.apiAddress]);
-  const U = Ke((R == null ? void 0 : R.lpToken) ?? void 0, { enabled: !!R && !!i }), L = ((K = U == null ? void 0 : U[0]) == null ? void 0 : K.balance) ?? "0";
+  const U = Ye((R == null ? void 0 : R.lpToken) ?? void 0, { enabled: !!R && !!i }), L = ((K = U == null ? void 0 : U[0]) == null ? void 0 : K.balance) ?? "0";
   new B(L).shiftedBy(-18).toFixed(6, B.ROUND_DOWN);
   const ee = () => {
     !L || L === "0" || E(new B(L).shiftedBy(-18).toFixed(18, B.ROUND_DOWN).replace(/\.?0+$/, ""));
   }, C = x ?? (R == null ? void 0 : R.lpSupply) ?? "0", ae = new B(C).isZero() ? new B(1) : new B(C), A = R && k ? BigInt(new B(k).shiftedBy(18).multipliedBy(R.reserveA).dividedBy(ae).toFixed(0, B.ROUND_DOWN)) : 0n, O = R && k ? BigInt(new B(k).shiftedBy(18).multipliedBy(R.reserveB).dividedBy(ae).toFixed(0, B.ROUND_DOWN)) : 0n, ge = async () => {
     if (!(!R || !i || !k))
       try {
-        const T = BigInt(new B(k).shiftedBy(18).toFixed(0)), W = ["ESDTTransfer", tr(R.lpToken), ze(T), tr("removeLiquidity"), ze(0n), ze(0n)], P = new tt({
+        const T = BigInt(new B(k).shiftedBy(18).toFixed(0)), W = ["ESDTTransfer", Te(R.lpToken), Ke(T), Te("removeLiquidity"), Ke(0n), Ke(0n)], P = new tt({
           value: 0n,
           data: new TextEncoder().encode(W.join("@")),
-          receiver: new qe(R.address),
-          sender: new qe(i),
+          receiver: new Oe(R.address),
+          sender: new Oe(i),
           gasLimit: 12000000n,
           gasPrice: BigInt(rt),
           chainID: s.chainId,
@@ -3996,7 +3996,7 @@ const So = () => {
     {
       className: "border-2 border-cyan-500/20",
       title: /* @__PURE__ */ w("div", { className: "flex items-center gap-3 w-full", children: [
-        /* @__PURE__ */ h("button", { onClick: () => o(e.liquidity), className: "p-1.5 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition flex-shrink-0", children: /* @__PURE__ */ h(Tt, { className: "w-4 h-4 text-gray-600 dark:text-gray-300" }) }),
+        /* @__PURE__ */ h("button", { onClick: () => o(e.liquidity), className: "p-1.5 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition flex-shrink-0", children: /* @__PURE__ */ h(At, { className: "w-4 h-4 text-gray-600 dark:text-gray-300" }) }),
         /* @__PURE__ */ h("span", { className: "text-xl", children: "🔓" }),
         /* @__PURE__ */ h("span", { className: "text-lg font-black tracking-tight", children: "Retirer Liquidité" })
       ] }),
@@ -4030,7 +4030,7 @@ const So = () => {
             /* @__PURE__ */ h("p", { className: "text-[10px] font-semibold uppercase tracking-wider text-gray-400", children: "Montant LP à retirer" }),
             /* @__PURE__ */ w("button", { onClick: ee, className: "text-[10px] font-semibold uppercase tracking-wider text-amber-500 hover:text-amber-600 flex items-center gap-1", children: [
               "MAX (",
-              /* @__PURE__ */ h($t, { amount: new B(L.toString()).toFixed(0, B.ROUND_DOWN), identifier: R.lpToken }),
+              /* @__PURE__ */ h(Et, { amount: new B(L.toString()).toFixed(0, B.ROUND_DOWN), identifier: R.lpToken }),
               ")"
             ] })
           ] }),
@@ -4048,11 +4048,11 @@ const So = () => {
           me && /* @__PURE__ */ h("p", { className: "mt-1 text-xs text-red-500", children: "Solde LP insuffisant" })
         ] }),
         R && k && A > 0n && O > 0n && !me && /* @__PURE__ */ w(dt, { children: [
-          /* @__PURE__ */ h("div", { className: "flex justify-center -my-2 relative z-10", children: /* @__PURE__ */ h("div", { className: "rounded-full p-1.5 bg-[#ffffff] dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333]", children: /* @__PURE__ */ h(Er, { className: "w-4 h-4 text-amber-500" }) }) }),
+          /* @__PURE__ */ h("div", { className: "flex justify-center -my-2 relative z-10", children: /* @__PURE__ */ h("div", { className: "rounded-full p-1.5 bg-[#ffffff] dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333]", children: /* @__PURE__ */ h(vr, { className: "w-4 h-4 text-amber-500" }) }) }),
           /* @__PURE__ */ w("div", { className: "rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] p-4 space-y-3 shadow-sm", children: [
             /* @__PURE__ */ h("p", { className: "text-[10px] font-semibold uppercase tracking-wider text-gray-400 text-center", children: "Vous recevrez (estimation)" }),
-            /* @__PURE__ */ h("div", { className: "text-sm font-bold text-gray-900 dark:text-white", children: /* @__PURE__ */ h($t, { amount: new B(A.toString()).toFixed(0, B.ROUND_DOWN), identifier: R.tokenA }) }),
-            /* @__PURE__ */ h("div", { className: "text-sm font-bold text-gray-900 dark:text-white", children: /* @__PURE__ */ h($t, { amount: new B(O.toString()).toFixed(0, B.ROUND_DOWN), identifier: R.tokenB }) })
+            /* @__PURE__ */ h("div", { className: "text-sm font-bold text-gray-900 dark:text-white", children: /* @__PURE__ */ h(Et, { amount: new B(A.toString()).toFixed(0, B.ROUND_DOWN), identifier: R.tokenA }) }),
+            /* @__PURE__ */ h("div", { className: "text-sm font-bold text-gray-900 dark:text-white", children: /* @__PURE__ */ h(Et, { amount: new B(O.toString()).toFixed(0, B.ROUND_DOWN), identifier: R.tokenB }) })
           ] })
         ] }),
         /* @__PURE__ */ h(
@@ -4067,10 +4067,10 @@ const So = () => {
       ] })
     }
   ) });
-}, Qe = (l) => Nt.from(l, "utf8").toString("hex"), Co = () => {
-  const { apiUrl: l, factoryAddress: e, routes: n } = We(), { t: i } = Ye("swap");
+}, So = () => {
+  const { apiUrl: l, factoryAddress: e, routes: n } = Ge(), { t: i } = Je("swap");
   ht("swap");
-  const { address: s } = pt(), { network: o } = Je(), c = st(), [p, f] = vt(), [m, u] = F([]), [y, S] = F(!0), [_, x] = F(/* @__PURE__ */ new Set()), [v, k] = F(null), [E, D] = F(null), R = ($) => {
+  const { address: s } = pt(), { network: o } = Xe(), c = st(), [p, f] = kt(), [m, u] = F([]), [y, S] = F(!0), [_, x] = F(/* @__PURE__ */ new Set()), [v, k] = F(null), [E, D] = F(null), R = ($) => {
     k($), f((G) => {
       const M = new URLSearchParams(G);
       return $ ? M.set("tokenX", $.identifier) : M.delete("tokenX"), M;
@@ -4080,7 +4080,7 @@ const So = () => {
       const M = new URLSearchParams(G);
       return $ ? M.set("tokenY", $.identifier) : M.delete("tokenY"), M;
     }, { replace: !0 });
-  }, [L, ee] = F(""), [C, ae] = F(""), [A, O] = F(null), [ge, me] = F(!1), [K, T] = F(!1), W = Ke(void 0, { enabled: !!s }), [P, Y] = F([]);
+  }, [L, ee] = F(""), [C, ae] = F(""), [A, O] = F(null), [ge, me] = F(!1), [K, T] = F(!1), W = Ye(void 0, { enabled: !!s }), [P, Y] = F([]);
   ie(() => {
     if (!W || W.length === 0) {
       Y([]);
@@ -4111,10 +4111,10 @@ const So = () => {
     }
   }, [y, m, P]), ie(() => {
     if (!v || !E) return;
-    const $ = (we) => we.split("-")[0].toUpperCase().replace(/[^A-Z0-9]/g, ""), G = $(v.ticker), M = $(E.ticker), ne = (we, Ne, Ce) => we.length + Ne.length <= Ce ? [we, Ne] : [we.slice(0, Ce - Math.floor(Ce / 2)), Ne.slice(0, Math.floor(Ce / 2))], [Fe, je] = ne(G, M, 18);
-    ee(Fe + je + "LP");
-    const [Re, Pe] = ne(G, M, 10);
-    ae(Re + Pe);
+    const $ = (we) => we.split("-")[0].toUpperCase().replace(/[^A-Z0-9]/g, ""), G = $(v.ticker), M = $(E.ticker), ne = (we, Ne, Ce) => we.length + Ne.length <= Ce ? [we, Ne] : [we.slice(0, Ce - Math.floor(Ce / 2)), Ne.slice(0, Math.floor(Ce / 2))], [Re, Me] = ne(G, M, 18);
+    ee(Re + Me + "LP");
+    const [Pe, De] = ne(G, M, 10);
+    ae(Pe + De);
   }, [v, E]);
   const he = async () => {
     var $, G;
@@ -4139,11 +4139,11 @@ const So = () => {
     }, 2e3);
     return () => clearInterval($);
   }, [Ee, v, E]);
-  const te = L.length >= 3 && L.length <= 20 && /^[a-zA-Z0-9]+$/.test(L), se = C.length >= 3 && C.length <= 10 && /^[A-Z0-9]+$/.test(C), xe = !!s && !!v && !!E && v.identifier !== E.identifier && te && se && !A, J = !!s && !!A && !A.isActive, re = ge || K, Oe = async () => {
+  const te = L.length >= 3 && L.length <= 20 && /^[a-zA-Z0-9]+$/.test(L), se = C.length >= 3 && C.length <= 10 && /^[A-Z0-9]+$/.test(C), xe = !!s && !!v && !!E && v.identifier !== E.identifier && te && se && !A, J = !!s && !!A && !A.isActive, re = ge || K, Ue = async () => {
     if (!(!xe || !v || !E)) {
       me(!0);
       try {
-        const $ = ["createPair", Qe(v.identifier), Qe(E.identifier), Qe(L), Qe(C)], G = new tt({ value: 0n, data: new TextEncoder().encode($.join("@")), receiver: new qe(e), sender: new qe(s), gasLimit: 300000000n, gasPrice: BigInt(rt), chainID: o.chainId, version: 1 });
+        const $ = ["createPair", Te(v.identifier), Te(E.identifier), Te(L), Te(C)], G = new tt({ value: 0n, data: new TextEncoder().encode($.join("@")), receiver: new Oe(e), sender: new Oe(s), gasLimit: 300000000n, gasPrice: BigInt(rt), chainID: o.chainId, version: 1 });
         await nt({ transactions: [G], transactionsDisplayInfo: { processingMessage: i("create_processing_pair"), errorMessage: i("create_error_pair"), successMessage: i("create_success_pair") } }), ke(!0);
       } catch ($) {
         console.error($);
@@ -4151,11 +4151,11 @@ const So = () => {
         me(!1);
       }
     }
-  }, Te = async () => {
+  }, Fe = async () => {
     if (!(!J || !v || !E)) {
       T(!0);
       try {
-        const $ = ["issueLpToken", Qe(v.identifier), Qe(E.identifier)], G = new tt({ value: 50000000000000000n, data: new TextEncoder().encode($.join("@")), receiver: new qe(e), sender: new qe(s), gasLimit: 150000000n, gasPrice: BigInt(rt), chainID: o.chainId, version: 1 });
+        const $ = ["issueLpToken", Te(v.identifier), Te(E.identifier)], G = new tt({ value: 50000000000000000n, data: new TextEncoder().encode($.join("@")), receiver: new Oe(e), sender: new Oe(s), gasLimit: 150000000n, gasPrice: BigInt(rt), chainID: o.chainId, version: 1 });
         await nt({ transactions: [G], transactionsDisplayInfo: { processingMessage: i("create_processing_lp"), errorMessage: i("create_error_lp"), successMessage: i("create_success_lp") } });
       } catch ($) {
         console.error($);
@@ -4166,7 +4166,7 @@ const So = () => {
   };
   return /* @__PURE__ */ w("div", { className: "mx-auto max-w-lg px-4 py-8", children: [
     /* @__PURE__ */ w("div", { className: "flex items-center gap-3 mb-6", children: [
-      /* @__PURE__ */ h("button", { onClick: () => c(n.liquidity), className: "p-2 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition", children: /* @__PURE__ */ h(Tt, { className: "w-5 h-5 text-gray-600 dark:text-gray-300" }) }),
+      /* @__PURE__ */ h("button", { onClick: () => c(n.liquidity), className: "p-2 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition", children: /* @__PURE__ */ h(At, { className: "w-5 h-5 text-gray-600 dark:text-gray-300" }) }),
       /* @__PURE__ */ w("div", { children: [
         /* @__PURE__ */ h("h1", { className: "text-xl font-black uppercase tracking-tight text-gray-900 dark:text-white", children: i("create_title") }),
         /* @__PURE__ */ h("p", { className: "text-xs text-gray-500 dark:text-gray-400", children: i("create_subtitle") })
@@ -4212,28 +4212,28 @@ const So = () => {
         ] })
       ] }),
       A ? A.isActive ? /* @__PURE__ */ w("div", { className: "rounded-xl border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800 p-6 mt-4 text-center", children: [
-        /* @__PURE__ */ h(Cr, { className: "w-12 h-12 text-green-500 mx-auto mb-3" }),
+        /* @__PURE__ */ h(Lr, { className: "w-12 h-12 text-green-500 mx-auto mb-3" }),
         /* @__PURE__ */ h("p", { className: "text-base font-bold text-green-700 dark:text-green-400 mb-2", children: i("create_pool_active") }),
         /* @__PURE__ */ h("p", { className: "text-sm text-green-600/80 dark:text-green-400/80 mb-4", children: i("create_pool_ready") }),
         /* @__PURE__ */ h("button", { onClick: () => c(`${n.addLiquidity}?tokenA=${v == null ? void 0 : v.identifier}&tokenB=${E == null ? void 0 : E.identifier}`), className: "w-full px-4 py-3 bg-green-500 text-white rounded-xl text-sm font-bold hover:bg-green-600 transition shadow-sm", children: i("create_add_liquidity") })
       ] }) : /* @__PURE__ */ w("div", { className: "rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-4 mt-4 text-center", children: [
         /* @__PURE__ */ h("p", { className: "text-sm font-semibold text-amber-600 dark:text-amber-400 mb-3", children: i("create_pair_done") }),
         /* @__PURE__ */ h("p", { className: "text-xs text-amber-600/80 dark:text-amber-400/80 mb-4 text-left", children: i("create_pair_desc") }),
-        /* @__PURE__ */ h("button", { onClick: Te, className: "w-full px-4 py-3 bg-amber-500 text-white rounded-xl text-sm font-bold hover:bg-amber-600 transition shadow-sm", children: i(K ? "create_tx_pending" : "create_step2") }),
+        /* @__PURE__ */ h("button", { onClick: Fe, className: "w-full px-4 py-3 bg-amber-500 text-white rounded-xl text-sm font-bold hover:bg-amber-600 transition shadow-sm", children: i(K ? "create_tx_pending" : "create_step2") }),
         K && /* @__PURE__ */ h("p", { className: "text-center text-xs text-amber-600 dark:text-amber-400 mt-2 animate-pulse", children: i("create_tx_waiting") })
       ] }) : /* @__PURE__ */ w(dt, { children: [
-        /* @__PURE__ */ h("button", { onClick: Oe, disabled: !xe || ge, className: "dinoButton w-full !py-3 text-base mt-4 disabled:opacity-40 disabled:cursor-not-allowed", children: i(ge ? "create_tx_pending" : "create_step1") }),
+        /* @__PURE__ */ h("button", { onClick: Ue, disabled: !xe || ge, className: "dinoButton w-full !py-3 text-base mt-4 disabled:opacity-40 disabled:cursor-not-allowed", children: i(ge ? "create_tx_pending" : "create_step1") }),
         ge && /* @__PURE__ */ h("p", { className: "text-center text-xs text-amber-600 dark:text-amber-400 mt-2 animate-pulse", children: i("create_tx_waiting") })
       ] })
     ] })
   ] });
 };
-function rr(l, e) {
+function Zt(l, e) {
   const n = new B(l).shiftedBy(-e);
   return n.isZero() ? "0" : n.gte(1e6) ? n.toFormat(0) + "" : n.gte(1e3) ? n.toFormat(2) : n.gte(1) ? n.toFormat(4) : n.toFormat(6);
 }
-const $o = () => {
-  const { apiUrl: l, routes: e } = We(), { t: n } = Ye("swap");
+const Bo = () => {
+  const { apiUrl: l, routes: e } = Ge(), { t: n } = Je("swap");
   ht("swap");
   const i = st(), [s, o] = Be.useState([]), [c, p] = Be.useState({}), [f, m] = Be.useState(!0), [u, y] = Be.useState("DinoVox");
   Be.useEffect(() => {
@@ -4298,7 +4298,7 @@ const $o = () => {
         )) }),
         /* @__PURE__ */ w("div", { className: "space-y-3 mt-4", children: [
           f ? /* @__PURE__ */ h("div", { className: "flex justify-center py-10", children: /* @__PURE__ */ h("div", { className: "w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" }) }) : s.length === 0 ? /* @__PURE__ */ h("p", { className: "text-center text-sm text-gray-500 dark:text-gray-400 py-8", children: n("pools_empty") }) : s.map((x) => {
-            const v = S(x.tokenA), k = S(x.tokenB), E = _(x.tokenA), D = _(x.tokenB), R = rr(x.reserveA, E), U = rr(x.reserveB, D);
+            const v = S(x.tokenA), k = S(x.tokenB), E = _(x.tokenA), D = _(x.tokenB), R = Zt(x.reserveA, E), U = Zt(x.reserveB, D);
             return /* @__PURE__ */ w("div", { className: "rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4", children: [
               /* @__PURE__ */ w("div", { className: "flex items-center justify-between mb-3", children: [
                 /* @__PURE__ */ w("div", { className: "flex items-center gap-2", children: [
@@ -4366,23 +4366,23 @@ const $o = () => {
   removeLiquidity: "#remove-liquidity",
   createPool: "#create-pool",
   pools: "#pools"
-}, Ao = Object.fromEntries(
+}, Eo = Object.fromEntries(
   Object.entries(xt).map(([l, e]) => [e, l])
 );
-function Io(l, e) {
+function Co(l, e) {
   const n = Object.entries(e);
   n.sort((i, s) => s[1].length - i[1].length);
   for (const [i, s] of n)
     if (l === s) return i;
   return "swap";
 }
-function nr(l) {
-  return Ao[l] ?? null;
+function Qt(l) {
+  return Eo[l] ?? null;
 }
-const Yo = ({
+const Ho = ({
   initialView: l = "swap"
 }) => {
-  const { routes: e, language: n, theme: i } = We(), [s, o] = F(
+  const { routes: e, language: n, theme: i } = Ge(), [s, o] = F(
     () => typeof document < "u" && document.documentElement.classList.contains("dark")
   );
   ie(() => {
@@ -4398,11 +4398,11 @@ const Yo = ({
     ot.language !== _ && ot.isInitialized && ot.changeLanguage(_);
   }, [n]);
   const [{ view: c, params: p }, f] = F(() => ({
-    view: (typeof window < "u" ? nr(window.location.hash) : null) ?? l,
+    view: (typeof window < "u" ? Qt(window.location.hash) : null) ?? l,
     params: new URLSearchParams(window.location.search)
-  })), m = At(
+  })), m = Ct(
     (_) => {
-      const [x, v] = _.split("?"), k = Io(x, e), E = xt[k], D = new URLSearchParams(v ?? ""), R = D.toString() ? "?" + D.toString() : "";
+      const [x, v] = _.split("?"), k = Co(x, e), E = xt[k], D = new URLSearchParams(v ?? ""), R = D.toString() ? "?" + D.toString() : "";
       window.history.pushState(
         null,
         "",
@@ -4413,7 +4413,7 @@ const Yo = ({
       });
     },
     [e]
-  ), u = At(
+  ), u = Ct(
     (_, x) => {
       f((v) => {
         const k = _(v.params), E = xt[v.view], D = window.location.pathname + "?" + k.toString() + E;
@@ -4424,7 +4424,7 @@ const Yo = ({
   );
   ie(() => {
     const _ = () => {
-      const x = nr(window.location.hash);
+      const x = Qt(window.location.hash);
       x && f((v) => ({
         ...v,
         view: x,
@@ -4439,36 +4439,36 @@ const Yo = ({
   const y = () => {
     switch (c) {
       case "liquidity":
-        return /* @__PURE__ */ h(vo, {});
+        return /* @__PURE__ */ h(_o, {});
       case "addLiquidity":
-        return /* @__PURE__ */ h(So, {});
-      case "removeLiquidity":
-        return /* @__PURE__ */ h(Eo, {});
-      case "createPool":
-        return /* @__PURE__ */ h(Co, {});
-      case "pools":
-        return /* @__PURE__ */ h($o, {});
-      default:
         return /* @__PURE__ */ h(No, {});
+      case "removeLiquidity":
+        return /* @__PURE__ */ h(Lo, {});
+      case "createPool":
+        return /* @__PURE__ */ h(So, {});
+      case "pools":
+        return /* @__PURE__ */ h(Bo, {});
+      default:
+        return /* @__PURE__ */ h(wo, {});
     }
   }, S = i === "dark" ? "dark" : i === "light" ? "light" : i === "mid" || s ? "dark" : "";
-  return /* @__PURE__ */ h(vr, { i18n: ot, children: /* @__PURE__ */ h(dr.Provider, { value: { params: p, navigate: m, setParams: u }, children: /* @__PURE__ */ h("div", { className: S || void 0, children: y() }) }) });
+  return /* @__PURE__ */ h(wr, { i18n: ot, children: /* @__PURE__ */ h(ar.Provider, { value: { params: p, navigate: m, setParams: u }, children: /* @__PURE__ */ h("div", { className: S || void 0, children: y() }) }) });
 };
 export {
-  So as AddLiquidity,
+  No as AddLiquidity,
   gt as Card,
-  Co as CreatePool,
-  $t as FormatAmount,
-  vo as Liquidity,
-  $o as Pools,
-  Eo as RemoveLiquidity,
-  No as Swap,
-  zo as SwapConfigProvider,
-  Yo as SwapWidget,
+  So as CreatePool,
+  Et as FormatAmount,
+  _o as Liquidity,
+  Bo as Pools,
+  Lo as RemoveLiquidity,
+  wo as Swap,
+  Wo as SwapConfigProvider,
+  Ho as SwapWidget,
   it as TokenSelect,
-  ze as bigToHex,
+  Ke as bigToHex,
   nt as signAndSendTransactions,
-  Ke as useGetUserESDT,
-  We as useSwapConfig
+  Ye as useGetUserESDT,
+  Ge as useSwapConfig
 };
 //# sourceMappingURL=mx-swap-widget.es.js.map

@@ -9,25 +9,7 @@ import { useGetUserESDT } from '../hooks/useGetUserEsdt';
 import axios from 'axios';
 import { useSwapConfig } from '../context/SwapConfigContext';
 import BigNumber from 'bignumber.js';
-
-interface PoolInfo {
-  address: string;
-  tokenA: string;
-  tokenB: string;
-  lpToken: string;
-  reserveA: string;
-  reserveB: string;
-  lpSupply: string;
-  isActive: boolean;
-}
-
-interface UserPosition {
-  pool: PoolInfo;
-  balance: string;
-  lpTotalSupply: string;
-  decimalsA: number;
-  decimalsB: number;
-}
+import type { LiquidityPool, UserPosition } from '../types';
 
 export const Liquidity = () => {
   const { apiUrl, routes } = useSwapConfig();
@@ -37,7 +19,7 @@ export const Liquidity = () => {
   const { address } = useGetAccount();
   const { network } = useGetNetworkConfig();
 
-  const [pools, setPools] = React.useState<PoolInfo[]>([]);
+  const [pools, setPools] = React.useState<LiquidityPool[]>([]);
   const [poolsLoading, setPoolsLoading] = React.useState(true);
   const [userPositions, setUserPositions] = React.useState<UserPosition[]>([]);
 

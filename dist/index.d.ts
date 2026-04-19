@@ -58,6 +58,14 @@ declare interface FormatAmountProps {
 
 export declare const Liquidity: () => JSX_2.Element;
 
+/** Pool with liquidity data — fields required for add/remove liquidity operations */
+declare interface LiquidityPool extends Required<Pick<PoolInfo, 'lpToken' | 'reserveA' | 'reserveB' | 'lpSupply'>> {
+    address: string;
+    tokenA: string;
+    tokenB: string;
+    isActive: boolean;
+}
+
 /** Full pool info returned by the DEX API */
 export declare interface PoolInfo {
     address: string;
@@ -210,7 +218,7 @@ export declare const useGetUserESDT: (identifier?: string, options?: {
 
 /** User's LP position for a specific pool */
 export declare interface UserPosition {
-    pool: PoolInfo;
+    pool: LiquidityPool;
     balance: string;
     lpTotalSupply: string;
     decimalsA: number;
