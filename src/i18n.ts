@@ -1,9 +1,9 @@
-import { createInstance } from 'i18next';
+import { createInstance, type i18n } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from './translations/en.json';
 import fr from './translations/fr.json';
 
-const widgetI18n = createInstance();
+const widgetI18n: i18n = createInstance();
 
 widgetI18n.use(initReactI18next).init({
   resources: {
