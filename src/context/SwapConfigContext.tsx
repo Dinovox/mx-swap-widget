@@ -31,6 +31,12 @@ export interface SwapConfig {
    */
   navigate?: (path: string) => void;
   /**
+   * Called when the user clicks "Connect wallet" inside the widget.
+   * Pass your app's connect/unlock handler here (e.g. navigate to the unlock route).
+   * When omitted the button is disabled for unauthenticated users.
+   */
+  onConnect?: () => void;
+  /**
    * Language code for widget UI (e.g. 'en', 'fr').
    * Defaults to navigator.language. Pass your app's current language here
    * to keep the widget in sync without requiring initReactI18next.

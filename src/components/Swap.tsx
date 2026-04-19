@@ -66,6 +66,7 @@ export const Swap = () => {
     wegldIdentifier: wegld_identifier,
     routes,
     theme,
+    onConnect,
   } = useSwapConfig();
   const p = getThemePalette(theme);
   const { t } = useTranslation("swap");
@@ -1099,8 +1100,8 @@ export const Swap = () => {
 
           {/* ---- Swap button ---- */}
           <button
-            onClick={isWrapUnwrap ? handleWrapUnwrap : handleSwap}
-            disabled={!canSwap}
+            onClick={!address ? onConnect : isWrapUnwrap ? handleWrapUnwrap : handleSwap}
+            disabled={!address ? !onConnect : !canSwap}
             style={theme === 'mid' ? { background: 'linear-gradient(135deg, #BD37EC, #1F67FF)', border: 'none' } : {}}
             className={`dinoButton orange w-full !py-3 text-base ${
               !tokenIn || !tokenOut

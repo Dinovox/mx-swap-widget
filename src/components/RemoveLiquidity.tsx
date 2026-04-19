@@ -19,7 +19,7 @@ import BigNumber from 'bignumber.js';
 import type { DexToken, LiquidityPool } from '../types';
 
 export const RemoveLiquidity = () => {
-  const { apiUrl, routes } = useSwapConfig();
+  const { apiUrl, routes, onConnect } = useSwapConfig();
   const { t } = useTranslation();
   const { address } = useGetAccount();
   const { network } = useGetNetworkConfig();
@@ -156,7 +156,7 @@ export const RemoveLiquidity = () => {
             </>
           )}
 
-          <button onClick={handleTx} disabled={!selectedPool || !address || !lpAmountInput || lpErr}
+          <button onClick={!address ? onConnect : handleTx} disabled={!address ? !onConnect : !selectedPool || !lpAmountInput || lpErr}
             className="dinoButton w-full !py-3 text-base mt-4 disabled:opacity-40 disabled:cursor-not-allowed">
             {!address ? 'Connectez votre wallet' : !selectedPool ? 'Sélectionnez une pool' : !lpAmountInput ? 'Renseignez un montant' : lpErr ? 'Solde insuffisant' : 'Retirer Liquidité'}
           </button>

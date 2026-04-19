@@ -27,7 +27,7 @@ function intSqrt(n: bigint): bigint {
 }
 
 export const AddLiquidity = () => {
-  const { apiUrl, routes } = useSwapConfig();
+  const { apiUrl, routes, onConnect } = useSwapConfig();
   const { t } = useTranslation('swap');
   useLoadTranslations('swap');
   const { address } = useGetAccount();
@@ -259,7 +259,7 @@ export const AddLiquidity = () => {
             </div>
           )}
 
-          <button onClick={handleTx} disabled={!pool || !pool.isActive || aErr || bErr || !amountA || !amountB || (lpPreview !== null && lpPreview < 1000n && !poolHasLiquidity)}
+          <button onClick={!address ? onConnect : handleTx} disabled={!address ? !onConnect : !pool || !pool.isActive || aErr || bErr || !amountA || !amountB || (lpPreview !== null && lpPreview < 1000n && !poolHasLiquidity)}
             className='dinoButton w-full !py-3 text-base mt-4 disabled:opacity-40 disabled:cursor-not-allowed'>
             {!address ? t('add_btn_connect') : !pool ? t('add_btn_no_pool') : !pool.isActive ? t('add_btn_inactive') : aErr || bErr ? t('add_btn_insufficient') : !amountA || !amountB ? t('add_btn_enter_amount') : (lpPreview !== null && lpPreview < 1000n && !poolHasLiquidity) ? t('add_btn_min') : t('add_btn_submit')}
           </button>

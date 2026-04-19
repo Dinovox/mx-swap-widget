@@ -106,8 +106,8 @@ export function TokenSelect<T extends TokenSelectToken>({
 
       {open && (
         <div
-          style={p.dropdown}
-          className="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 dark:border-[#444] bg-[#ffffff] dark:bg-[#2a2a2a] shadow-lg overflow-hidden"
+          style={{ backgroundColor: '#ffffff', ...p.dropdown }}
+          className="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 dark:border-[#444] dark:bg-[#2a2a2a] shadow-lg overflow-hidden"
         >
           <div className="px-2 pt-2 pb-1">
             <input
