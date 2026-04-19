@@ -3,6 +3,18 @@ import { useTranslation } from 'react-i18next';
 import { useSwapConfig } from '../context/SwapConfigContext';
 import { getThemePalette } from './themePalette';
 
+function useIsDark(ref: React.RefObject<HTMLElement | null>) {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDark(!!ref.current?.closest('.dark'));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'], subtree: false });
+    return () => observer.disconnect();
+  }, [ref]);
+  return isDark;
+}
+
 export interface TokenSelectToken {
   identifier: string;
   ticker: string;
@@ -52,6 +64,8 @@ export function TokenSelect<T extends TokenSelectToken>({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
+  const isDark = useIsDark(ref);
+  const dropdownBg = p.dropdown.backgroundColor ?? (isDark ? '#2a2a2a' : '#ffffff');
   const searchRef = useRef<HTMLInputElement>(null);
 
   const filtered = tokens
@@ -106,8 +120,8 @@ export function TokenSelect<T extends TokenSelectToken>({
 
       {open && (
         <div
-          style={{ backgroundColor: '#ffffff', ...p.dropdown }}
-          className="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 dark:border-[#444] dark:bg-[#2a2a2a] shadow-lg overflow-hidden"
+          style={{ backgroundColor: dropdownBg, ...p.dropdown }}
+          className="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 dark:border-[#444] shadow-lg overflow-hidden"
         >
           <div className="px-2 pt-2 pb-1">
             <input
