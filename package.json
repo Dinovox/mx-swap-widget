@@ -1,6 +1,6 @@
 {
   "name": "@dinovox/mx-swap-widget",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "DinoVox swap & liquidity widget for MultiversX dApps",
   "keywords": [
     "multiversx",
