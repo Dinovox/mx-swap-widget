@@ -6,7 +6,6 @@ import { useGoTo } from "../context/SwapViewContext";
 import useLoadTranslations from "../hooks/useLoadTranslations";
 import { ArrowUpDown } from "lucide-react";
 import { useGetAccount } from "@multiversx/sdk-dapp/out/react/account/useGetAccount";
-import { useGetAccountInfo } from "@multiversx/sdk-dapp/out/react/account/useGetAccountInfo";
 import { useGetNetworkConfig } from "@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig";
 import { Address, Transaction } from "@multiversx/sdk-core";
 import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
@@ -75,8 +74,7 @@ export const Swap = () => {
   const p = getThemePalette(theme);
   const { t } = useTranslation("swap");
   useLoadTranslations("swap");
-  const { address } = useGetAccount();
-  const { account: accountInfo } = useGetAccountInfo();
+  const { address, balance: egldBalance } = useGetAccount();
   const { network } = useGetNetworkConfig();
   const [searchParams, setSearchParams] = useWidgetSearchParams();
 
@@ -138,7 +136,7 @@ export const Swap = () => {
   }, [tokenInBalances]);
 
   const tokenInBalanceRaw: string | null = isEgldIn
-    ? (accountInfo?.balance ?? null)
+    ? (egldBalance ?? null)
     : (tokenInBalances?.[0]?.balance ?? null);
 
   const tokenInBalanceDisplay =
@@ -175,7 +173,7 @@ export const Swap = () => {
     { enabled: !!tokenOut && !isEgldOut_balance && !!address },
   );
   const tokenOutBalanceRaw: string | null = isEgldOut_balance
-    ? (accountInfo?.balance ?? null)
+    ? (egldBalance ?? null)
     : (tokenOutBalances?.[0]?.balance ?? null);
   const tokenOutBalanceDisplay =
     tokenOutBalanceRaw && tokenOut
@@ -222,15 +220,19 @@ export const Swap = () => {
         .catch(() => ({ data: { hubTokens: [] } })),
     ])
       .then(([tokensRes, hubRes]) => {
-        const whiteSet = whitelist && whitelist.length > 0 ? new Set(whitelist) : null;
-        const blackSet = blacklist && blacklist.length > 0 ? new Set(blacklist) : null;
+        const whiteSet =
+          whitelist && whitelist.length > 0 ? new Set(whitelist) : null;
+        const blackSet =
+          blacklist && blacklist.length > 0 ? new Set(blacklist) : null;
         const list = (tokensRes.data.tokens || [])
           .filter((t) => t.identifier)
           .filter((t) => !whiteSet || whiteSet.has(t.identifier))
           .filter((t) => !blackSet || !blackSet.has(t.identifier));
         const wegld = list.find((t) => t.ticker === "WEGLD");
         const egld = { ...EGLD_TOKEN, logoUrl: wegld?.logoUrl ?? null };
-        const includeEgld = (!whiteSet || whiteSet.has('EGLD')) && (!blackSet || !blackSet.has('EGLD'));
+        const includeEgld =
+          (!whiteSet || whiteSet.has("EGLD")) &&
+          (!blackSet || !blackSet.has("EGLD"));
         setTokens(includeEgld ? [egld, ...list] : list);
         const ids: string[] = (hubRes.data?.hubTokens ?? []).map(
           (h: any) => h.identifier,
@@ -371,7 +373,16 @@ export const Swap = () => {
     } finally {
       setQuoteLoading(false);
     }
-  }, [tokenIn, tokenOut, amountIn, amountOut, activeField, isArb, isWrapUnwrap, slippage]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    tokenIn,
+    tokenOut,
+    amountIn,
+    amountOut,
+    activeField,
+    isArb,
+    isWrapUnwrap,
+    slippage,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (quoteTimerRef.current) clearTimeout(quoteTimerRef.current);
@@ -458,7 +469,7 @@ export const Swap = () => {
       ? new BigNumber(activeAmountStr).toFixed(6, BigNumber.ROUND_DOWN)
       : ""
     : activeField === "out"
-      ? amountOut  // user is typing here
+      ? amountOut // user is typing here
       : isArb && arb
         ? new BigNumber(arb.amountOut)
             .shiftedBy(-(tokenIn?.decimals ?? 18))
@@ -535,7 +546,9 @@ export const Swap = () => {
     try {
       const senderAddress = new Address(address);
       const amountRaw = BigInt(
-        new BigNumber(wrapAmount).shiftedBy(18).toFixed(0, BigNumber.ROUND_DOWN),
+        new BigNumber(wrapAmount)
+          .shiftedBy(18)
+          .toFixed(0, BigNumber.ROUND_DOWN),
       );
       const wrapAddress = new Address(WRAP_CONTRACT);
 
@@ -606,12 +619,18 @@ export const Swap = () => {
               <span className="text-lg font-black tracking-tight">Swap</span>
             </div>
             {/* Tabs: Swap / Liquidité */}
-            <div style={p.tabBar} className="flex gap-1.5 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl shadow-inner w-full xs:w-auto">
-              <button style={p.activeTab} className="flex-1 xs:flex-initial px-4 sm:px-6 py-2 text-sm font-black rounded-lg bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all">
+            <div
+              style={p.tabBar}
+              className="flex gap-1.5 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl shadow-inner w-full xs:w-auto"
+            >
+              <button
+                style={p.activeTab}
+                className="flex-1 xs:flex-initial px-4 sm:px-6 py-2 text-sm font-black rounded-lg bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all"
+              >
                 {t("tab_swap")}
               </button>
               <button
-                onClick={() => goTo('liquidity')}
+                onClick={() => goTo("liquidity")}
                 className="flex-1 xs:flex-initial px-4 sm:px-6 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5"
               >
                 {t("tab_liquidity")}
@@ -623,7 +642,10 @@ export const Swap = () => {
       >
         <div className="space-y-2 mt-4">
           {/* ---- Token In ---- */}
-          <div style={p.inner} className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4">
+          <div
+            style={p.inner}
+            className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4"
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
@@ -709,7 +731,10 @@ export const Swap = () => {
           </div>
 
           {/* ---- Token Out ---- */}
-          <div style={p.inner} className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4">
+          <div
+            style={p.inner}
+            className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4"
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
@@ -783,7 +808,10 @@ export const Swap = () => {
 
           {/* ---- Quote details ---- */}
           {!isWrapUnwrap && quote && !quoteLoading && (
-            <div style={p.quoteSection} className="rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] px-4 py-3 space-y-2.5 text-sm">
+            <div
+              style={p.quoteSection}
+              className="rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] px-4 py-3 space-y-2.5 text-sm"
+            >
               <div className="flex justify-between items-center">
                 <span className="text-gray-500 dark:text-gray-400">
                   {t("price_impact")}
@@ -940,7 +968,7 @@ export const Swap = () => {
                           return (
                             <button
                               onClick={() =>
-                                goTo('add-liquidity', { tokenA, tokenB })
+                                goTo("add-liquidity", { tokenA, tokenB })
                               }
                               className="self-start underline font-semibold hover:text-red-700 dark:hover:text-red-300 transition"
                             >
@@ -1105,9 +1133,22 @@ export const Swap = () => {
 
           {/* ---- Swap button ---- */}
           <button
-            onClick={!address ? onConnect : isWrapUnwrap ? handleWrapUnwrap : handleSwap}
+            onClick={
+              !address
+                ? onConnect
+                : isWrapUnwrap
+                  ? handleWrapUnwrap
+                  : handleSwap
+            }
             disabled={!address ? !onConnect : !canSwap}
-            style={theme === 'mid' ? { background: 'linear-gradient(135deg, #BD37EC, #1F67FF)', border: 'none' } : {}}
+            style={
+              theme === "mid"
+                ? {
+                    background: "linear-gradient(135deg, #BD37EC, #1F67FF)",
+                    border: "none",
+                  }
+                : {}
+            }
             className={`dinoButton orange w-full !py-3 text-base ${
               !tokenIn || !tokenOut
                 ? "!bg-orange-400 dark:!bg-orange-500 !border-orange-600 dark:!border-orange-700 !text-orange-950 dark:!text-orange-950 font-bold !opacity-100 hover:!bg-orange-500 hover:!border-orange-700 dark:hover:!bg-orange-400"
