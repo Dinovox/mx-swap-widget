@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { useWidgetNavigate } from '../hooks/useWidgetNavigate';
+import { useGoTo } from '../context/SwapViewContext';
 import { useWidgetSearchParams } from '../hooks/useWidgetSearchParams';
 import { ArrowLeft, ArrowDown } from 'lucide-react';
 import { useGetAccount } from '@multiversx/sdk-dapp/out/react/account/useGetAccount';
@@ -19,11 +19,11 @@ import BigNumber from 'bignumber.js';
 import type { DexToken, LiquidityPool } from '../types';
 
 export const RemoveLiquidity = () => {
-  const { apiUrl, routes, onConnect } = useSwapConfig();
+  const { apiUrl, onConnect } = useSwapConfig();
+  const goTo = useGoTo();
   const { t } = useTranslation();
   const { address } = useGetAccount();
   const { network } = useGetNetworkConfig();
-  const navigate = useWidgetNavigate();
 
   const [pools, setPools] = useState<LiquidityPool[]>([]);
   const [tokens, setTokens] = useState<Record<string, DexToken>>({});
@@ -102,7 +102,7 @@ export const RemoveLiquidity = () => {
         className='border-2 border-cyan-500/20'
         title={
           <div className='flex items-center gap-3 w-full'>
-            <button onClick={() => navigate(routes.liquidity)} className='p-1.5 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition flex-shrink-0'>
+            <button onClick={() => goTo('liquidity')} className='p-1.5 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition flex-shrink-0'>
               <ArrowLeft className='w-4 h-4 text-gray-600 dark:text-gray-300' />
             </button>
             <span className='text-xl'>🔓</span>

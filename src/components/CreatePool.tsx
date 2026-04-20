@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { useWidgetNavigate } from '../hooks/useWidgetNavigate';
+import { useGoTo } from '../context/SwapViewContext';
 import { useWidgetSearchParams } from '../hooks/useWidgetSearchParams';
 import useLoadTranslations from '../hooks/useLoadTranslations';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
@@ -17,12 +17,12 @@ import strToHex from '../helpers/strToHex';
 import type { DexToken, PoolInfo } from '../types';
 
 export const CreatePool = () => {
-  const { apiUrl, factoryAddress, routes } = useSwapConfig();
+  const { apiUrl, factoryAddress } = useSwapConfig();
+  const goTo = useGoTo();
   const { t } = useTranslation('swap');
   useLoadTranslations('swap');
   const { address } = useGetAccount();
   const { network } = useGetNetworkConfig();
-  const navigate = useWidgetNavigate();
   const [searchParams, setSearchParams] = useWidgetSearchParams();
 
   const [hubTokens, setHubTokens] = useState<DexToken[]>([]);
@@ -123,7 +123,7 @@ export const CreatePool = () => {
   return (
     <div className='mx-auto max-w-lg px-4 py-8'>
       <div className='flex items-center gap-3 mb-6'>
-        <button onClick={() => navigate(routes.liquidity)} className='p-2 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition'>
+        <button onClick={() => goTo('liquidity')} className='p-2 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition'>
           <ArrowLeft className='w-5 h-5 text-gray-600 dark:text-gray-300' />
         </button>
         <div>
@@ -175,7 +175,7 @@ export const CreatePool = () => {
             <CheckCircle className='w-12 h-12 text-green-500 mx-auto mb-3' />
             <p className='text-base font-bold text-green-700 dark:text-green-400 mb-2'>{t('create_pool_active')}</p>
             <p className='text-sm text-green-600/80 dark:text-green-400/80 mb-4'>{t('create_pool_ready')}</p>
-            <button onClick={() => navigate(`${routes.addLiquidity}?tokenA=${tokenX?.identifier}&tokenB=${tokenY?.identifier}`)} className='w-full px-4 py-3 bg-green-500 text-white rounded-xl text-sm font-bold hover:bg-green-600 transition shadow-sm'>
+            <button onClick={() => goTo('add-liquidity', { tokenA: tokenX?.identifier ?? '', tokenB: tokenY?.identifier ?? '' })} className='w-full px-4 py-3 bg-green-500 text-white rounded-xl text-sm font-bold hover:bg-green-600 transition shadow-sm'>
               {t('create_add_liquidity')}
             </button>
           </div>

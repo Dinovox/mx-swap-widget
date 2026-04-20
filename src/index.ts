@@ -12,11 +12,7 @@ export { Pools } from "./components/Pools";
 
 // Context / Config
 export { SwapConfigProvider, useSwapConfig } from "./context/SwapConfigContext";
-export type {
-  SwapConfig,
-  SwapRoutes,
-  ResolvedSwapConfig,
-} from "./context/SwapConfigContext";
+export type { SwapConfig, ResolvedSwapConfig } from "./context/SwapConfigContext";
 
 // Types
 export type {
@@ -39,6 +35,8 @@ export { default as bigToHex } from "./helpers/bigToHex";
 
 // Hooks
 export { useGetUserESDT } from "./hooks/useGetUserEsdt";
+export { useSwapView } from "./hooks/useSwapView";
+export type { SwapView } from "./hooks/useSwapView";
 
 // UI primitives
 export { Card } from "./ui/Card";

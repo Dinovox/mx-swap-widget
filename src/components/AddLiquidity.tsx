@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import { useWidgetNavigate } from '../hooks/useWidgetNavigate';
+import { useGoTo } from '../context/SwapViewContext';
 import { useWidgetSearchParams } from '../hooks/useWidgetSearchParams';
 import { ArrowLeft, Plus } from 'lucide-react';
 import useLoadTranslations from '../hooks/useLoadTranslations';
@@ -27,12 +27,12 @@ function intSqrt(n: bigint): bigint {
 }
 
 export const AddLiquidity = () => {
-  const { apiUrl, routes, onConnect } = useSwapConfig();
+  const { apiUrl, onConnect } = useSwapConfig();
+  const goTo = useGoTo();
   const { t } = useTranslation('swap');
   useLoadTranslations('swap');
   const { address } = useGetAccount();
   const { network } = useGetNetworkConfig();
-  const navigate = useWidgetNavigate();
   const [searchParams, setSearchParams] = useWidgetSearchParams();
 
   const [tokens, setTokens] = useState<DexToken[]>([]);
@@ -189,7 +189,7 @@ export const AddLiquidity = () => {
         title={
           <div className='flex flex-col xs:flex-row items-start xs:items-center gap-3 w-full'>
             <div className='flex items-center gap-3'>
-              <button onClick={() => navigate(routes.liquidity)} className='p-1.5 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition flex-shrink-0'>
+              <button onClick={() => goTo('liquidity')} className='p-1.5 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition flex-shrink-0'>
                 <ArrowLeft className='w-4 h-4 text-gray-600 dark:text-gray-300' />
               </button>
               <span className='text-xl'>➕</span>
@@ -244,7 +244,7 @@ export const AddLiquidity = () => {
             <div className='rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-4 mt-4'>
               <p className='text-sm font-semibold text-amber-600 dark:text-amber-400'>{t('add_no_pool_title')}</p>
               <p className='text-xs text-amber-500 mt-1'>{t('add_no_pool_desc')}</p>
-              <button onClick={() => navigate(`${routes.createPool}?tokenX=${tokenA?.identifier ?? ''}&tokenY=${tokenB?.identifier ?? ''}`)} className='mt-3 px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition'>
+              <button onClick={() => goTo('create-pool', { tokenX: tokenA?.identifier ?? '', tokenY: tokenB?.identifier ?? '' })} className='mt-3 px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition'>
                 {t('add_no_pool_btn')}
               </button>
             </div>

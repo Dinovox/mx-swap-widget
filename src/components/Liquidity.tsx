@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '../ui/Card';
 import { useTranslation } from 'react-i18next';
-import { useWidgetNavigate } from '../hooks/useWidgetNavigate';
+import { useGoTo } from '../context/SwapViewContext';
 import useLoadTranslations from '../hooks/useLoadTranslations';
 import { useGetAccount } from '@multiversx/sdk-dapp/out/react/account/useGetAccount';
 import { useGetNetworkConfig } from '@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig';
@@ -12,10 +12,10 @@ import BigNumber from 'bignumber.js';
 import type { LiquidityPool, UserPosition } from '../types';
 
 export const Liquidity = () => {
-  const { apiUrl, routes } = useSwapConfig();
+  const { apiUrl } = useSwapConfig();
+  const goTo = useGoTo();
   const { t } = useTranslation('swap');
   useLoadTranslations('swap');
-  const navigate = useWidgetNavigate();
   const { address } = useGetAccount();
   const { network } = useGetNetworkConfig();
 
@@ -69,13 +69,13 @@ export const Liquidity = () => {
               <span className='text-lg font-black tracking-tight'>{t('liquidity_title')}</span>
             </div>
             <div className='flex gap-1 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl shadow-inner w-full sm:w-auto'>
-              <button onClick={() => navigate(routes.swap)} className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5'>
+              <button onClick={() => goTo('swap')} className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5'>
                 Swap
               </button>
               <button className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-black rounded-lg bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all'>
                 {t('tab_liquidity')}
               </button>
-              <button onClick={() => navigate(routes.pools)} className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5'>
+              <button onClick={() => goTo('pools')} className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5'>
                 Pools
               </button>
             </div>
@@ -87,7 +87,7 @@ export const Liquidity = () => {
           {!poolsLoading && userPositions.length === 0 ? (
             <div className='rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-6 text-center'>
               <p className='text-sm text-gray-500 dark:text-gray-400 mb-4'>{t('liquidity_empty')}</p>
-              <button onClick={() => navigate(routes.addLiquidity)} className='dinoButton w-full !py-3 text-base'>
+              <button onClick={() => goTo('add-liquidity')} className='dinoButton w-full !py-3 text-base'>
                 {t('liquidity_add')}
               </button>
             </div>
@@ -113,8 +113,8 @@ export const Liquidity = () => {
                       <div className='xs:text-right w-full xs:w-auto'>
                         <p className='font-bold text-gray-900 dark:text-white mb-1'>{displayBalance} LP</p>
                         <div className='flex gap-3 xs:justify-end'>
-                          <button onClick={() => navigate(`${routes.addLiquidity}?tokenA=${pos.pool.tokenA}&tokenB=${pos.pool.tokenB}`)} className='text-xs font-bold text-green-500 hover:text-green-600 transition underline decoration-dashed'>{t('liquidity_add_btn')}</button>
-                          <button onClick={() => navigate(`${routes.removeLiquidity}?pool=${pos.pool.address}`)} className='text-xs font-bold text-red-500 hover:text-red-600 transition underline decoration-dashed'>{t('liquidity_remove_btn')}</button>
+                          <button onClick={() => goTo('add-liquidity', { tokenA: pos.pool.tokenA, tokenB: pos.pool.tokenB })} className='text-xs font-bold text-green-500 hover:text-green-600 transition underline decoration-dashed'>{t('liquidity_add_btn')}</button>
+                          <button onClick={() => goTo('remove-liquidity', { pool: pos.pool.address })} className='text-xs font-bold text-red-500 hover:text-red-600 transition underline decoration-dashed'>{t('liquidity_remove_btn')}</button>
                         </div>
                       </div>
                     </div>
@@ -131,7 +131,7 @@ export const Liquidity = () => {
                   </div>
                 );
               })}
-              <button onClick={() => navigate(routes.addLiquidity)} className='dinoButton w-full !py-3 text-base'>{t('liquidity_add')}</button>
+              <button onClick={() => goTo('add-liquidity')} className='dinoButton w-full !py-3 text-base'>{t('liquidity_add')}</button>
             </div>
           )}
         </div>

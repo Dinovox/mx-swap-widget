@@ -1,5 +1,5 @@
 import React from 'react';
-import { useWidgetNavigate } from '../hooks/useWidgetNavigate';
+import { useGoTo } from '../context/SwapViewContext';
 import { useTranslation } from 'react-i18next';
 import useLoadTranslations from '../hooks/useLoadTranslations';
 import axios from 'axios';
@@ -18,10 +18,10 @@ function formatReserve(raw: string, decimals: number): string {
 }
 
 export const Pools = () => {
-  const { apiUrl, routes } = useSwapConfig();
+  const { apiUrl } = useSwapConfig();
+  const goTo = useGoTo();
   const { t } = useTranslation('swap');
   useLoadTranslations('swap');
-  const navigate = useWidgetNavigate();
 
   const [pools, setPools] = React.useState<LiquidityPool[]>([]);
   const [tokenMap, setTokenMap] = React.useState<Record<string, TokenMeta>>({});
@@ -60,13 +60,13 @@ export const Pools = () => {
             </div>
             <div className='flex gap-1 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl shadow-inner w-full sm:w-auto overflow-x-auto'>
               <button
-                onClick={() => navigate(routes.swap)}
+                onClick={() => goTo('swap')}
                 className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5 whitespace-nowrap'
               >
                 {t('tab_swap')}
               </button>
               <button
-                onClick={() => navigate(routes.liquidity)}
+                onClick={() => goTo('liquidity')}
                 className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5 whitespace-nowrap'
               >
                 {t('tab_liquidity')}
@@ -118,7 +118,7 @@ export const Pools = () => {
                     </div>
                     {dexFilter === 'DinoVox' && (
                       <button
-                        onClick={() => navigate(`${routes.addLiquidity}?tokenA=${pool.tokenA}&tokenB=${pool.tokenB}`)}
+                        onClick={() => goTo('add-liquidity', { tokenA: pool.tokenA, tokenB: pool.tokenB })}
                         className='text-xs font-bold text-amber-500 hover:text-amber-600 transition'
                       >
                         {t('pools_add')}
@@ -141,7 +141,7 @@ export const Pools = () => {
             })
           )}
           <button
-            onClick={() => navigate(routes.createPool)}
+            onClick={() => goTo('create-pool')}
             className='w-full py-3 rounded-xl border-2 border-amber-500 text-amber-500 font-bold hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors mt-2'
           >
             {t('pools_create')}

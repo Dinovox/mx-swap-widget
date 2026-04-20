@@ -7,7 +7,7 @@ Plug-and-play swap & liquidity widget for [MultiversX](https://multiversx.com) d
 - EGLD ↔ WEGLD wrap / unwrap
 - Liquidity management: add, remove, create pools, browse pools
 - Bidirectional amount input (type what you want to receive, get the required input)
-- Internal SPA routing via URL anchors — no page reloads
+- Internal SPA routing via URL anchors — no page reloads, no host router dependency
 - Built-in translations (English & French), works without `react-i18next` in the host app
 
 ---
@@ -32,8 +32,6 @@ import '@dinovox/mx-swap-widget/styles.css';
 
 ## Quick start
 
-The simplest integration — drop `<SwapWidget />` anywhere in your app:
-
 ```tsx
 import { SwapWidget } from '@dinovox/mx-swap-widget';
 import '@dinovox/mx-swap-widget/styles.css';
@@ -56,8 +54,8 @@ import { SwapWidget, SwapConfigProvider } from '@dinovox/mx-swap-widget';
 
 export const SwapPage = () => (
   <SwapConfigProvider config={{
-    language: 'fr',              // 'en' | 'fr' — defaults to navigator.language
-    navigate: useNavigate(),     // pass your router's navigate for SPA navigation
+    language: 'fr',
+    onConnect: () => navigate('/unlock'),
   }}>
     <SwapWidget />
   </SwapConfigProvider>
@@ -74,42 +72,93 @@ export const SwapPage = () => (
 | `factoryAddress` | `string` | DinoVox factory | Factory smart contract address |
 | `wrapContract` | `string` | DinoVox wrap contract | EGLD ↔ WEGLD wrap contract address |
 | `wegldIdentifier` | `string` | `WEGLD-bd4d79` | WEGLD token identifier |
-| `routes` | `Partial<SwapRoutes>` | See below | URL paths for each view |
-| `navigate` | `(path: string) => void` | `window.location.assign` | Navigation function from the host router |
+| `onConnect` | `() => void` | — | Called when the user clicks "Connect wallet" while unauthenticated. Pass your app's unlock handler. When omitted the button is disabled. |
 | `language` | `string` | `navigator.language` | Language code (`'en'`, `'fr'`) |
-| `theme` | `'light' \| 'dark'` | *(inherit)* | Pin the widget theme independently of the host app. When omitted the widget follows the host app's `dark` class on `<html>`. |
-
-### Default routes
-
-```ts
-{
-  swap:            '/swap',
-  liquidity:       '/liquidity',
-  addLiquidity:    '/liquidity/add',
-  removeLiquidity: '/liquidity/remove',
-  createPool:      '/liquidity/create',
-  pools:           '/liquidity/pools',
-}
-```
+| `theme` | `'light' \| 'dark' \| 'mid'` | *(inherit)* | Pin the widget theme independently of the host app. When omitted the widget follows the host app's `dark` class on `<html>`. |
 
 ---
 
-## URL anchors & deep-linking
+## Navigation
 
-`SwapWidget` manages view navigation via URL hash fragments — no full page reloads, no host router dependency.
+The widget manages its own view switching via URL hash fragments — no host router required, no page reloads.
 
 | View | Hash |
 |---|---|
-| Swap | *(none)* |
+| Swap | `#swap` *(or no hash)* |
 | Liquidity | `#liquidity` |
 | Add Liquidity | `#add-liquidity` |
 | Remove Liquidity | `#remove-liquidity` |
 | Create Pool | `#create-pool` |
 | Pools | `#pools` |
 
-Deep-linking works out of the box: `/swap#add-liquidity?tokenA=EGLD&tokenB=WEGLD-bd4d79` opens directly on the Add Liquidity view with tokens pre-selected.
+The browser's back/forward buttons work out of the box.
 
-Browser back/forward navigation is supported.
+### Deep-linking
+
+Navigate directly to any view by setting the hash in the URL:
+
+```
+/your-page#add-liquidity?tokenA=EGLD&tokenB=WEGLD-bd4d79
+```
+
+### Programmatic navigation
+
+Use the exported `useSwapView` hook to read the current view or navigate from outside the widget:
+
+```tsx
+import { useSwapView } from '@dinovox/mx-swap-widget';
+
+const { view, goTo } = useSwapView();
+
+goTo('add-liquidity', { tokenA: 'EGLD', tokenB: 'WEGLD-bd4d79' });
+```
+
+---
+
+## SwapWidget props
+
+Beyond `SwapConfigProvider`, `SwapWidget` accepts a set of props that override the config for token pre-selection and filtering.
+
+### Default tokens
+
+Pre-select tokens in the Swap view. These are used as fallback when no `from` / `to` URL param is present.
+
+```tsx
+<SwapWidget
+  defaultFrom="EGLD"
+  defaultTo="USDC-c76f1f"
+/>
+```
+
+URL params always take precedence over these defaults:
+```
+/your-page?from=WEGLD-bd4d79   ← this wins over defaultFrom
+```
+
+### Token whitelist / blacklist
+
+Control which tokens appear in the selector.
+
+```tsx
+<SwapWidget
+  whitelist={['EGLD', 'WEGLD-bd4d79', 'USDC-c76f1f']}
+/>
+```
+
+```tsx
+<SwapWidget
+  blacklist={['SPAM-123456', 'SCAM-abcdef']}
+/>
+```
+
+Both can be combined. Whitelist is applied first, blacklist is applied after.
+
+| Prop | Type | Behaviour when omitted |
+|---|---|---|
+| `defaultFrom` | `string` | No token pre-selected |
+| `defaultTo` | `string` | No token pre-selected |
+| `whitelist` | `string[]` | All tokens shown |
+| `blacklist` | `string[]` | No token hidden |
 
 ---
 
@@ -118,14 +167,16 @@ Browser back/forward navigation is supported.
 Pass `from` and `to` query params to pre-select tokens in the Swap view:
 
 ```
-/swap?from=EGLD&to=WEGLD-bd4d79
+/your-page?from=EGLD&to=WEGLD-bd4d79
 ```
+
+These params are also written to the URL when the user picks a token, enabling shareable links.
 
 ---
 
 ## Standalone components
 
-Individual views are also exported if you manage routing yourself:
+Individual views are also exported if you manage rendering yourself:
 
 ```tsx
 import {
@@ -138,13 +189,11 @@ import {
 } from '@dinovox/mx-swap-widget';
 ```
 
-When using standalone components, wrap them with `SwapConfigProvider` and ensure the host app provides a `react-i18next` instance via `initReactI18next`, or use `SwapWidget` which handles i18n internally.
+When using standalone components, wrap them with `SwapConfigProvider`. The `SwapWidget` wrapper handles i18n internally; standalone components require a `react-i18next` instance via `initReactI18next` in the host app.
 
 ---
 
 ## Peer dependencies
-
-These must be installed in the host app:
 
 ```json
 {
@@ -161,13 +210,14 @@ These must be installed in the host app:
 
 ---
 
-## Exported utilities
+## Exported API
 
 | Export | Description |
 |---|---|
 | `SwapWidget` | All-in-one widget with internal routing |
 | `SwapConfigProvider` | Configuration context provider |
 | `useSwapConfig` | Hook to read the resolved config |
+| `useSwapView` | Hook to read the current view and navigate (`goTo`) |
 | `FormatAmount` | Token amount formatter component |
 | `signAndSendTransactions` | Helper to sign & send MultiversX transactions |
 | `bigToHex` | BigInt → hex string helper |

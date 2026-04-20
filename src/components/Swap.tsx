@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
-import { useWidgetNavigate } from "../hooks/useWidgetNavigate";
 import { useWidgetSearchParams } from "../hooks/useWidgetSearchParams";
+import { useGoTo } from "../context/SwapViewContext";
 import useLoadTranslations from "../hooks/useLoadTranslations";
 import { ArrowUpDown } from "lucide-react";
 import { useGetAccount } from "@multiversx/sdk-dapp/out/react/account/useGetAccount";
@@ -64,10 +64,14 @@ export const Swap = () => {
     aggregatorAddress,
     wrapContract: WRAP_CONTRACT,
     wegldIdentifier: wegld_identifier,
-    routes,
     theme,
     onConnect,
+    defaultFrom,
+    defaultTo,
+    whitelist,
+    blacklist,
   } = useSwapConfig();
+  const goTo = useGoTo();
   const p = getThemePalette(theme);
   const { t } = useTranslation("swap");
   useLoadTranslations("swap");
@@ -75,7 +79,6 @@ export const Swap = () => {
   const { account: accountInfo } = useGetAccountInfo();
   const { network } = useGetNetworkConfig();
   const [searchParams, setSearchParams] = useWidgetSearchParams();
-  const navigate = useWidgetNavigate();
 
   /* ---- Token list ---- */
   const [tokens, setTokens] = useState<SwapToken[]>([]);
@@ -219,12 +222,16 @@ export const Swap = () => {
         .catch(() => ({ data: { hubTokens: [] } })),
     ])
       .then(([tokensRes, hubRes]) => {
-        const list = (tokensRes.data.tokens || []).filter((t) => t.identifier);
+        const whiteSet = whitelist && whitelist.length > 0 ? new Set(whitelist) : null;
+        const blackSet = blacklist && blacklist.length > 0 ? new Set(blacklist) : null;
+        const list = (tokensRes.data.tokens || [])
+          .filter((t) => t.identifier)
+          .filter((t) => !whiteSet || whiteSet.has(t.identifier))
+          .filter((t) => !blackSet || !blackSet.has(t.identifier));
         const wegld = list.find((t) => t.ticker === "WEGLD");
-        setTokens([
-          { ...EGLD_TOKEN, logoUrl: wegld?.logoUrl ?? null },
-          ...list,
-        ]);
+        const egld = { ...EGLD_TOKEN, logoUrl: wegld?.logoUrl ?? null };
+        const includeEgld = (!whiteSet || whiteSet.has('EGLD')) && (!blackSet || !blackSet.has('EGLD'));
+        setTokens(includeEgld ? [egld, ...list] : list);
         const ids: string[] = (hubRes.data?.hubTokens ?? []).map(
           (h: any) => h.identifier,
         );
@@ -239,8 +246,8 @@ export const Swap = () => {
     if (tokens.length === 0 || urlInitDoneRef.current) return;
     urlInitDoneRef.current = true;
 
-    const fromId = searchParams.get("from");
-    const toId = searchParams.get("to");
+    const fromId = searchParams.get("from") || defaultFrom;
+    const toId = searchParams.get("to") || defaultTo;
 
     const foundIn = fromId ? tokens.find((t) => t.identifier === fromId) : null;
     const foundOut = toId ? tokens.find((t) => t.identifier === toId) : null;
@@ -604,7 +611,7 @@ export const Swap = () => {
                 {t("tab_swap")}
               </button>
               <button
-                onClick={() => navigate(routes.liquidity)}
+                onClick={() => goTo('liquidity')}
                 className="flex-1 xs:flex-initial px-4 sm:px-6 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5"
               >
                 {t("tab_liquidity")}
@@ -933,9 +940,7 @@ export const Swap = () => {
                           return (
                             <button
                               onClick={() =>
-                                navigate(
-                                  `${routes.addLiquidity}?tokenA=${tokenA}&tokenB=${tokenB}`,
-                                )
+                                goTo('add-liquidity', { tokenA, tokenB })
                               }
                               className="self-start underline font-semibold hover:text-red-700 dark:hover:text-red-300 transition"
                             >
