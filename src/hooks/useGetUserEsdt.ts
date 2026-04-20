@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useGetAccountInfo } from '@multiversx/sdk-dapp/out/react/account/useGetAccountInfo';
+import { useGetAccount } from '@multiversx/sdk-dapp/out/react/account/useGetAccount';
 import { useGetNetworkConfig } from '@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig';
 import { useGetPendingTransactions } from '@multiversx/sdk-dapp/out/react/transactions/useGetPendingTransactions';
 import axios from 'axios';
@@ -10,7 +10,7 @@ export const useGetUserESDT = (
 ) => {
   const { network } = useGetNetworkConfig();
   const [esdtBalance, setEsdtBalance] = useState<any[]>([]);
-  const { address } = useGetAccountInfo();
+  const { address } = useGetAccount();
   const enabled = options?.enabled ?? true;
 
   const transactions = useGetPendingTransactions();
