@@ -3,8 +3,6 @@ import { Card } from '../ui/Card';
 import { useTranslation } from 'react-i18next';
 import { useGoTo } from '../context/SwapViewContext';
 import useLoadTranslations from '../hooks/useLoadTranslations';
-import { useGetAccount } from '@multiversx/sdk-dapp/out/react/account/useGetAccount';
-import { useGetNetworkConfig } from '@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig';
 import { useGetUserESDT } from '../hooks/useGetUserEsdt';
 import axios from 'axios';
 import { useSwapConfig } from '../context/SwapConfigContext';
@@ -12,12 +10,10 @@ import BigNumber from 'bignumber.js';
 import type { LiquidityPool, UserPosition } from '../types';
 
 export const Liquidity = () => {
-  const { apiUrl } = useSwapConfig();
+  const { apiUrl, address, networkApiAddress } = useSwapConfig();
   const goTo = useGoTo();
   const { t } = useTranslation('swap');
   useLoadTranslations('swap');
-  const { address } = useGetAccount();
-  const { network } = useGetNetworkConfig();
 
   const [pools, setPools] = React.useState<LiquidityPool[]>([]);
   const [poolsLoading, setPoolsLoading] = React.useState(true);
@@ -31,10 +27,10 @@ export const Liquidity = () => {
     }).catch(console.error).finally(() => setPoolsLoading(false));
   }, [apiUrl]);
 
-  const walletTokens = useGetUserESDT(undefined, { enabled: !!address });
+  const walletTokens = useGetUserESDT(undefined, { enabled: !!address, address, networkApiAddress });
 
   React.useEffect(() => {
-    if (!walletTokens || walletTokens.length === 0 || pools.length === 0 || !network?.apiAddress) {
+    if (!walletTokens || walletTokens.length === 0 || pools.length === 0 || !networkApiAddress) {
       setUserPositions([]);
       return;
     }
@@ -49,14 +45,14 @@ export const Liquidity = () => {
     Promise.all(
       held.map(async ({ pool, balance }) => {
         const [lpRes, tokenARes, tokenBRes] = await Promise.all([
-          axios.get(`/tokens/${pool.lpToken}`, { baseURL: network.apiAddress }),
-          axios.get(`/tokens/${pool.tokenA}`, { baseURL: network.apiAddress }).catch(() => null),
-          axios.get(`/tokens/${pool.tokenB}`, { baseURL: network.apiAddress }).catch(() => null),
+          axios.get(`/tokens/${pool.lpToken}`, { baseURL: networkApiAddress }),
+          axios.get(`/tokens/${pool.tokenA}`, { baseURL: networkApiAddress }).catch(() => null),
+          axios.get(`/tokens/${pool.tokenB}`, { baseURL: networkApiAddress }).catch(() => null),
         ]);
         return { pool, balance, lpTotalSupply: lpRes.data?.minted ?? '1', decimalsA: tokenARes?.data?.decimals ?? 18, decimalsB: tokenBRes?.data?.decimals ?? 18 } as UserPosition;
       })
     ).then(setUserPositions).catch(console.error);
-  }, [walletTokens, pools, network?.apiAddress]);
+  }, [walletTokens, pools, networkApiAddress]);
 
   return (
     <div className='flex flex-col w-full gap-6'>

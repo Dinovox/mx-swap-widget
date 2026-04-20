@@ -5,8 +5,6 @@ import { useWidgetSearchParams } from "../hooks/useWidgetSearchParams";
 import { useGoTo } from "../context/SwapViewContext";
 import useLoadTranslations from "../hooks/useLoadTranslations";
 import { ArrowUpDown } from "lucide-react";
-import { useGetAccount } from "@multiversx/sdk-dapp/out/react/account/useGetAccount";
-import { useGetNetworkConfig } from "@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig";
 import { Address, Transaction } from "@multiversx/sdk-core";
 import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
@@ -69,14 +67,28 @@ export const Swap = () => {
     defaultTo,
     whitelist,
     blacklist,
+    address,
+    networkApiAddress,
+    chainId,
+    explorerAddress,
+    onSignTransactions,
   } = useSwapConfig();
   const goTo = useGoTo();
   const p = getThemePalette(theme);
   const { t } = useTranslation("swap");
   useLoadTranslations("swap");
-  const { address, balance: egldBalance } = useGetAccount();
-  const { network } = useGetNetworkConfig();
   const [searchParams, setSearchParams] = useWidgetSearchParams();
+
+  /* ---- EGLD balance (fetched directly from API, no sdk-dapp hook) ---- */
+  const [egldBalance, setEgldBalance] = useState<string | null>(null);
+  const [balanceRefreshKey, setBalanceRefreshKey] = useState(0);
+  useEffect(() => {
+    if (!address || !networkApiAddress) { setEgldBalance(null); return; }
+    axios
+      .get<{ balance: string }>(`/accounts/${address}`, { baseURL: networkApiAddress })
+      .then((res) => setEgldBalance(res.data.balance ?? null))
+      .catch(() => setEgldBalance(null));
+  }, [address, networkApiAddress, balanceRefreshKey]);
 
   /* ---- Token list ---- */
   const [tokens, setTokens] = useState<SwapToken[]>([]);
@@ -121,7 +133,7 @@ export const Swap = () => {
 
   const tokenInBalances = useGetUserESDT(
     !isEgldIn ? tokenIn?.identifier : undefined,
-    { enabled: !!tokenIn && !isEgldIn && !!address },
+    { enabled: !!tokenIn && !isEgldIn && !!address, address, networkApiAddress, refreshKey: balanceRefreshKey },
   );
 
   // Marque "en chargement" dès qu'on change de token
@@ -170,7 +182,7 @@ export const Swap = () => {
   const isEgldOut_balance = tokenOut?.identifier === "EGLD";
   const tokenOutBalances = useGetUserESDT(
     !isEgldOut_balance ? tokenOut?.identifier : undefined,
-    { enabled: !!tokenOut && !isEgldOut_balance && !!address },
+    { enabled: !!tokenOut && !isEgldOut_balance && !!address, address, networkApiAddress, refreshKey: balanceRefreshKey },
   );
   const tokenOutBalanceRaw: string | null = isEgldOut_balance
     ? (egldBalance ?? null)
@@ -434,11 +446,12 @@ export const Swap = () => {
         sender: new Address(address),
         gasLimit: BigInt(tx.gasLimit),
         gasPrice: BigInt(GAS_PRICE),
-        chainID: network.chainId,
+        chainID: chainId!,
         version: 1,
       });
 
       await signAndSendTransactions({
+        onSignTransactions,
         transactions: [transaction],
         transactionsDisplayInfo: {
           processingMessage: t("processing"),
@@ -453,7 +466,9 @@ export const Swap = () => {
       setActiveField("in");
       setQuote(null);
       setArb(null);
+      setBalanceRefreshKey((k) => k + 1);
     } catch (err: any) {
+      console.error('[SwapWidget] handleSwap error:', err);
       setTxError(err?.message ?? "Erreur lors du swap");
     } finally {
       setIsSending(false);
@@ -582,11 +597,12 @@ export const Swap = () => {
         sender: senderAddress,
         gasLimit: BigInt(3_000_000),
         gasPrice: BigInt(GAS_PRICE),
-        chainID: network.chainId,
+        chainID: chainId!,
         version: 1,
       });
 
       await signAndSendTransactions({
+        onSignTransactions,
         transactions: [transaction],
         transactionsDisplayInfo: {
           processingMessage: isWrap
@@ -600,6 +616,7 @@ export const Swap = () => {
       setAmountIn("");
       setAmountOut("");
       setActiveField("in");
+      setBalanceRefreshKey((k) => k + 1);
     } catch (err: any) {
       setTxError(err?.message ?? "Erreur");
     } finally {
@@ -653,7 +670,7 @@ export const Swap = () => {
                 </p>
                 {tokenIn && (
                   <a
-                    href={`${network.explorerAddress}/tokens/${tokenIn.identifier}`}
+                    href={`${explorerAddress}/tokens/${tokenIn.identifier}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[10px] font-bold text-amber-500 hover:text-amber-400 hover:underline transition-colors"
@@ -742,7 +759,7 @@ export const Swap = () => {
                 </p>
                 {tokenOut && (
                   <a
-                    href={`${network.explorerAddress}/tokens/${tokenOut.identifier}`}
+                    href={`${explorerAddress}/tokens/${tokenOut.identifier}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[10px] font-bold text-amber-500 hover:text-amber-400 hover:underline transition-colors"
@@ -888,7 +905,7 @@ export const Swap = () => {
                         {/* Connector */}
                         <div className="flex flex-col items-center mx-1">
                           <a
-                            href={`${network.explorerAddress}/accounts/${hop.pair}`}
+                            href={`${explorerAddress}/accounts/${hop.pair}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={`text-[9px] font-bold hover:underline ${hopHighImpact ? "text-red-500" : dexStyle.label}`}
@@ -1064,7 +1081,7 @@ export const Swap = () => {
                         <React.Fragment key={i}>
                           <div className="flex flex-col items-center mx-1">
                             <a
-                              href={`${network.explorerAddress}/accounts/${hop.pair}`}
+                              href={`${explorerAddress}/accounts/${hop.pair}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className={`text-[9px] font-bold hover:underline ${dexStyle.label}`}

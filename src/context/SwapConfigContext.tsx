@@ -20,6 +20,23 @@ export interface SwapConfig {
    */
   onConnect?: () => void;
   /**
+   * Called when the widget needs to sign and broadcast a transaction.
+   * Pass your app's signAndSendTransactions from sdk-dapp so the widget
+   * never touches the signing provider directly (avoids module-scope issues
+   * in production Vite bundles).
+   *
+   * Example:
+   *   import { signAndSendTransactions } from '@multiversx/sdk-dapp/...';
+   *   <SwapWidget onSignTransactions={(txs, info) =>
+   *     signAndSendTransactions({ transactions: txs, transactionsDisplayInfo: info })
+   *   } />
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onSignTransactions?: (
+    transactions: any[],
+    displayInfo: { processingMessage: string; errorMessage: string; successMessage: string },
+  ) => Promise<unknown>;
+  /**
    * Language code for widget UI (e.g. 'en', 'fr').
    * Defaults to navigator.language. Pass your app's current language here
    * to keep the widget in sync without requiring initReactI18next.
@@ -47,6 +64,30 @@ export interface SwapConfig {
    * Takes effect after whitelist filtering.
    */
   blacklist?: string[];
+  /**
+   * Wallet address. Pass from the host app's own useGetAccount() call to
+   * guarantee wallet detection in production (avoids Zustand/bundle-boundary
+   * edge cases in Vite prod builds). Falls back to the widget's internal
+   * useGetAccount() when omitted.
+   */
+  address?: string;
+  /**
+   * MultiversX API base URL (e.g. 'https://api.multiversx.com').
+   * Pass from the host app's own useGetNetworkConfig() call for the same
+   * reason as `address` — avoids Zustand hydration issues in prod bundles.
+   * Defaults to 'https://api.multiversx.com' (mainnet).
+   */
+  networkApiAddress?: string;
+  /**
+   * MultiversX chain ID. Pass from the host app's useGetNetworkConfig().
+   * Defaults to '1' (mainnet). Use 'D' for devnet, 'T' for testnet.
+   */
+  chainId?: string;
+  /**
+   * MultiversX explorer base URL.
+   * Defaults to 'https://explorer.multiversx.com' (mainnet).
+   */
+  explorerAddress?: string;
 }
 
 /** Resolved config available inside components */
@@ -59,6 +100,9 @@ const DEFAULT_CONFIG: ResolvedSwapConfig = {
   factoryAddress: 'erd1qqqqqqqqqqqqqpgqq5852gnes6xxka35lw42prqwtv6a0znhfm8sn3h9n3',
   wrapContract: 'erd1qqqqqqqqqqqqqpgqhe8t5jewej70zupmh44jurgn29psua5l2jps3ntjj3',
   wegldIdentifier: 'WEGLD-bd4d79',
+  networkApiAddress: 'https://api.multiversx.com',
+  chainId: '1',
+  explorerAddress: 'https://explorer.multiversx.com',
 };
 
 const SwapConfigContext = createContext<ResolvedSwapConfig>(DEFAULT_CONFIG);

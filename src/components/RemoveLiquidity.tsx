@@ -4,8 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { useGoTo } from '../context/SwapViewContext';
 import { useWidgetSearchParams } from '../hooks/useWidgetSearchParams';
 import { ArrowLeft, ArrowDown } from 'lucide-react';
-import { useGetAccount } from '@multiversx/sdk-dapp/out/react/account/useGetAccount';
-import { useGetNetworkConfig } from '@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig';
 import { Address, Transaction } from '@multiversx/sdk-core';
 import { GAS_PRICE } from '@multiversx/sdk-dapp/out/constants/mvx.constants';
 import { FormatAmount } from '../helpers/FormatAmount';
@@ -19,11 +17,8 @@ import BigNumber from 'bignumber.js';
 import type { DexToken, LiquidityPool } from '../types';
 
 export const RemoveLiquidity = () => {
-  const { apiUrl, onConnect } = useSwapConfig();
+  const { apiUrl, onConnect, address, networkApiAddress, chainId, onSignTransactions } = useSwapConfig();
   const goTo = useGoTo();
-  const { t } = useTranslation();
-  const { address } = useGetAccount();
-  const { network } = useGetNetworkConfig();
 
   const [pools, setPools] = useState<LiquidityPool[]>([]);
   const [tokens, setTokens] = useState<Record<string, DexToken>>({});
@@ -58,13 +53,13 @@ export const RemoveLiquidity = () => {
   const selectedPool = pools.find(p => p.address === selectedPoolAddress);
 
   useEffect(() => {
-    if (!selectedPool?.lpToken || !network?.apiAddress) { setLpTotalMinted(null); return; }
-    axios.get(`/tokens/${selectedPool.lpToken}`, { baseURL: network.apiAddress })
+    if (!selectedPool?.lpToken || !networkApiAddress) { setLpTotalMinted(null); return; }
+    axios.get(`/tokens/${selectedPool.lpToken}`, { baseURL: networkApiAddress })
       .then(res => setLpTotalMinted(res.data?.minted ?? null))
       .catch(() => setLpTotalMinted(null));
-  }, [selectedPool?.lpToken, network?.apiAddress]);
+  }, [selectedPool?.lpToken, networkApiAddress]);
 
-  const lpTokenBalances = useGetUserESDT(selectedPool?.lpToken ?? undefined, { enabled: !!selectedPool && !!address });
+  const lpTokenBalances = useGetUserESDT(selectedPool?.lpToken ?? undefined, { enabled: !!selectedPool && !!address, address, networkApiAddress });
   const lpBalanceRaw = lpTokenBalances?.[0]?.balance ?? '0';
   const lpBalanceDisplay = new BigNumber(lpBalanceRaw).shiftedBy(-18).toFixed(6, BigNumber.ROUND_DOWN);
 
@@ -87,9 +82,9 @@ export const RemoveLiquidity = () => {
       const transaction = new Transaction({
         value: 0n, data: new TextEncoder().encode(txDataParts.join('@')),
         receiver: new Address(selectedPool.address), sender: new Address(address),
-        gasLimit: 12_000_000n, gasPrice: BigInt(GAS_PRICE), chainID: network.chainId, version: 1,
+        gasLimit: 12_000_000n, gasPrice: BigInt(GAS_PRICE), chainID: chainId!, version: 1,
       });
-      await signAndSendTransactions({ transactions: [transaction], transactionsDisplayInfo: { processingMessage: 'Retrait en cours...', errorMessage: 'Le retrait a échoué', successMessage: 'Liquidité retirée !' } });
+      await signAndSendTransactions({ onSignTransactions, transactions: [transaction], transactionsDisplayInfo: { processingMessage: 'Retrait en cours...', errorMessage: 'Le retrait a échoué', successMessage: 'Liquidité retirée !' } });
       setLpAmountInput('');
     } catch (err) { console.error(err); }
   };

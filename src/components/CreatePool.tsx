@@ -5,8 +5,6 @@ import { useGoTo } from '../context/SwapViewContext';
 import { useWidgetSearchParams } from '../hooks/useWidgetSearchParams';
 import useLoadTranslations from '../hooks/useLoadTranslations';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
-import { useGetAccount } from '@multiversx/sdk-dapp/out/react/account/useGetAccount';
-import { useGetNetworkConfig } from '@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig';
 import { Address, Transaction } from '@multiversx/sdk-core';
 import { GAS_PRICE } from '@multiversx/sdk-dapp/out/constants/mvx.constants';
 import { signAndSendTransactions } from '../helpers/signAndSendTransactions';
@@ -17,12 +15,10 @@ import strToHex from '../helpers/strToHex';
 import type { DexToken, PoolInfo } from '../types';
 
 export const CreatePool = () => {
-  const { apiUrl, factoryAddress } = useSwapConfig();
+  const { apiUrl, factoryAddress, address, chainId, networkApiAddress, onSignTransactions } = useSwapConfig();
   const goTo = useGoTo();
   const { t } = useTranslation('swap');
   useLoadTranslations('swap');
-  const { address } = useGetAccount();
-  const { network } = useGetNetworkConfig();
   const [searchParams, setSearchParams] = useWidgetSearchParams();
 
   const [hubTokens, setHubTokens] = useState<DexToken[]>([]);
@@ -40,7 +36,7 @@ export const CreatePool = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isIssuing, setIsIssuing] = useState(false);
 
-  const allWalletTokensRaw = useGetUserESDT(undefined, { enabled: !!address });
+  const allWalletTokensRaw = useGetUserESDT(undefined, { enabled: !!address, address, networkApiAddress });
   const [walletTokens, setWalletTokens] = useState<DexToken[]>([]);
 
   useEffect(() => {
@@ -104,8 +100,8 @@ export const CreatePool = () => {
     setIsCreating(true);
     try {
       const txDataParts = ['createPair', strToHex(tokenX.identifier), strToHex(tokenY.identifier), strToHex(lpName), strToHex(lpTicker)];
-      const transaction = new Transaction({ value: 0n, data: new TextEncoder().encode(txDataParts.join('@')), receiver: new Address(factoryAddress), sender: new Address(address), gasLimit: 300_000_000n, gasPrice: BigInt(GAS_PRICE), chainID: network.chainId, version: 1 });
-      await signAndSendTransactions({ transactions: [transaction], transactionsDisplayInfo: { processingMessage: t('create_processing_pair'), errorMessage: t('create_error_pair'), successMessage: t('create_success_pair') } });
+      const transaction = new Transaction({ value: 0n, data: new TextEncoder().encode(txDataParts.join('@')), receiver: new Address(factoryAddress), sender: new Address(address), gasLimit: 300_000_000n, gasPrice: BigInt(GAS_PRICE), chainID: chainId!, version: 1 });
+      await signAndSendTransactions({ onSignTransactions, transactions: [transaction], transactionsDisplayInfo: { processingMessage: t('create_processing_pair'), errorMessage: t('create_error_pair'), successMessage: t('create_success_pair') } });
       setFastPolling(true);
     } catch (err) { console.error(err); } finally { setIsCreating(false); }
   };
@@ -115,8 +111,8 @@ export const CreatePool = () => {
     setIsIssuing(true);
     try {
       const txDataParts = ['issueLpToken', strToHex(tokenX.identifier), strToHex(tokenY.identifier)];
-      const transaction = new Transaction({ value: 50_000_000_000_000_000n, data: new TextEncoder().encode(txDataParts.join('@')), receiver: new Address(factoryAddress), sender: new Address(address), gasLimit: 150_000_000n, gasPrice: BigInt(GAS_PRICE), chainID: network.chainId, version: 1 });
-      await signAndSendTransactions({ transactions: [transaction], transactionsDisplayInfo: { processingMessage: t('create_processing_lp'), errorMessage: t('create_error_lp'), successMessage: t('create_success_lp') } });
+      const transaction = new Transaction({ value: 50_000_000_000_000_000n, data: new TextEncoder().encode(txDataParts.join('@')), receiver: new Address(factoryAddress), sender: new Address(address), gasLimit: 150_000_000n, gasPrice: BigInt(GAS_PRICE), chainID: chainId!, version: 1 });
+      await signAndSendTransactions({ onSignTransactions, transactions: [transaction], transactionsDisplayInfo: { processingMessage: t('create_processing_lp'), errorMessage: t('create_error_lp'), successMessage: t('create_success_lp') } });
     } catch (err) { console.error(err); } finally { setIsIssuing(false); }
   };
 

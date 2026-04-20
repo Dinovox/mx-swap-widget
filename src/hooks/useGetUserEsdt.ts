@@ -1,30 +1,29 @@
 import { useEffect, useState } from 'react';
-import { useGetAccount } from '@multiversx/sdk-dapp/out/react/account/useGetAccount';
-import { useGetNetworkConfig } from '@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig';
-import { useGetPendingTransactions } from '@multiversx/sdk-dapp/out/react/transactions/useGetPendingTransactions';
 import axios from 'axios';
 
 export const useGetUserESDT = (
   identifier?: string,
-  options?: { enabled?: boolean },
+  options?: {
+    enabled?: boolean;
+    address?: string;
+    networkApiAddress?: string;
+    refreshKey?: number;
+  },
 ) => {
-  const { network } = useGetNetworkConfig();
   const [esdtBalance, setEsdtBalance] = useState<any[]>([]);
-  const { address } = useGetAccount();
+  const address = options?.address;
+  const apiAddress = options?.networkApiAddress;
   const enabled = options?.enabled ?? true;
 
-  const transactions = useGetPendingTransactions();
-  const hasPendingTransactions = transactions.length > 0;
-
   const getUserESDT = async () => {
-    if (!enabled || hasPendingTransactions || !address) return;
+    if (!enabled || !address || !apiAddress) return;
 
     try {
       const PAGE_SIZE = 1000;
 
       if (identifier) {
         const { data } = await axios.get<any[]>(`/accounts/${address}/tokens`, {
-          baseURL: network.apiAddress,
+          baseURL: apiAddress,
           params: { size: PAGE_SIZE, identifier },
         });
         setEsdtBalance(data);
@@ -35,7 +34,7 @@ export const useGetUserESDT = (
       let from = 0;
       while (true) {
         const { data } = await axios.get<any[]>(`/accounts/${address}/tokens`, {
-          baseURL: network.apiAddress,
+          baseURL: apiAddress,
           params: { size: PAGE_SIZE, from },
         });
         all.push(...data);
@@ -54,7 +53,7 @@ export const useGetUserESDT = (
       return;
     }
     getUserESDT();
-  }, [address, hasPendingTransactions, identifier, enabled]);
+  }, [address, identifier, enabled, apiAddress, options?.refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return esdtBalance;
 };

@@ -5,8 +5,6 @@ import { useGoTo } from '../context/SwapViewContext';
 import { useWidgetSearchParams } from '../hooks/useWidgetSearchParams';
 import { ArrowLeft, Plus } from 'lucide-react';
 import useLoadTranslations from '../hooks/useLoadTranslations';
-import { useGetAccount } from '@multiversx/sdk-dapp/out/react/account/useGetAccount';
-import { useGetNetworkConfig } from '@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig';
 import { Address, Transaction } from '@multiversx/sdk-core';
 import { GAS_PRICE } from '@multiversx/sdk-dapp/out/constants/mvx.constants';
 import { signAndSendTransactions } from '../helpers/signAndSendTransactions';
@@ -27,12 +25,10 @@ function intSqrt(n: bigint): bigint {
 }
 
 export const AddLiquidity = () => {
-  const { apiUrl, onConnect } = useSwapConfig();
+  const { apiUrl, onConnect, address, networkApiAddress, chainId, onSignTransactions } = useSwapConfig();
   const goTo = useGoTo();
   const { t } = useTranslation('swap');
   useLoadTranslations('swap');
-  const { address } = useGetAccount();
-  const { network } = useGetNetworkConfig();
   const [searchParams, setSearchParams] = useWidgetSearchParams();
 
   const [tokens, setTokens] = useState<DexToken[]>([]);
@@ -55,7 +51,7 @@ export const AddLiquidity = () => {
   const [refundB, setRefundB] = useState(0n);
   const [lpTokenSet, setLpTokenSet] = useState<Set<string>>(new Set());
 
-  const allWalletTokensRaw = useGetUserESDT(undefined, { enabled: !!address });
+  const allWalletTokensRaw = useGetUserESDT(undefined, { enabled: !!address, address, networkApiAddress });
   const [walletTokens, setWalletTokens] = useState<DexToken[]>([]);
 
   const tokenBChoices = React.useMemo(() => {
@@ -72,8 +68,8 @@ export const AddLiquidity = () => {
     setWalletTokens(mapped);
   }, [allWalletTokensRaw, lpTokenSet]);
 
-  const balancesA = useGetUserESDT(tokenA?.identifier ?? undefined, { enabled: !!tokenA && !!address });
-  const balancesB = useGetUserESDT(tokenB?.identifier ?? undefined, { enabled: !!tokenB && !!address });
+  const balancesA = useGetUserESDT(tokenA?.identifier ?? undefined, { enabled: !!tokenA && !!address, address, networkApiAddress });
+  const balancesB = useGetUserESDT(tokenB?.identifier ?? undefined, { enabled: !!tokenB && !!address, address, networkApiAddress });
   const balanceRawA = balancesA?.[0]?.balance ?? '0';
   const balanceRawB = balancesB?.[0]?.balance ?? '0';
   const balanceDisplayA = tokenA && balanceRawA ? new BigNumber(balanceRawA).shiftedBy(-tokenA.decimals).toFixed(6, BigNumber.ROUND_DOWN) : '0';
@@ -119,9 +115,9 @@ export const AddLiquidity = () => {
       const pools: PoolInfo[] = res.data.pools || [];
       const found = pools.find(p => (p.tokenA === tokenA.identifier && p.tokenB === tokenB.identifier) || (p.tokenA === tokenB.identifier && p.tokenB === tokenA.identifier));
       setPool((found as LiquidityPool) || null);
-      if (found?.lpToken && network?.apiAddress) {
+      if (found?.lpToken && networkApiAddress) {
         try {
-          const lpRes = await axios.get(`/tokens/${found.lpToken}`, { baseURL: network.apiAddress });
+          const lpRes = await axios.get(`/tokens/${found.lpToken}`, { baseURL: networkApiAddress });
           setLpTotalMinted(lpRes.data?.minted ?? null);
         } catch { setLpTotalMinted(null); }
       } else setLpTotalMinted(null);
@@ -173,8 +169,8 @@ export const AddLiquidity = () => {
       const bAmt = BigInt(new BigNumber(amountB).shiftedBy(tokenB.decimals).toFixed(0));
       const senderAddr = new Address(address);
       const txDataParts = ['MultiESDTNFTTransfer', new Address(pool.address).toHex(), '02', strToHex(tokenA.identifier), '00', bigToHex(aAmt), strToHex(tokenB.identifier), '00', bigToHex(bAmt), strToHex('addLiquidity'), bigToHex(0n), bigToHex(0n)];
-      const transaction = new Transaction({ value: 0n, data: new TextEncoder().encode(txDataParts.join('@')), receiver: senderAddr, sender: senderAddr, gasLimit: 15_000_000n, gasPrice: BigInt(GAS_PRICE), chainID: network.chainId, version: 1 });
-      await signAndSendTransactions({ transactions: [transaction], transactionsDisplayInfo: { processingMessage: t('add_processing'), errorMessage: t('add_error'), successMessage: t('add_success') } });
+      const transaction = new Transaction({ value: 0n, data: new TextEncoder().encode(txDataParts.join('@')), receiver: senderAddr, sender: senderAddr, gasLimit: 15_000_000n, gasPrice: BigInt(GAS_PRICE), chainID: chainId!, version: 1 });
+      await signAndSendTransactions({ onSignTransactions, transactions: [transaction], transactionsDisplayInfo: { processingMessage: t('add_processing'), errorMessage: t('add_error'), successMessage: t('add_success') } });
       setAmountA(''); setAmountB('');
     } catch (err) { console.error(err); }
   };

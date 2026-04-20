@@ -1,28 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useGetNetworkConfig } from '@multiversx/sdk-dapp/out/react/network/useGetNetworkConfig';
 import BigNumber from 'bignumber.js';
 import bigToHex from './bigToHex';
+import { useSwapConfig } from '../context/SwapConfigContext';
 
 const useGetEsdtInfo = (identifier: string) => {
-  const { network } = useGetNetworkConfig();
+  const { networkApiAddress } = useSwapConfig();
   const [info, setInfo] = useState<any>({});
 
   useEffect(() => {
-    if (!identifier || identifier === 'EGLD') return;
+    if (!identifier || identifier === 'EGLD' || !networkApiAddress) return;
     const id = identifier === 'EGLD' ? 'EGLD-000000' : identifier;
     const cacheKey = `esdt_${id}`;
     const cached = localStorage.getItem(cacheKey);
     const expire = Number(localStorage.getItem(`${cacheKey}_expire`));
     if (cached && Date.now() < expire) { setInfo(JSON.parse(cached)); return; }
-    axios.get(`/tokens/${id}`, { baseURL: network.apiAddress })
+    axios.get(`/tokens/${id}`, { baseURL: networkApiAddress })
       .then(({ data }) => {
         setInfo(data);
         localStorage.setItem(cacheKey, JSON.stringify(data));
         localStorage.setItem(`${cacheKey}_expire`, String(Date.now() + 3_600_000));
       })
       .catch(() => setInfo({}));
-  }, [identifier, network.apiAddress]);
+  }, [identifier, networkApiAddress]);
 
   return info;
 };
