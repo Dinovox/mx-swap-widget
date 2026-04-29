@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useWidgetSearchParams } from "../hooks/useWidgetSearchParams";
 import { useGoTo } from "../context/SwapViewContext";
 import useLoadTranslations from "../hooks/useLoadTranslations";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, RefreshCw } from "lucide-react";
 import { Address, Transaction } from "@multiversx/sdk-core";
 import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
@@ -15,6 +15,7 @@ import bigToHex from "../helpers/bigToHex";
 import strToHex from "../helpers/strToHex";
 import BigNumber from "bignumber.js";
 import { useSwapConfig } from "../context/SwapConfigContext";
+import eCompassLogo from "../assets/ecompass-logo.png";
 import { getThemePalette } from "../ui/themePalette";
 import type {
   SwapToken,
@@ -28,6 +29,8 @@ import type {
 /*  Constants                                                           */
 /* ------------------------------------------------------------------ */
 const SLIPPAGE_PRESETS = [0.005, 0.01, 0.02]; // 0.5 %, 1 %, 2 %
+const eCompassId = (identifier: string) =>
+  identifier === "EGLD" ? "WEGLD-bd4d79" : identifier;
 const EGLD_TOKEN: SwapToken = {
   identifier: "EGLD",
   ticker: "EGLD",
@@ -83,9 +86,14 @@ export const Swap = () => {
   const [egldBalance, setEgldBalance] = useState<string | null>(null);
   const [balanceRefreshKey, setBalanceRefreshKey] = useState(0);
   useEffect(() => {
-    if (!address || !networkApiAddress) { setEgldBalance(null); return; }
+    if (!address || !networkApiAddress) {
+      setEgldBalance(null);
+      return;
+    }
     axios
-      .get<{ balance: string }>(`/accounts/${address}`, { baseURL: networkApiAddress })
+      .get<{ balance: string }>(`/accounts/${address}`, {
+        baseURL: networkApiAddress,
+      })
       .then((res) => setEgldBalance(res.data.balance ?? null))
       .catch(() => setEgldBalance(null));
   }, [address, networkApiAddress, balanceRefreshKey]);
@@ -126,6 +134,10 @@ export const Swap = () => {
   const [txError, setTxError] = useState<string | null>(null);
 
   const quoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [refreshCountdown, setRefreshCountdown] = useState(10);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
   /* ---- Balance tokenIn ---- */
   const [balanceLoading, setBalanceLoading] = useState(false);
@@ -133,7 +145,12 @@ export const Swap = () => {
 
   const tokenInBalances = useGetUserESDT(
     !isEgldIn ? tokenIn?.identifier : undefined,
-    { enabled: !!tokenIn && !isEgldIn && !!address, address, networkApiAddress, refreshKey: balanceRefreshKey },
+    {
+      enabled: !!tokenIn && !isEgldIn && !!address,
+      address,
+      networkApiAddress,
+      refreshKey: balanceRefreshKey,
+    },
   );
 
   // Marque "en chargement" dès qu'on change de token
@@ -182,7 +199,12 @@ export const Swap = () => {
   const isEgldOut_balance = tokenOut?.identifier === "EGLD";
   const tokenOutBalances = useGetUserESDT(
     !isEgldOut_balance ? tokenOut?.identifier : undefined,
-    { enabled: !!tokenOut && !isEgldOut_balance && !!address, address, networkApiAddress, refreshKey: balanceRefreshKey },
+    {
+      enabled: !!tokenOut && !isEgldOut_balance && !!address,
+      address,
+      networkApiAddress,
+      refreshKey: balanceRefreshKey,
+    },
   );
   const tokenOutBalanceRaw: string | null = isEgldOut_balance
     ? (egldBalance ?? null)
@@ -404,6 +426,37 @@ export const Swap = () => {
     };
   }, [fetchQuote]);
 
+  const fetchQuoteRef = useRef(fetchQuote);
+  useEffect(() => {
+    fetchQuoteRef.current = fetchQuote;
+  }, [fetchQuote]);
+
+  /* ---------- Auto-refresh quote every 10s ---------- */
+  useEffect(() => {
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
+    if (!quote || quoteLoading || isWrapUnwrap) return;
+    setRefreshCountdown(10);
+    let count = 10;
+    refreshIntervalRef.current = setInterval(() => {
+      count -= 1;
+      setRefreshCountdown(count);
+      if (count <= 0) {
+        count = 10;
+        setRefreshCountdown(10);
+        fetchQuoteRef.current();
+      }
+    }, 1000);
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+    };
+  }, [quote, quoteLoading, isWrapUnwrap]);
+
   /* ---------- Invert direction ---------- */
   const invertTokens = () => {
     setTokenIn(tokenOut);
@@ -468,7 +521,7 @@ export const Swap = () => {
       setArb(null);
       setBalanceRefreshKey((k) => k + 1);
     } catch (err: any) {
-      console.error('[SwapWidget] handleSwap error:', err);
+      console.error("[SwapWidget] handleSwap error:", err);
       setTxError(err?.message ?? "Erreur lors du swap");
     } finally {
       setIsSending(false);
@@ -678,6 +731,21 @@ export const Swap = () => {
                     {tokenIn.ticker} ↗
                   </a>
                 )}
+                {tokenIn && (
+                  <a
+                    href={`https://e-compass.io/token/${eCompassId(tokenIn.identifier)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="View on e-compass"
+                    className="hover:opacity-70 transition-opacity"
+                  >
+                    <img
+                      src={eCompassLogo}
+                      alt="e-compass"
+                      className="h-6 w-6"
+                    />
+                  </a>
+                )}
               </div>
               {quoteLoading && activeField === "out" && (
                 <span className="text-[10px] text-gray-400 animate-pulse uppercase tracking-wider">
@@ -767,6 +835,21 @@ export const Swap = () => {
                     {tokenOut.ticker} ↗
                   </a>
                 )}
+                {tokenOut && (
+                  <a
+                    href={`https://e-compass.io/token/${eCompassId(tokenOut.identifier)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="View on e-compass"
+                    className="hover:opacity-70 transition-opacity"
+                  >
+                    <img
+                      src={eCompassLogo}
+                      alt="e-compass"
+                      className="h-6 w-6"
+                    />
+                  </a>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {quoteLoading && activeField === "in" && (
@@ -824,10 +907,10 @@ export const Swap = () => {
           )}
 
           {/* ---- Quote details ---- */}
-          {!isWrapUnwrap && quote && !quoteLoading && (
+          {!isWrapUnwrap && quote && (
             <div
               style={p.quoteSection}
-              className="rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] px-4 py-3 space-y-2.5 text-sm"
+              className={`rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] px-4 py-3 space-y-2.5 text-sm transition-opacity duration-300 ${quoteLoading ? "opacity-50" : "opacity-100"}`}
             >
               <div className="flex justify-between items-center">
                 <span className="text-gray-500 dark:text-gray-400">
@@ -846,9 +929,22 @@ export const Swap = () => {
                 </span>
               </div>
               <div className="pt-2 border-t border-gray-100 dark:border-[#2a2a2a]">
-                <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-2">
-                  {t("route")}
-                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">
+                    {t("route")}
+                  </p>
+                  <button
+                    onClick={() => fetchQuote()}
+                    disabled={quoteLoading}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-500 transition-colors disabled:opacity-40"
+                    title="Rafraîchir le prix"
+                  >
+                    <RefreshCw
+                      className={`h-3 w-3 ${quoteLoading ? "animate-spin" : ""}`}
+                    />
+                    <span className="tabular-nums">{refreshCountdown}s</span>
+                  </button>
+                </div>
                 <div className="flex items-center flex-wrap gap-0">
                   {/* First token */}
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200">
