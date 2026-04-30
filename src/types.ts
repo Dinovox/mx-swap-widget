@@ -9,6 +9,7 @@ export interface DexToken {
   poolCount?: number;
   decimals: number;
   logoUrl?: string | null;
+  priceUsd?: string | null;
 }
 
 /** Alias used by the swap interface */
@@ -24,6 +25,7 @@ export interface PoolInfo {
   reserveB?: string;
   lpSupply?: string;
   isActive: boolean;
+  lpTokenPriceUsd?: string | null;
 }
 
 /** Pool with liquidity data — fields required for add/remove liquidity operations */
@@ -32,6 +34,7 @@ export interface LiquidityPool extends Required<Pick<PoolInfo, 'lpToken' | 'rese
   tokenA: string;
   tokenB: string;
   isActive: boolean;
+  lpTokenPriceUsd?: string | null;
 }
 
 /** User's LP position for a specific pool */
@@ -41,6 +44,8 @@ export interface UserPosition {
   lpTotalSupply: string;
   decimalsA: number;
   decimalsB: number;
+  priceA: number | null;
+  priceB: number | null;
 }
 
 /** Token metadata (used in Pools for display) */
@@ -48,6 +53,7 @@ export interface TokenMeta {
   identifier: string;
   ticker: string;
   decimals: number;
+  priceUsd?: string | null;
 }
 
 /** DEX filter for the Pools page */

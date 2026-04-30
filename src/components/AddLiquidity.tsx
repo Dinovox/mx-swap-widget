@@ -17,6 +17,15 @@ import { useSwapConfig } from '../context/SwapConfigContext';
 import BigNumber from 'bignumber.js';
 import type { DexToken, PoolInfo, LiquidityPool } from '../types';
 
+function formatUsd(priceUsd: string, amount: number): string | null {
+  if (!amount || !priceUsd) return null;
+  const value = parseFloat(priceUsd) * amount;
+  if (!value) return null;
+  if (value < 0.01) return '<$0.01';
+  if (value < 1000) return `$${value.toFixed(2)}`;
+  return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+}
+
 function intSqrt(n: bigint): bigint {
   if (n < 2n) return n;
   let x = n; let y = (x + 1n) / 2n;
@@ -62,11 +71,13 @@ export const AddLiquidity = () => {
 
   useEffect(() => {
     if (!allWalletTokensRaw || allWalletTokensRaw.length === 0) { setWalletTokens([]); return; }
-    const mapped: DexToken[] = allWalletTokensRaw.filter((t: any) => !lpTokenSet.has(t.identifier)).map((t: any) => ({
-      identifier: t.identifier, ticker: t.ticker || t.identifier.split('-')[0], poolCount: 0, decimals: t.decimals ?? 18, logoUrl: t.assets?.svgUrl ?? t.assets?.pngUrl ?? null,
-    }));
+    const mapped: DexToken[] = allWalletTokensRaw.filter((t: any) => !lpTokenSet.has(t.identifier)).map((t: any) => {
+      const dinoToken = tokens.find((dt) => dt.identifier === t.identifier);
+      const priceUsd = dinoToken?.priceUsd ?? (t.price != null ? String(t.price) : null);
+      return { identifier: t.identifier, ticker: t.ticker || t.identifier.split('-')[0], poolCount: 0, decimals: t.decimals ?? 18, logoUrl: t.assets?.svgUrl ?? t.assets?.pngUrl ?? null, priceUsd };
+    });
     setWalletTokens(mapped);
-  }, [allWalletTokensRaw, lpTokenSet]);
+  }, [allWalletTokensRaw, lpTokenSet, tokens]);
 
   const balancesA = useGetUserESDT(tokenA?.identifier ?? undefined, { enabled: !!tokenA && !!address, address, networkApiAddress });
   const balancesB = useGetUserESDT(tokenB?.identifier ?? undefined, { enabled: !!tokenB && !!address, address, networkApiAddress });
@@ -92,7 +103,7 @@ export const AddLiquidity = () => {
         const hubList: string[] = hubItems.map((h: any) => h.identifier);
         const combinedRaw = [...raw];
         for (const ht of hubItems) if (!combinedRaw.find((t: any) => t.identifier === ht.identifier)) combinedRaw.push({ ...ht, poolCount: 0 });
-        const validTokens: DexToken[] = combinedRaw.map((t: any) => ({ identifier: t.identifier, ticker: t.ticker || t.identifier.split('-')[0], poolCount: t.poolCount ?? 0, decimals: t.decimals ?? 18, logoUrl: t.logoUrl ?? null }));
+        const validTokens: DexToken[] = combinedRaw.map((t: any) => ({ identifier: t.identifier, ticker: t.ticker || t.identifier.split('-')[0], poolCount: t.poolCount ?? 0, decimals: t.decimals ?? 18, logoUrl: t.logoUrl ?? null, priceUsd: t.priceUsd ?? null }));
         setTokens(validTokens);
         setHubTokens(validTokens.filter(t => hubList.includes(t.identifier)));
       } catch (err) { console.error(err); } finally { setTokensLoading(false); }
@@ -177,6 +188,9 @@ export const AddLiquidity = () => {
 
   const aErr = !!(amountA && new BigNumber(amountA).shiftedBy(tokenA?.decimals ?? 18).isGreaterThan(balanceRawA));
   const bErr = !!(amountB && new BigNumber(amountB).shiftedBy(tokenB?.decimals ?? 18).isGreaterThan(balanceRawB));
+
+  const amountAUsd = tokenA?.priceUsd && Number(amountA) > 0 ? formatUsd(tokenA.priceUsd, Number(amountA)) : null;
+  const amountBUsd = tokenB?.priceUsd && Number(amountB) > 0 ? formatUsd(tokenB.priceUsd, Number(amountB)) : null;
   const poolHasLiquidity = !!(pool && new BigNumber(pool.reserveA).gt(0) && new BigNumber(pool.reserveB).gt(0));
 
   return (
@@ -211,6 +225,7 @@ export const AddLiquidity = () => {
               <input type='number' min='0' placeholder='0.0' value={amountA} onChange={e => handleAmountA(e.target.value)}
                 className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${aErr ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 dark:border-[#444] focus:ring-amber-500'}`} />
             </div>
+            {amountAUsd && !aErr && <p className='mt-1 text-[10px] text-gray-400 text-right'>≈ {amountAUsd}</p>}
           </div>
 
           <div className='flex justify-center -my-3 relative z-10'>
@@ -232,6 +247,7 @@ export const AddLiquidity = () => {
               <input type='number' min='0' placeholder='0.0' value={amountB} onChange={e => handleAmountB(e.target.value)}
                 className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${bErr ? 'border-red-400 focus:ring-red-400' : 'border-gray-200 dark:border-[#444] focus:ring-amber-500'}`} />
             </div>
+            {amountBUsd && !bErr && <p className='mt-1 text-[10px] text-gray-400 text-right'>≈ {amountBUsd}</p>}
           </div>
 
           {poolLoading && <p className='text-center text-xs text-gray-500 mt-4 animate-pulse'>{t('add_pool_searching')}</p>}

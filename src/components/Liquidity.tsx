@@ -1,5 +1,11 @@
 import React from 'react';
 import { Card } from '../ui/Card';
+
+const formatUsd = (value: number): string => {
+  if (value < 0.01) return '<$0.01';
+  if (value < 1000) return `$${value.toFixed(2)}`;
+  return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+};
 import { useTranslation } from 'react-i18next';
 import { useGoTo } from '../context/SwapViewContext';
 import useLoadTranslations from '../hooks/useLoadTranslations';
@@ -49,7 +55,7 @@ export const Liquidity = () => {
           axios.get(`/tokens/${pool.tokenA}`, { baseURL: networkApiAddress }).catch(() => null),
           axios.get(`/tokens/${pool.tokenB}`, { baseURL: networkApiAddress }).catch(() => null),
         ]);
-        return { pool, balance, lpTotalSupply: lpRes.data?.minted ?? '1', decimalsA: tokenARes?.data?.decimals ?? 18, decimalsB: tokenBRes?.data?.decimals ?? 18 } as UserPosition;
+        return { pool, balance, lpTotalSupply: lpRes.data?.minted ?? '1', decimalsA: tokenARes?.data?.decimals ?? 18, decimalsB: tokenBRes?.data?.decimals ?? 18, priceA: tokenARes?.data?.price ?? null, priceB: tokenBRes?.data?.price ?? null } as UserPosition;
       })
     ).then(setUserPositions).catch(console.error);
   }, [walletTokens, pools, networkApiAddress]);
@@ -89,44 +95,75 @@ export const Liquidity = () => {
             </div>
           ) : (
             <div className='space-y-4'>
-              {userPositions.map((pos: UserPosition) => {
-                const lpTokenTicker = pos.pool.lpToken.split('-')[0];
-                const displayBalance = new BigNumber(pos.balance).shiftedBy(-18).toFixed(6, BigNumber.ROUND_DOWN);
-                const totalSupplyBN = new BigNumber(pos.lpTotalSupply);
-                const safeTotalSupply = totalSupplyBN.isZero() ? new BigNumber(1) : totalSupplyBN;
-                const estimatedA = new BigNumber(pos.balance).multipliedBy(pos.pool.reserveA).dividedBy(safeTotalSupply).shiftedBy(-pos.decimalsA).toFixed(6, BigNumber.ROUND_DOWN);
-                const estimatedB = new BigNumber(pos.balance).multipliedBy(pos.pool.reserveB).dividedBy(safeTotalSupply).shiftedBy(-pos.decimalsB).toFixed(6, BigNumber.ROUND_DOWN);
+              {(() => {
+                const totalUsd = userPositions.reduce((acc, pos) => {
+                  if (!pos.pool.lpTokenPriceUsd) return acc;
+                  const bal = new BigNumber(pos.balance).shiftedBy(-18).toNumber();
+                  return acc + bal * parseFloat(pos.pool.lpTokenPriceUsd);
+                }, 0);
                 return (
-                  <div key={pos.pool.address} className='rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#2a2a2a] p-4'>
-                    <div className='flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 mb-3'>
-                      <div className='min-w-0'>
-                        <div className='flex items-center gap-2 mb-0.5'>
-                          <span className='font-bold text-gray-900 dark:text-white uppercase truncate'>{lpTokenTicker}</span>
-                          <span className='text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 font-semibold border border-amber-200 dark:border-amber-800 flex-shrink-0'>LP</span>
+                  <>
+                    {totalUsd > 0 && (
+                      <div className='rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/10 px-4 py-3 flex items-center justify-between'>
+                        <span className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>{t('liquidity_total_value')}</span>
+                        <span className='font-bold text-amber-600 dark:text-amber-400 text-base'>{formatUsd(totalUsd)}</span>
+                      </div>
+                    )}
+                    {userPositions.map((pos: UserPosition) => {
+                      const lpTokenTicker = pos.pool.lpToken.split('-')[0];
+                      const displayBalance = new BigNumber(pos.balance).shiftedBy(-18).toFixed(6, BigNumber.ROUND_DOWN);
+                      const totalSupplyBN = new BigNumber(pos.lpTotalSupply);
+                      const safeTotalSupply = totalSupplyBN.isZero() ? new BigNumber(1) : totalSupplyBN;
+                      const estimatedA = new BigNumber(pos.balance).multipliedBy(pos.pool.reserveA).dividedBy(safeTotalSupply).shiftedBy(-pos.decimalsA).toFixed(6, BigNumber.ROUND_DOWN);
+                      const estimatedB = new BigNumber(pos.balance).multipliedBy(pos.pool.reserveB).dividedBy(safeTotalSupply).shiftedBy(-pos.decimalsB).toFixed(6, BigNumber.ROUND_DOWN);
+                      const estimatedAUsd = pos.priceA != null ? parseFloat(estimatedA) * pos.priceA : null;
+                      const estimatedBUsd = pos.priceB != null ? parseFloat(estimatedB) * pos.priceB : null;
+                      const posUsd = pos.pool.lpTokenPriceUsd
+                        ? new BigNumber(pos.balance).shiftedBy(-18).toNumber() * parseFloat(pos.pool.lpTokenPriceUsd)
+                        : null;
+                      return (
+                        <div key={pos.pool.address} className='rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#2a2a2a] p-4'>
+                          <div className='flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 mb-3'>
+                            <div className='min-w-0'>
+                              <div className='flex items-center gap-2 mb-0.5'>
+                                <span className='font-bold text-gray-900 dark:text-white uppercase truncate'>{lpTokenTicker}</span>
+                                <span className='text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 font-semibold border border-amber-200 dark:border-amber-800 flex-shrink-0'>LP</span>
+                              </div>
+                              <p className='text-xs text-gray-500 font-medium truncate'>{pos.pool.tokenA.split('-')[0]} / {pos.pool.tokenB.split('-')[0]}</p>
+                            </div>
+                            <div className='xs:text-right w-full xs:w-auto'>
+                              <p className='font-bold text-gray-900 dark:text-white mb-0.5'>{displayBalance} LP</p>
+                              {posUsd !== null && posUsd > 0 && (
+                                <p className='text-xs text-amber-600 dark:text-amber-400 font-semibold mb-1'>≈ {formatUsd(posUsd)}</p>
+                              )}
+                              <div className='flex gap-3 xs:justify-end'>
+                                <button onClick={() => goTo('add-liquidity', { tokenA: pos.pool.tokenA, tokenB: pos.pool.tokenB })} className='text-xs font-bold text-green-500 hover:text-green-600 transition underline decoration-dashed'>{t('liquidity_add_btn')}</button>
+                                <button onClick={() => goTo('remove-liquidity', { pool: pos.pool.address })} className='text-xs font-bold text-red-500 hover:text-red-600 transition underline decoration-dashed'>{t('liquidity_remove_btn')}</button>
+                              </div>
+                            </div>
+                          </div>
+                          <div className='grid grid-cols-2 gap-2'>
+                            <div className='rounded-xl bg-gray-50 dark:bg-[#1e1e1e] border border-gray-100 dark:border-[#333] px-3 py-2 text-xs'>
+                              <p className='text-gray-400 mb-0.5'>≈ {pos.pool.tokenA.split('-')[0]}</p>
+                              <p className='font-bold text-gray-900 dark:text-white'>{estimatedA}</p>
+                              {estimatedAUsd != null && estimatedAUsd > 0 && (
+                                <p className='text-gray-400 mt-0.5'>{formatUsd(estimatedAUsd)}</p>
+                              )}
+                            </div>
+                            <div className='rounded-xl bg-gray-50 dark:bg-[#1e1e1e] border border-gray-100 dark:border-[#333] px-3 py-2 text-xs'>
+                              <p className='text-gray-400 mb-0.5'>≈ {pos.pool.tokenB.split('-')[0]}</p>
+                              <p className='font-bold text-gray-900 dark:text-white'>{estimatedB}</p>
+                              {estimatedBUsd != null && estimatedBUsd > 0 && (
+                                <p className='text-gray-400 mt-0.5'>{formatUsd(estimatedBUsd)}</p>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <p className='text-xs text-gray-500 font-medium truncate'>{pos.pool.tokenA.split('-')[0]} / {pos.pool.tokenB.split('-')[0]}</p>
-                      </div>
-                      <div className='xs:text-right w-full xs:w-auto'>
-                        <p className='font-bold text-gray-900 dark:text-white mb-1'>{displayBalance} LP</p>
-                        <div className='flex gap-3 xs:justify-end'>
-                          <button onClick={() => goTo('add-liquidity', { tokenA: pos.pool.tokenA, tokenB: pos.pool.tokenB })} className='text-xs font-bold text-green-500 hover:text-green-600 transition underline decoration-dashed'>{t('liquidity_add_btn')}</button>
-                          <button onClick={() => goTo('remove-liquidity', { pool: pos.pool.address })} className='text-xs font-bold text-red-500 hover:text-red-600 transition underline decoration-dashed'>{t('liquidity_remove_btn')}</button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className='grid grid-cols-2 gap-2'>
-                      <div className='rounded-xl bg-gray-50 dark:bg-[#1e1e1e] border border-gray-100 dark:border-[#333] px-3 py-2 text-xs'>
-                        <p className='text-gray-400 mb-0.5'>≈ {pos.pool.tokenA.split('-')[0]}</p>
-                        <p className='font-bold text-gray-900 dark:text-white'>{estimatedA}</p>
-                      </div>
-                      <div className='rounded-xl bg-gray-50 dark:bg-[#1e1e1e] border border-gray-100 dark:border-[#333] px-3 py-2 text-xs'>
-                        <p className='text-gray-400 mb-0.5'>≈ {pos.pool.tokenB.split('-')[0]}</p>
-                        <p className='font-bold text-gray-900 dark:text-white'>{estimatedB}</p>
-                      </div>
-                    </div>
-                  </div>
+                      );
+                    })}
+                  </>
                 );
-              })}
+              })()}
               <button onClick={() => goTo('add-liquidity')} className='dinoButton w-full !py-3 text-base'>{t('liquidity_add')}</button>
             </div>
           )}

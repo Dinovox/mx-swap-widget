@@ -19,6 +19,17 @@ export interface TokenSelectToken {
   identifier: string;
   ticker: string;
   logoUrl?: string | null;
+  priceUsd?: string | null;
+}
+
+function formatTokenPrice(priceUsd: string): string {
+  const p = parseFloat(priceUsd);
+  if (!p) return '';
+  if (p < 0.0001) return `$${p.toExponential(2)}`;
+  if (p < 0.01) return `$${p.toFixed(6)}`;
+  if (p < 1) return `$${p.toFixed(4)}`;
+  if (p < 1000) return `$${p.toFixed(2)}`;
+  return `$${p.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
 
 interface TokenSelectProps<T extends TokenSelectToken> {
@@ -157,6 +168,9 @@ export function TokenSelect<T extends TokenSelectToken>({
                   >
                     <TokenLogo url={t.logoUrl} ticker={t.ticker} />
                     <span className="flex-1 text-left">{t.ticker}</span>
+                    {t.priceUsd && (
+                      <span className="text-[10px] text-gray-400 font-normal">{formatTokenPrice(t.priceUsd)}</span>
+                    )}
                     <span className="text-[10px] text-gray-400 font-normal">{t.identifier.split('-')[1] ?? ''}</span>
                   </button>
                 );

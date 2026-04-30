@@ -43,6 +43,25 @@ const EGLD_TOKEN: SwapToken = {
 /*  Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
+const formatUsd = (priceUsd: string, amount: number): string | null => {
+  if (!amount || !priceUsd) return null;
+  const value = parseFloat(priceUsd) * amount;
+  if (!value) return null;
+  if (value < 0.01) return '<$0.01';
+  if (value < 1000) return `$${value.toFixed(2)}`;
+  return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+};
+
+const formatUnitPrice = (priceUsd: string | null | undefined): string | null => {
+  if (!priceUsd) return null;
+  const v = parseFloat(priceUsd);
+  if (!v) return null;
+  if (v >= 1000) return `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  if (v >= 1) return `$${v.toFixed(2)}`;
+  if (v >= 0.0001) return `$${v.toFixed(4)}`;
+  return `$${v.toExponential(2)}`;
+};
+
 /** Apply slippage to a raw amountOut string */
 const applySlippage = (rawAmount: string, slippage: number): bigint =>
   BigInt(
@@ -247,6 +266,7 @@ export const Swap = () => {
           poolCount: number;
           decimals: number;
           logoUrl?: string | null;
+          priceUsd?: string | null;
         }>;
       }>(`${apiUrl}/tokens`),
       axios
@@ -263,7 +283,7 @@ export const Swap = () => {
           .filter((t) => !whiteSet || whiteSet.has(t.identifier))
           .filter((t) => !blackSet || !blackSet.has(t.identifier));
         const wegld = list.find((t) => t.ticker === "WEGLD");
-        const egld = { ...EGLD_TOKEN, logoUrl: wegld?.logoUrl ?? null };
+        const egld = { ...EGLD_TOKEN, logoUrl: wegld?.logoUrl ?? null, priceUsd: wegld?.priceUsd ?? null };
         const includeEgld =
           (!whiteSet || whiteSet.has("EGLD")) &&
           (!blackSet || !blackSet.has("EGLD"));
@@ -570,6 +590,18 @@ export const Swap = () => {
           .toFixed(6, BigNumber.ROUND_DOWN)
       : null;
 
+  const amountInUsd = tokenIn?.priceUsd && Number(amountInDisplay) > 0
+    ? formatUsd(tokenIn.priceUsd, Number(amountInDisplay))
+    : null;
+
+  const amountOutUsd = tokenOut?.priceUsd && Number(amountOutDisplay) > 0
+    ? formatUsd(tokenOut.priceUsd, Number(amountOutDisplay))
+    : null;
+
+  const balanceInUsd = tokenIn?.priceUsd && tokenInBalanceDisplay && Number(tokenInBalanceDisplay) > 0
+    ? formatUsd(tokenIn.priceUsd, Number(tokenInBalanceDisplay))
+    : null;
+
   const priceImpactPct = quote
     ? (parseFloat(quote.priceImpact) * 100).toFixed(2)
     : null;
@@ -746,6 +778,11 @@ export const Swap = () => {
                     />
                   </a>
                 )}
+                {tokenIn && formatUnitPrice(tokenIn.priceUsd) && (
+                  <span className="text-[10px] font-semibold text-gray-400">
+                    {formatUnitPrice(tokenIn.priceUsd)}
+                  </span>
+                )}
               </div>
               {quoteLoading && activeField === "out" && (
                 <span className="text-[10px] text-gray-400 animate-pulse uppercase tracking-wider">
@@ -759,6 +796,9 @@ export const Swap = () => {
                 >
                   <span className="text-gray-400">{t("balance")} :</span>
                   {tokenInBalanceDisplay}
+                  {balanceInUsd && (
+                    <span className="text-gray-400 font-normal">≈ {balanceInUsd}</span>
+                  )}
                   <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded text-[9px] font-bold">
                     MAX
                   </span>
@@ -797,6 +837,9 @@ export const Swap = () => {
                 }`}
               />
             </div>
+            {amountInUsd && !insufficientBalance && (
+              <p className="mt-1 text-[10px] text-gray-400 text-right">≈ {amountInUsd}</p>
+            )}
             {insufficientBalance && (
               <p className="mt-2 text-[10px] font-semibold text-red-500 text-right">
                 {t("insufficient_balance")}
@@ -850,6 +893,11 @@ export const Swap = () => {
                     />
                   </a>
                 )}
+                {tokenOut && formatUnitPrice(tokenOut.priceUsd) && (
+                  <span className="text-[10px] font-semibold text-gray-400">
+                    {formatUnitPrice(tokenOut.priceUsd)}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {quoteLoading && activeField === "in" && (
@@ -897,6 +945,9 @@ export const Swap = () => {
                 }`}
               />
             </div>
+            {amountOutUsd && (
+              <p className="mt-1 text-[10px] text-gray-400 text-right">≈ {amountOutUsd}</p>
+            )}
           </div>
 
           {/* ---- Wrap/Unwrap info ---- */}

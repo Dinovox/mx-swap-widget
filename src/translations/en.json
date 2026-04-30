@@ -50,6 +50,7 @@
   "token_no_results": "No results",
   "liquidity_title": "Liquidity",
   "liquidity_subtitle": "Manage your liquidity pairs",
+  "liquidity_total_value": "Total value",
   "liquidity_card_desc": "Your active liquidity positions",
   "liquidity_empty": "Your liquidity positions will appear here.",
   "liquidity_add": "Add liquidity",

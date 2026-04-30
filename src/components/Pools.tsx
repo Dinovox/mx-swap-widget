@@ -8,6 +8,13 @@ import { Card } from '../ui/Card';
 import { useSwapConfig } from '../context/SwapConfigContext';
 import type { DexFilter, LiquidityPool, TokenMeta } from '../types';
 
+function formatUsd(value: number): string {
+  if (value < 0.01) return '<$0.01';
+  if (value < 1000) return `$${value.toFixed(2)}`;
+  if (value < 1_000_000) return `$${(value / 1000).toFixed(1)}K`;
+  return `$${(value / 1_000_000).toFixed(2)}M`;
+}
+
 function formatReserve(raw: string, decimals: number): string {
   const bn = new BigNumber(raw).shiftedBy(-decimals);
   if (bn.isZero()) return '0';
@@ -39,7 +46,7 @@ export const Pools = () => {
       setPools(activePools);
       const map: Record<string, TokenMeta> = {};
       for (const t of (tokensRes.data.tokens || [])) {
-        map[t.identifier] = { identifier: t.identifier, ticker: t.ticker ?? t.identifier.split('-')[0], decimals: t.decimals ?? 18 };
+        map[t.identifier] = { identifier: t.identifier, ticker: t.ticker ?? t.identifier.split('-')[0], decimals: t.decimals ?? 18, priceUsd: t.priceUsd ?? null };
       }
       setTokenMap(map);
     }).catch(console.error).finally(() => setLoading(false));
@@ -109,12 +116,24 @@ export const Pools = () => {
               const decB = getDecimals(pool.tokenB);
               const resA = formatReserve(pool.reserveA, decA);
               const resB = formatReserve(pool.reserveB, decB);
+              const priceA = tokenMap[pool.tokenA]?.priceUsd;
+              const priceB = tokenMap[pool.tokenB]?.priceUsd;
+              const resAUsd = priceA ? new BigNumber(pool.reserveA).shiftedBy(-decA).toNumber() * parseFloat(priceA) : null;
+              const resBUsd = priceB ? new BigNumber(pool.reserveB).shiftedBy(-decB).toNumber() * parseFloat(priceB) : null;
+              const tvl = pool.lpTokenPriceUsd && pool.lpSupply
+                ? parseFloat(pool.lpTokenPriceUsd) * new BigNumber(pool.lpSupply).shiftedBy(-18).toNumber()
+                : (resAUsd != null && resBUsd != null) ? resAUsd + resBUsd : null;
               return (
                 <div key={pool.address} className='rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4'>
                   <div className='flex items-center justify-between mb-3'>
-                    <div className='flex items-center gap-2'>
+                    <div className='flex items-center gap-2 flex-wrap'>
                       <span className='font-black text-gray-900 dark:text-white text-base'>{tickerA} / {tickerB}</span>
                       <span className='text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 font-semibold border border-green-200 dark:border-green-800 uppercase'>{t('pools_active')}</span>
+                      {tvl != null && tvl > 0 && (
+                        <span className='text-[10px] font-semibold text-gray-400'>
+                          TVL {formatUsd(tvl)}
+                        </span>
+                      )}
                     </div>
                     {dexFilter === 'DinoVox' && (
                       <button
@@ -129,10 +148,12 @@ export const Pools = () => {
                     <div className='rounded-xl bg-[#ffffff] dark:bg-[#2a2a2a] border border-gray-100 dark:border-[#333] px-3 py-2'>
                       <p className='text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5'>{t('pools_reserve')} {tickerA}</p>
                       <p className='font-bold text-gray-900 dark:text-white text-sm'>{resA} <span className='text-gray-400 font-medium'>{tickerA}</span></p>
+                      {resAUsd != null && resAUsd > 0 && <p className='text-[10px] text-gray-400 mt-0.5'>{formatUsd(resAUsd)}</p>}
                     </div>
                     <div className='rounded-xl bg-[#ffffff] dark:bg-[#2a2a2a] border border-gray-100 dark:border-[#333] px-3 py-2'>
                       <p className='text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5'>{t('pools_reserve')} {tickerB}</p>
                       <p className='font-bold text-gray-900 dark:text-white text-sm'>{resB} <span className='text-gray-400 font-medium'>{tickerB}</span></p>
+                      {resBUsd != null && resBUsd > 0 && <p className='text-[10px] text-gray-400 mt-0.5'>{formatUsd(resBUsd)}</p>}
                     </div>
                   </div>
                   <p className='text-[10px] text-gray-400 mt-2 font-mono truncate'>{pool.address}</p>
