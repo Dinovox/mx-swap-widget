@@ -47,16 +47,19 @@ const formatUsd = (priceUsd: string, amount: number): string | null => {
   if (!amount || !priceUsd) return null;
   const value = parseFloat(priceUsd) * amount;
   if (!value) return null;
-  if (value < 0.01) return '<$0.01';
+  if (value < 0.01) return "<$0.01";
   if (value < 1000) return `$${value.toFixed(2)}`;
-  return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  return `$${value.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 };
 
-const formatUnitPrice = (priceUsd: string | null | undefined): string | null => {
+const formatUnitPrice = (
+  priceUsd: string | null | undefined,
+): string | null => {
   if (!priceUsd) return null;
   const v = parseFloat(priceUsd);
   if (!v) return null;
-  if (v >= 1000) return `$${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  if (v >= 1000)
+    return `$${v.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
   if (v >= 1) return `$${v.toFixed(2)}`;
   if (v >= 0.0001) return `$${v.toFixed(4)}`;
   return `$${v.toExponential(2)}`;
@@ -283,7 +286,11 @@ export const Swap = () => {
           .filter((t) => !whiteSet || whiteSet.has(t.identifier))
           .filter((t) => !blackSet || !blackSet.has(t.identifier));
         const wegld = list.find((t) => t.ticker === "WEGLD");
-        const egld = { ...EGLD_TOKEN, logoUrl: wegld?.logoUrl ?? null, priceUsd: wegld?.priceUsd ?? null };
+        const egld = {
+          ...EGLD_TOKEN,
+          logoUrl: wegld?.logoUrl ?? null,
+          priceUsd: wegld?.priceUsd ?? null,
+        };
         const includeEgld =
           (!whiteSet || whiteSet.has("EGLD")) &&
           (!blackSet || !blackSet.has("EGLD"));
@@ -590,17 +597,29 @@ export const Swap = () => {
           .toFixed(6, BigNumber.ROUND_DOWN)
       : null;
 
-  const amountInUsd = tokenIn?.priceUsd && Number(amountInDisplay) > 0
-    ? formatUsd(tokenIn.priceUsd, Number(amountInDisplay))
-    : null;
+  const amountInUsd =
+    tokenIn?.priceUsd && Number(amountInDisplay) > 0
+      ? formatUsd(tokenIn.priceUsd, Number(amountInDisplay))
+      : null;
 
-  const amountOutUsd = tokenOut?.priceUsd && Number(amountOutDisplay) > 0
-    ? formatUsd(tokenOut.priceUsd, Number(amountOutDisplay))
-    : null;
+  const amountOutUsd =
+    tokenOut?.priceUsd && Number(amountOutDisplay) > 0
+      ? formatUsd(tokenOut.priceUsd, Number(amountOutDisplay))
+      : null;
 
-  const balanceInUsd = tokenIn?.priceUsd && tokenInBalanceDisplay && Number(tokenInBalanceDisplay) > 0
-    ? formatUsd(tokenIn.priceUsd, Number(tokenInBalanceDisplay))
-    : null;
+  const balanceInUsd =
+    tokenIn?.priceUsd &&
+    tokenInBalanceDisplay &&
+    Number(tokenInBalanceDisplay) > 0
+      ? formatUsd(tokenIn.priceUsd, Number(tokenInBalanceDisplay))
+      : null;
+
+  const balanceOutUsd =
+    tokenOut?.priceUsd &&
+    tokenOutBalanceDisplay &&
+    Number(tokenOutBalanceDisplay) > 0
+      ? formatUsd(tokenOut.priceUsd, Number(tokenOutBalanceDisplay))
+      : null;
 
   const priceImpactPct = quote
     ? (parseFloat(quote.priceImpact) * 100).toFixed(2)
@@ -748,8 +767,8 @@ export const Swap = () => {
             style={p.inner}
             className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                   {t("you_send")}
                 </p>
@@ -785,11 +804,13 @@ export const Swap = () => {
                 )}
               </div>
               {quoteLoading && activeField === "out" && (
-                <span className="text-[10px] text-gray-400 animate-pulse uppercase tracking-wider">
+                <span className="text-[10px] text-gray-400 animate-pulse uppercase tracking-wider flex-shrink-0">
                   {t("calculating")}
                 </span>
               )}
-              {address && tokenInBalanceDisplay && (
+            </div>
+            {address && tokenInBalanceDisplay && (
+              <div className="flex justify-end mb-3">
                 <button
                   onClick={handleMax}
                   className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-500 hover:text-amber-600 transition-colors"
@@ -797,14 +818,16 @@ export const Swap = () => {
                   <span className="text-gray-400">{t("balance")} :</span>
                   {tokenInBalanceDisplay}
                   {balanceInUsd && (
-                    <span className="text-gray-400 font-normal">≈ {balanceInUsd}</span>
+                    <span className="text-gray-400 font-normal">
+                      ≈ {balanceInUsd}
+                    </span>
                   )}
                   <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded text-[9px] font-bold">
                     MAX
                   </span>
                 </button>
-              )}
-            </div>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <TokenSelect
                 value={tokenIn}
@@ -838,7 +861,9 @@ export const Swap = () => {
               />
             </div>
             {amountInUsd && !insufficientBalance && (
-              <p className="mt-1 text-[10px] text-gray-400 text-right">≈ {amountInUsd}</p>
+              <p className="mt-1 text-[10px] text-gray-400 text-right">
+                ≈ {amountInUsd}
+              </p>
             )}
             {insufficientBalance && (
               <p className="mt-2 text-[10px] font-semibold text-red-500 text-right">
@@ -863,8 +888,8 @@ export const Swap = () => {
             style={p.inner}
             className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                   {t("you_receive")}
                 </p>
@@ -899,22 +924,27 @@ export const Swap = () => {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                {quoteLoading && activeField === "in" && (
-                  <span className="text-[10px] text-gray-400 animate-pulse uppercase tracking-wider">
-                    {t("calculating")}
-                  </span>
-                )}
-                {address && tokenOutBalanceDisplay && (
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                    {t("balance")} :{" "}
-                    <span className="text-amber-500">
-                      {tokenOutBalanceDisplay}
-                    </span>
-                  </span>
-                )}
-              </div>
+              {quoteLoading && activeField === "in" && (
+                <span className="text-[10px] text-gray-400 animate-pulse uppercase tracking-wider flex-shrink-0">
+                  {t("calculating")}
+                </span>
+              )}
             </div>
+            {address && tokenOutBalanceDisplay && (
+              <div className="flex justify-end mb-3">
+                <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                  {t("balance")} :{" "}
+                  <span className="text-amber-500">
+                    {tokenOutBalanceDisplay}
+                  </span>
+                  {balanceOutUsd && (
+                    <span className="font-normal normal-case">
+                      ≈ {balanceOutUsd}
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <TokenSelect
                 value={tokenOut}
@@ -946,7 +976,9 @@ export const Swap = () => {
               />
             </div>
             {amountOutUsd && (
-              <p className="mt-1 text-[10px] text-gray-400 text-right">≈ {amountOutUsd}</p>
+              <p className="mt-1 text-[10px] text-gray-400 text-right">
+                ≈ {amountOutUsd}
+              </p>
             )}
           </div>
 
@@ -1310,10 +1342,11 @@ export const Swap = () => {
                 ? {
                     background: "linear-gradient(135deg, #BD37EC, #1F67FF)",
                     border: "none",
+                    minHeight: "36px",
                   }
-                : {}
+                : { minHeight: "36px" }
             }
-            className={`dinoButton orange w-full !py-3 text-base ${
+            className={`dinoButton orange w-full text-base ${
               !tokenIn || !tokenOut
                 ? "!bg-orange-400 dark:!bg-orange-500 !border-orange-600 dark:!border-orange-700 !text-orange-950 dark:!text-orange-950 font-bold !opacity-100 hover:!bg-orange-500 hover:!border-orange-700 dark:hover:!bg-orange-400"
                 : "disabled:opacity-40 disabled:cursor-not-allowed"

@@ -131,7 +131,7 @@ export function TokenSelect<T extends TokenSelectToken>({
 
       {open && (
         <div
-          style={{ backgroundColor: dropdownBg, ...p.dropdown }}
+          style={{ backgroundColor: dropdownBg, ...p.dropdown, minWidth: '260px' }}
           className="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 dark:border-[#444] shadow-lg overflow-hidden"
         >
           <div className="px-2 pt-2 pb-1">
@@ -145,7 +145,7 @@ export function TokenSelect<T extends TokenSelectToken>({
               className="w-full rounded-lg border border-gray-200 dark:border-[#555] bg-gray-50 dark:bg-[#1e1e1e] px-3 py-1.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
-          <div className="max-h-52 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             {filtered.length === 0 ? (
               <p className="px-3 py-3 text-sm text-gray-400 text-center">{t('token_no_results')}</p>
             ) : (
@@ -160,18 +160,22 @@ export function TokenSelect<T extends TokenSelectToken>({
                     type="button"
                     onClick={() => { onChange(t); setOpen(false); }}
                     style={itemStyle}
-                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium hover:bg-amber-50 dark:hover:bg-[#333] ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-amber-50 dark:hover:bg-[#333] ${
                       isSelected
-                        ? 'bg-amber-50 dark:bg-[#333] text-amber-600 dark:text-amber-400'
-                        : 'text-gray-900 dark:text-white'
+                        ? 'bg-amber-50 dark:bg-[#333]'
+                        : ''
                     }`}
                   >
                     <TokenLogo url={t.logoUrl} ticker={t.ticker} />
-                    <span className="flex-1 text-left">{t.ticker}</span>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className={`text-sm font-bold truncate leading-tight ${isSelected ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'}`}>
+                        {t.ticker}
+                      </p>
+                      <p className="text-[10px] text-gray-400 font-normal leading-tight">{t.identifier.split('-')[1] ?? ''}</p>
+                    </div>
                     {t.priceUsd && (
-                      <span className="text-[10px] text-gray-400 font-normal">{formatTokenPrice(t.priceUsd)}</span>
+                      <span className="text-[11px] text-gray-400 font-medium shrink-0">{formatTokenPrice(t.priceUsd)}</span>
                     )}
-                    <span className="text-[10px] text-gray-400 font-normal">{t.identifier.split('-')[1] ?? ''}</span>
                   </button>
                 );
               })
