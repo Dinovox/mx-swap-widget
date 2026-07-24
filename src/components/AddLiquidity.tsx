@@ -209,31 +209,48 @@ export const AddLiquidity = () => {
       setLpTotalMinted(null);
       return;
     }
+    let cancelled = false;
     setPoolLoading(true);
-    axios
-      .get(`${apiUrl}/pools`)
-      .then(async (res) => {
-        const pools: PoolInfo[] = res.data.pools || [];
-        const found = pools.find(
-          (p) =>
-            (p.tokenA === tokenA.identifier &&
-              p.tokenB === tokenB.identifier) ||
-            (p.tokenA === tokenB.identifier && p.tokenB === tokenA.identifier),
-        );
+
+    const fetchPool = async () => {
+      try {
+        // /pools (the full list) only includes pools that already have
+        // liquidity — a freshly created, still-empty pool never appears
+        // there. /pools/pair looks up this exact pair directly and returns
+        // it regardless of liquidity state (same endpoint CreatePool uses
+        // to confirm pair creation), so it's the correct source of truth
+        // here too.
+        const res = await axios.get(`${apiUrl}/pools/pair`, {
+          params: { tokenA: tokenA.identifier, tokenB: tokenB.identifier },
+        });
+        if (cancelled) return;
+        const found: PoolInfo | null = res.data?.address ? res.data : null;
         setPool((found as LiquidityPool) || null);
         if (found?.lpToken && networkApiAddress) {
           try {
             const lpRes = await axios.get(`/tokens/${found.lpToken}`, {
               baseURL: networkApiAddress,
             });
-            setLpTotalMinted(lpRes.data?.minted ?? null);
+            if (!cancelled) setLpTotalMinted(lpRes.data?.minted ?? null);
           } catch {
-            setLpTotalMinted(null);
+            if (!cancelled) setLpTotalMinted(null);
           }
-        } else setLpTotalMinted(null);
-      })
-      .catch(console.error)
-      .finally(() => setPoolLoading(false));
+        } else if (!cancelled) setLpTotalMinted(null);
+      } catch (err: any) {
+        if (err?.response?.status !== 404) console.error(err);
+        if (!cancelled) {
+          setPool(null);
+          setLpTotalMinted(null);
+        }
+      } finally {
+        if (!cancelled) setPoolLoading(false);
+      }
+    };
+
+    fetchPool();
+    return () => {
+      cancelled = true;
+    };
   }, [tokenA, tokenB]); // eslint-disable-line
 
   const handleAmountA = (val: string) => {
