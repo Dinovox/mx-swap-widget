@@ -84,6 +84,7 @@ export const Swap = () => {
     apiUrl,
     routerAddress,
     aggregatorAddress,
+    voxEgldAddress,
     wrapContract: WRAP_CONTRACT,
     wegldIdentifier: wegld_identifier,
     theme,
@@ -511,9 +512,11 @@ export const Swap = () => {
     try {
       const { tx } = isArb ? arb! : quote!;
 
-      const allowedReceivers = [routerAddress, aggregatorAddress].map((a) =>
-        a.toLowerCase(),
-      );
+      const allowedReceivers = [
+        routerAddress,
+        aggregatorAddress,
+        voxEgldAddress,
+      ].map((a) => a.toLowerCase());
       if (!allowedReceivers.includes(tx.scAddress.toLowerCase())) {
         setTxError(`Receiver refusé : ${tx.scAddress}`);
         return;

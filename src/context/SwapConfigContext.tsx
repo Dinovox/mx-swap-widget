@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext } from "react";
 
 export interface SwapConfig {
   /** Base URL of the DEX API  e.g. 'https://dex.dinovox.com/api/v1' */
@@ -7,6 +7,8 @@ export interface SwapConfig {
   routerAddress: string;
   /** Aggregator smart contract address */
   aggregatorAddress: string;
+  /** VOX-EGLD smart contract address */
+  voxEgldAddress: string;
   /** Factory smart contract address */
   factoryAddress: string;
   /** Wrap/unwrap contract address (EGLD ↔ WEGLD) */
@@ -34,7 +36,11 @@ export interface SwapConfig {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSignTransactions?: (
     transactions: any[],
-    displayInfo: { processingMessage: string; errorMessage: string; successMessage: string },
+    displayInfo: {
+      processingMessage: string;
+      errorMessage: string;
+      successMessage: string;
+    },
   ) => Promise<unknown>;
   /**
    * Language code for widget UI (e.g. 'en', 'fr').
@@ -49,7 +55,7 @@ export interface SwapConfig {
    * Pass `'dark'` or `'light'` to pin the widget theme independently
    * of the host app — useful for apps without their own theme toggle.
    */
-  theme?: 'light' | 'dark' | 'mid';
+  theme?: "light" | "dark" | "mid";
   /** Default "from" token identifier loaded when no `from` URL param is present. */
   defaultFrom?: string;
   /** Default "to" token identifier loaded when no `to` URL param is present. */
@@ -94,15 +100,21 @@ export interface SwapConfig {
 export type ResolvedSwapConfig = SwapConfig;
 
 const DEFAULT_CONFIG: ResolvedSwapConfig = {
-  apiUrl: 'https://dex.dinovox.com/api/v1',
-  routerAddress: 'erd1qqqqqqqqqqqqqpgq67xp5hv48n5vy5d8990uq8kpx99h7rfkfm8s2zqqxn',
-  aggregatorAddress: 'erd1qqqqqqqqqqqqqpgqly98mw70swxc403a7r63mr7pkzh9uhazfm8suv22ak',
-  factoryAddress: 'erd1qqqqqqqqqqqqqpgqq5852gnes6xxka35lw42prqwtv6a0znhfm8sn3h9n3',
-  wrapContract: 'erd1qqqqqqqqqqqqqpgqhe8t5jewej70zupmh44jurgn29psua5l2jps3ntjj3',
-  wegldIdentifier: 'WEGLD-bd4d79',
-  networkApiAddress: 'https://api.multiversx.com',
-  chainId: '1',
-  explorerAddress: 'https://explorer.multiversx.com',
+  apiUrl: "https://dex.dinovox.com/api/v1",
+  routerAddress:
+    "erd1qqqqqqqqqqqqqpgq67xp5hv48n5vy5d8990uq8kpx99h7rfkfm8s2zqqxn",
+  aggregatorAddress:
+    "erd1qqqqqqqqqqqqqpgqly98mw70swxc403a7r63mr7pkzh9uhazfm8suv22ak",
+  voxEgldAddress:
+    "erd1qqqqqqqqqqqqqpgql6v06snr0jtg9gesuvsre83f6rvqr0wr8ltsjgfta3",
+  factoryAddress:
+    "erd1qqqqqqqqqqqqqpgqq5852gnes6xxka35lw42prqwtv6a0znhfm8sn3h9n3",
+  wrapContract:
+    "erd1qqqqqqqqqqqqqpgqhe8t5jewej70zupmh44jurgn29psua5l2jps3ntjj3",
+  wegldIdentifier: "WEGLD-bd4d79",
+  networkApiAddress: "https://api.multiversx.com",
+  chainId: "1",
+  explorerAddress: "https://explorer.multiversx.com",
 };
 
 const SwapConfigContext = createContext<ResolvedSwapConfig>(DEFAULT_CONFIG);
@@ -119,4 +131,5 @@ export const SwapConfigProvider: React.FC<{
   );
 };
 
-export const useSwapConfig = (): ResolvedSwapConfig => useContext(SwapConfigContext);
+export const useSwapConfig = (): ResolvedSwapConfig =>
+  useContext(SwapConfigContext);
