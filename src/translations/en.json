@@ -13,6 +13,7 @@
   "price_impact": "Price impact",
   "hops": "Hops",
   "route": "Route",
+  "route_stake": "Stake",
   "slippage": "Slippage",
   "min_received": "Minimum received",
   "high_impact_warning": "This route has a high price impact — you are paying more than the market price for this token. Try reducing the swap amount for a better rate.",

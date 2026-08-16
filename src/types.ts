@@ -66,7 +66,7 @@ export interface QuoteHop {
   tokenOut: string;
   amountIn: string;
   amountOut: string;
-  dexType?: 'DinoVox' | 'XExchange' | 'JExchange';
+  dexType?: 'DinoVox' | 'XExchange' | 'JExchange' | 'LiquidStaking';
   priceImpact?: string;
 }
 
@@ -88,6 +88,12 @@ export interface QuoteResponse {
   hops: number;
   route: QuoteHop[];
   tx: QuoteTx;
+  /**
+   * Set to 'stake' when the backend found that direct EGLD → liquid-staking is more
+   * profitable than routing through a swap. Only ever occurs for EGLD → voxEGLD.
+   * When set, amountOut is deterministic (no slippage should be applied to it).
+   */
+  source?: string;
 }
 
 /** Arbitrage opportunity response */

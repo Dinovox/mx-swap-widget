@@ -138,6 +138,12 @@ export const Swap = () => {
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  // Backend found direct EGLD → liquid-staking more profitable than swapping.
+  // One-way only (EGLD → voxEGLD): amountOut is deterministic, no wrap step involved.
+  const isStakeRoute =
+    !!quote &&
+    (quote.source === "stake" ||
+      quote.route.every((h) => h.dexType === "LiquidStaking"));
 
   /* ---- Arb ---- */
   const [arb, setArb] = useState<ArbResponse | null>(null);
@@ -640,10 +646,16 @@ export const Swap = () => {
         .toFixed(6, BigNumber.ROUND_DOWN)
     : null;
 
-  // Minimum received: slippage on quote.amountOut (already net of all fees)
+  // Minimum received: slippage on quote.amountOut (already net of all fees).
+  // Stake route is deterministic (direct contract mint) — slippage doesn't apply,
+  // amountOut itself is guaranteed.
   const minAmountOutDisplay =
     quote && !isWrapUnwrap
-      ? new BigNumber(applySlippage(quote.amountOut, slippage).toString())
+      ? new BigNumber(
+          isStakeRoute
+            ? quote.amountOut
+            : applySlippage(quote.amountOut, slippage).toString(),
+        )
           .shiftedBy(-(tokenOut?.decimals ?? 18))
           .toFixed(6, BigNumber.ROUND_DOWN)
       : null;
@@ -1086,8 +1098,8 @@ export const Swap = () => {
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200">
                     {tokenIn?.ticker ?? quote.route[0]?.tokenIn}
                   </span>
-                  {/* Wrap connector when EGLD in */}
-                  {isEgldIn && (
+                  {/* Wrap connector when EGLD in (skipped for the direct stake route, which never wraps) */}
+                  {isEgldIn && !isStakeRoute && (
                     <React.Fragment>
                       <div className="flex flex-col items-center mx-1">
                         <span className="text-[9px] font-bold text-gray-400">
@@ -1115,23 +1127,29 @@ export const Swap = () => {
                     const hopHighImpact = hopImpact >= 5;
                     // Color per DEX
                     const dexStyle =
-                      hop.dexType === "XExchange"
+                      hop.dexType === "LiquidStaking"
                         ? {
-                            line: "bg-blue-400 dark:bg-blue-500",
-                            label: "text-blue-600 dark:text-blue-400",
-                            name: "XExchange",
+                            line: "bg-purple-400 dark:bg-purple-500",
+                            label: "text-purple-600 dark:text-purple-400",
+                            name: t("route_stake"),
                           }
-                        : hop.dexType === "JExchange"
+                        : hop.dexType === "XExchange"
                           ? {
-                              line: "bg-green-400 dark:bg-green-500",
-                              label: "text-green-600 dark:text-green-400",
-                              name: "JExchange",
+                              line: "bg-blue-400 dark:bg-blue-500",
+                              label: "text-blue-600 dark:text-blue-400",
+                              name: "XExchange",
                             }
-                          : {
-                              line: "bg-amber-400 dark:bg-amber-500",
-                              label: "text-amber-600 dark:text-amber-400",
-                              name: "DinoVox",
-                            };
+                          : hop.dexType === "JExchange"
+                            ? {
+                                line: "bg-green-400 dark:bg-green-500",
+                                label: "text-green-600 dark:text-green-400",
+                                name: "JExchange",
+                              }
+                            : {
+                                line: "bg-amber-400 dark:bg-amber-500",
+                                label: "text-amber-600 dark:text-amber-400",
+                                name: "DinoVox",
+                              };
                     return (
                       <React.Fragment key={i}>
                         {/* Connector */}
