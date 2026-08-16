@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSwapConfig } from '../context/SwapConfigContext';
 import { getThemePalette } from './themePalette';
@@ -22,6 +22,14 @@ export interface TokenSelectToken {
   priceUsd?: string | null;
 }
 
+/** Wallet holding info for a token, keyed by identifier and passed to TokenSelect for display/sorting. */
+export interface TokenBalanceInfo {
+  /** Human-readable balance (already divided by decimals). */
+  amount: number;
+  /** USD value of the holding, or null when the token has no known price. */
+  usd: number | null;
+}
+
 function formatTokenPrice(priceUsd: string): string {
   const p = parseFloat(priceUsd);
   if (!p) return '';
@@ -32,6 +40,20 @@ function formatTokenPrice(priceUsd: string): string {
   return `$${p.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
 
+function formatTokenAmount(amount: number): string {
+  if (!amount) return '0';
+  if (amount < 0.000001) return amount.toExponential(2);
+  if (amount < 1) return amount.toFixed(6);
+  if (amount < 1000) return amount.toFixed(4);
+  return amount.toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
+function formatUsdValue(value: number): string {
+  if (value < 0.01) return '<$0.01';
+  if (value < 1000) return `$${value.toFixed(2)}`;
+  return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+}
+
 interface TokenSelectProps<T extends TokenSelectToken> {
   value: T | null;
   onChange: (t: T | null) => void;
@@ -39,6 +61,13 @@ interface TokenSelectProps<T extends TokenSelectToken> {
   exclude?: string;
   loading: boolean;
   className?: string;
+  /**
+   * Wallet balances keyed by token identifier. When provided, tokens are expected to
+   * already be sorted wallet-holdings-first (largest USD value first), and the dropdown
+   * shows the held amount / USD value instead of the unit price, grouped under
+   * "in wallet" / "other tokens" headers.
+   */
+  balances?: Record<string, TokenBalanceInfo>;
 }
 
 function TokenLogo({ url, ticker }: { url?: string | null; ticker: string }) {
@@ -67,6 +96,7 @@ export function TokenSelect<T extends TokenSelectToken>({
   exclude,
   loading,
   className = '',
+  balances,
 }: TokenSelectProps<T>) {
   const { t } = useTranslation('swap');
   const { theme } = useSwapConfig();
@@ -149,36 +179,72 @@ export function TokenSelect<T extends TokenSelectToken>({
             {filtered.length === 0 ? (
               <p className="px-3 py-3 text-sm text-gray-400 text-center">{t('token_no_results')}</p>
             ) : (
-              filtered.map((t) => {
-                const isSelected = value?.identifier === t.identifier;
-                const itemStyle = isSelected
-                  ? theme === 'mid' ? { backgroundColor: 'rgba(189,55,236,0.2)', color: '#BD37EC' } : {}
-                  : theme === 'mid' ? { color: '#ffffff' } : {};
-                return (
-                  <button
-                    key={t.identifier}
-                    type="button"
-                    onClick={() => { onChange(t); setOpen(false); }}
-                    style={itemStyle}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-amber-50 dark:hover:bg-[#333] ${
-                      isSelected
-                        ? 'bg-amber-50 dark:bg-[#333]'
-                        : ''
-                    }`}
-                  >
-                    <TokenLogo url={t.logoUrl} ticker={t.ticker} />
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className={`text-sm font-bold truncate leading-tight ${isSelected ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'}`}>
-                        {t.ticker}
+              (() => {
+                const hasHeldTokens = !!balances && filtered.some((tok) => balances[tok.identifier]);
+                let walletHeaderShown = false;
+                let otherHeaderShown = false;
+
+                return filtered.map((tok) => {
+                  const isSelected = value?.identifier === tok.identifier;
+                  const itemStyle = isSelected
+                    ? theme === 'mid' ? { backgroundColor: 'rgba(189,55,236,0.2)', color: '#BD37EC' } : {}
+                    : theme === 'mid' ? { color: '#ffffff' } : {};
+                  const bal = balances?.[tok.identifier];
+
+                  let header: React.ReactNode = null;
+                  if (hasHeldTokens && bal && !walletHeaderShown) {
+                    walletHeaderShown = true;
+                    header = (
+                      <p className="px-3 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                        {t('token_group_wallet')}
                       </p>
-                      <p className="text-[10px] text-gray-400 font-normal leading-tight">{t.identifier.split('-')[1] ?? ''}</p>
-                    </div>
-                    {t.priceUsd && (
-                      <span className="text-[11px] text-gray-400 font-medium shrink-0">{formatTokenPrice(t.priceUsd)}</span>
-                    )}
-                  </button>
-                );
-              })
+                    );
+                  } else if (hasHeldTokens && !bal && !otherHeaderShown) {
+                    otherHeaderShown = true;
+                    header = (
+                      <p className="px-3 pt-2.5 pb-1 mt-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-t border-gray-100 dark:border-[#333]">
+                        {t('token_group_other')}
+                      </p>
+                    );
+                  }
+
+                  return (
+                    <React.Fragment key={tok.identifier}>
+                      {header}
+                      <button
+                        type="button"
+                        onClick={() => { onChange(tok); setOpen(false); }}
+                        style={itemStyle}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-amber-50 dark:hover:bg-[#333] ${
+                          isSelected
+                            ? 'bg-amber-50 dark:bg-[#333]'
+                            : ''
+                        }`}
+                      >
+                        <TokenLogo url={tok.logoUrl} ticker={tok.ticker} />
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className={`text-sm font-bold truncate leading-tight ${isSelected ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'}`}>
+                            {tok.ticker}
+                          </p>
+                          <p className="text-[10px] text-gray-400 font-normal leading-tight">{tok.identifier.split('-')[1] ?? ''}</p>
+                        </div>
+                        {bal ? (
+                          <div className="text-right shrink-0 leading-tight">
+                            <p className={`text-xs font-semibold ${isSelected ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-200'}`}>
+                              {formatTokenAmount(bal.amount)}
+                            </p>
+                            {bal.usd != null && (
+                              <p className="text-[10px] text-gray-400 font-normal">{formatUsdValue(bal.usd)}</p>
+                            )}
+                          </div>
+                        ) : tok.priceUsd ? (
+                          <span className="text-[11px] text-gray-400 font-medium shrink-0">{formatTokenPrice(tok.priceUsd)}</span>
+                        ) : null}
+                      </button>
+                    </React.Fragment>
+                  );
+                });
+              })()
             )}
           </div>
         </div>

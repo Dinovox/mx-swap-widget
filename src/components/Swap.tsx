@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import { useWidgetSearchParams } from "../hooks/useWidgetSearchParams";
@@ -10,7 +10,7 @@ import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
 import { useGetUserESDT } from "../hooks/useGetUserEsdt";
 import { Card } from "../ui/Card";
-import { TokenSelect } from "../ui/TokenSelect";
+import { TokenSelect, type TokenBalanceInfo } from "../ui/TokenSelect";
 import bigToHex from "../helpers/bigToHex";
 import strToHex from "../helpers/strToHex";
 import BigNumber from "bignumber.js";
@@ -238,6 +238,54 @@ export const Swap = () => {
           .shiftedBy(-tokenOut.decimals)
           .toFixed(6, BigNumber.ROUND_DOWN)
       : null;
+
+  /* ---------- Wallet holdings (to sort/annotate the token selector) ---------- */
+  // Fetch every ESDT held by the connected wallet (no identifier filter = full list).
+  const allWalletTokensRaw = useGetUserESDT(undefined, {
+    enabled: !!address,
+    address,
+    networkApiAddress,
+    refreshKey: balanceRefreshKey,
+  });
+
+  const walletBalanceMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const w of allWalletTokensRaw as Array<{ identifier?: string; balance?: string }>) {
+      if (w?.identifier && w?.balance) map.set(w.identifier, w.balance);
+    }
+    return map;
+  }, [allWalletTokensRaw]);
+
+  // Held amount + USD value per token identifier, used to display balances in the
+  // token selector and to sort it wallet-holdings-first.
+  const tokenBalances = useMemo(() => {
+    const map: Record<string, TokenBalanceInfo> = {};
+    for (const tok of tokens) {
+      const raw =
+        tok.identifier === "EGLD" ? egldBalance : walletBalanceMap.get(tok.identifier);
+      if (!raw) continue;
+      const amount = new BigNumber(raw).shiftedBy(-tok.decimals);
+      if (amount.isZero()) continue;
+      map[tok.identifier] = {
+        amount: amount.toNumber(),
+        usd: tok.priceUsd ? amount.multipliedBy(tok.priceUsd).toNumber() : null,
+      };
+    }
+    return map;
+  }, [tokens, egldBalance, walletBalanceMap]);
+
+  // Tokens held by the wallet first (largest USD value first, dust included so it can
+  // be sold too), then the remaining tokens in their original order.
+  const sortedTokens = useMemo(() => {
+    if (Object.keys(tokenBalances).length === 0) return tokens;
+    return [...tokens].sort((a, b) => {
+      const aBal = tokenBalances[a.identifier];
+      const bBal = tokenBalances[b.identifier];
+      if (!!aBal !== !!bBal) return aBal ? -1 : 1;
+      if (aBal && bBal) return (bBal.usd ?? -1) - (aBal.usd ?? -1);
+      return 0;
+    });
+  }, [tokens, tokenBalances]);
 
   /* ---------- Wrap / Unwrap detection ---------- */
   const isWrap =
@@ -838,7 +886,8 @@ export const Swap = () => {
                   setTokenIn(t);
                   setQuote(null);
                 }}
-                tokens={tokens}
+                tokens={sortedTokens}
+                balances={tokenBalances}
                 exclude={undefined}
                 loading={tokensLoading}
               />
@@ -955,7 +1004,8 @@ export const Swap = () => {
                   setTokenOut(t);
                   setQuote(null);
                 }}
-                tokens={tokens}
+                tokens={sortedTokens}
+                balances={tokenBalances}
                 exclude={undefined}
                 loading={tokensLoading}
               />

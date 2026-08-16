@@ -48,6 +48,8 @@
   "token_search": "Rechercher…",
   "token_loading": "Chargement…",
   "token_no_results": "Aucun résultat",
+  "token_group_wallet": "Dans votre wallet",
+  "token_group_other": "Autres tokens",
   "liquidity_title": "Liquidité",
   "liquidity_subtitle": "Gérer vos paires de liquidité",
   "liquidity_total_value": "Valeur totale",
