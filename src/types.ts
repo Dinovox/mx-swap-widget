@@ -57,7 +57,7 @@ export interface TokenMeta {
 }
 
 /** DEX filter for the Pools page */
-export type DexFilter = 'DinoVox' | 'XExchange';
+export type DexFilter = 'DinoVox' | 'XExchange' | 'JExchange';
 
 /** A single hop in a multi-hop swap route */
 export interface QuoteHop {

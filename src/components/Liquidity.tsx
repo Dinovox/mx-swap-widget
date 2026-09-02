@@ -13,7 +13,7 @@ import { useGetUserESDT } from "../hooks/useGetUserEsdt";
 import axios from "axios";
 import { useSwapConfig } from "../context/SwapConfigContext";
 import BigNumber from "bignumber.js";
-import type { LiquidityPool, UserPosition } from "../types";
+import type { LiquidityPool, TokenMeta, UserPosition } from "../types";
 
 export const Liquidity = () => {
   const { apiUrl, address, networkApiAddress } = useSwapConfig();
@@ -24,14 +24,32 @@ export const Liquidity = () => {
   const [pools, setPools] = React.useState<LiquidityPool[]>([]);
   const [poolsLoading, setPoolsLoading] = React.useState(true);
   const [userPositions, setUserPositions] = React.useState<UserPosition[]>([]);
+  // DinoVox's own token catalogue — same price source as the pool's
+  // lpTokenPriceUsd (used for the total/per-position headline figures) and as
+  // RemoveLiquidity. Deliberately not api.multiversx.com's generic per-token
+  // `price` field: that's a different feed and previously made the per-token
+  // breakdown (estimatedAUsd/estimatedBUsd) disagree with the headline total.
+  const [tokenMeta, setTokenMeta] = React.useState<Record<string, TokenMeta>>({});
 
   React.useEffect(() => {
     if (!apiUrl) return;
     setPoolsLoading(true);
-    axios
-      .get(`${apiUrl}/pools`)
-      .then((res) => {
-        setPools(res.data.pools || []);
+    Promise.all([
+      axios.get(`${apiUrl}/pools`),
+      axios.get(`${apiUrl}/tokens`).catch(() => ({ data: { tokens: [] } })),
+    ])
+      .then(([poolsRes, tokensRes]) => {
+        setPools(poolsRes.data.pools || []);
+        const map: Record<string, TokenMeta> = {};
+        for (const tk of tokensRes.data.tokens || []) {
+          map[tk.identifier] = {
+            identifier: tk.identifier,
+            ticker: tk.ticker || tk.identifier.split("-")[0],
+            decimals: tk.decimals ?? 18,
+            priceUsd: tk.priceUsd ?? null,
+          };
+        }
+        setTokenMeta(map);
       })
       .catch(console.error)
       .finally(() => setPoolsLoading(false));
@@ -68,29 +86,43 @@ export const Liquidity = () => {
     }
     Promise.all(
       held.map(async ({ pool, balance }) => {
-        const [lpRes, tokenARes, tokenBRes] = await Promise.all([
-          axios.get(`/tokens/${pool.lpToken}`, { baseURL: networkApiAddress }),
-          axios
-            .get(`/tokens/${pool.tokenA}`, { baseURL: networkApiAddress })
-            .catch(() => null),
-          axios
-            .get(`/tokens/${pool.tokenB}`, { baseURL: networkApiAddress })
-            .catch(() => null),
-        ]);
+        // Pool *detail* endpoint rather than the bulk /pools list this pool
+        // object came from — a single-pool lookup stays fresher than the
+        // list snapshot. Pulling reserveA/reserveB/lpSupply/lpTokenPriceUsd
+        // all from this one response (instead of mixing the list snapshot's
+        // reserves with a separately-queried live supply) keeps them from
+        // the same moment, so a swap/arbitrage that just rebalanced the pool
+        // can't leave the per-token breakdown and the headline total
+        // disagreeing. Falls back to the list snapshot on failure.
+        const detailRes = await axios
+          .get(`${apiUrl}/pools/${pool.address}`)
+          .catch(() => null);
+        const detail = detailRes?.data;
+        const freshPool: LiquidityPool = detail
+          ? {
+              ...pool,
+              reserveA: detail.reserveA ?? pool.reserveA,
+              reserveB: detail.reserveB ?? pool.reserveB,
+              lpSupply: detail.lpSupply ?? pool.lpSupply,
+              lpTokenPriceUsd: detail.lpTokenPriceUsd ?? pool.lpTokenPriceUsd,
+            }
+          : pool;
+        const metaA = tokenMeta[pool.tokenA];
+        const metaB = tokenMeta[pool.tokenB];
         return {
-          pool,
+          pool: freshPool,
           balance,
-          lpTotalSupply: lpRes.data?.minted ?? "1",
-          decimalsA: tokenARes?.data?.decimals ?? 18,
-          decimalsB: tokenBRes?.data?.decimals ?? 18,
-          priceA: tokenARes?.data?.price ?? null,
-          priceB: tokenBRes?.data?.price ?? null,
+          lpTotalSupply: freshPool.lpSupply,
+          decimalsA: metaA?.decimals ?? 18,
+          decimalsB: metaB?.decimals ?? 18,
+          priceA: metaA?.priceUsd != null ? parseFloat(metaA.priceUsd) : null,
+          priceB: metaB?.priceUsd != null ? parseFloat(metaB.priceUsd) : null,
         } as UserPosition;
       }),
     )
       .then(setUserPositions)
       .catch(console.error);
-  }, [walletTokens, pools, networkApiAddress]);
+  }, [walletTokens, pools, networkApiAddress, tokenMeta, apiUrl]);
 
   return (
     <div className="flex flex-col w-full gap-6">

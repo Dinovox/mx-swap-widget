@@ -5,7 +5,7 @@ Plug-and-play swap & liquidity widget for [MultiversX](https://multiversx.com) d
 - Token swap with multi-hop routing across DinoVox and XExchange pools
 - Arbitrage detection (same-token circular swap)
 - EGLD ↔ WEGLD wrap / unwrap
-- Liquidity management: add, remove, create pools, browse pools
+- Liquidity management: add (two tokens, or a single token auto-split via the pair v2 `addLiquiditySingle` endpoint), remove, create pools, browse pools
 - Bidirectional amount input (type what you want to receive, get the required input)
 - Internal SPA routing via URL anchors — no page reloads, no host router dependency
 - Built-in translations (English & French), works without `react-i18next` in the host app
@@ -75,6 +75,7 @@ export const SwapPage = () => (
 | `onConnect` | `() => void` | — | Called when the user clicks "Connect wallet" while unauthenticated. Pass your app's unlock handler. When omitted the button is disabled. |
 | `language` | `string` | `navigator.language` | Language code (`'en'`, `'fr'`) |
 | `theme` | `'light' \| 'dark' \| 'mid'` | *(inherit)* | Pin the widget theme independently of the host app. When omitted the widget follows the host app's `dark` class on `<html>`. |
+| `withJExchange` | `boolean` | `false` | **Temporary test flag.** Enables JExchange as a routing/liquidity source: passes `withjex=true` to `/quote`, and shows a "JExchange" tab on the Pools view. Requires the on-chain Aggregator contract to have JExchange support deployed, or a route through it will fail on submit. Will be removed once JExchange routing is default. |
 
 ---
 
@@ -95,10 +96,16 @@ The browser's back/forward buttons work out of the box.
 
 ### Deep-linking
 
-Navigate directly to any view by setting the hash in the URL:
+Navigate directly to any view by setting the hash in the URL, with any params as a regular query string before it:
 
 ```
-/your-page#add-liquidity?tokenA=EGLD&tokenB=WEGLD-bd4d79
+/your-page?tokenA=EGLD&tokenB=WEGLD-bd4d79#add-liquidity
+```
+
+On Add Liquidity, add `mode=single` to land directly on the single-token deposit tab (falls back to the two-token tab if the pool doesn't exist yet or has no liquidity):
+
+```
+/your-page?tokenA=EGLD&tokenB=WEGLD-bd4d79&mode=single#add-liquidity
 ```
 
 ### Programmatic navigation

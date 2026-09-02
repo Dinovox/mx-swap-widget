@@ -70,7 +70,7 @@ interface TokenSelectProps<T extends TokenSelectToken> {
   balances?: Record<string, TokenBalanceInfo>;
 }
 
-function TokenLogo({ url, ticker }: { url?: string | null; ticker: string }) {
+export function TokenLogo({ url, ticker }: { url?: string | null; ticker: string }) {
   const [error, setError] = useState(false);
   if (!url || error) {
     return (

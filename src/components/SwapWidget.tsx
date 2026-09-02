@@ -12,7 +12,7 @@ import { RemoveLiquidity } from "./RemoveLiquidity";
 import { CreatePool } from "./CreatePool";
 import { Pools } from "./Pools";
 
-type SwapWidgetProps = Pick<SwapConfig, 'defaultFrom' | 'defaultTo' | 'whitelist' | 'blacklist' | 'address' | 'networkApiAddress' | 'chainId' | 'explorerAddress' | 'onSignTransactions'>;
+type SwapWidgetProps = Pick<SwapConfig, 'defaultFrom' | 'defaultTo' | 'whitelist' | 'blacklist' | 'address' | 'networkApiAddress' | 'chainId' | 'explorerAddress' | 'onSignTransactions' | 'withJExchange'>;
 
 export const SwapWidget: React.FC<SwapWidgetProps> = (props) => {
   const outerConfig = useSwapConfig();

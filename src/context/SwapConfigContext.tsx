@@ -94,6 +94,15 @@ export interface SwapConfig {
    * Defaults to 'https://explorer.multiversx.com' (mainnet).
    */
   explorerAddress?: string;
+  /**
+   * TEMPORARY test flag — enables JExchange as a routing/liquidity source.
+   * Passes `withjex=true` to the DEX API's `/quote` call, and shows a
+   * "JExchange" tab alongside DinoVox/XExchange on the Pools view.
+   * Requires the on-chain Aggregator contract to have JExchange support
+   * deployed — otherwise a route through JExchange will fail on submit.
+   * Off by default; will be removed once JExchange routing is default.
+   */
+  withJExchange?: boolean;
 }
 
 /** Resolved config available inside components */

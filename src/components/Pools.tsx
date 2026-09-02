@@ -25,7 +25,7 @@ function formatReserve(raw: string, decimals: number): string {
 }
 
 export const Pools = () => {
-  const { apiUrl } = useSwapConfig();
+  const { apiUrl, explorerAddress, withJExchange } = useSwapConfig();
   const goTo = useGoTo();
   const { t } = useTranslation('swap');
   useLoadTranslations('swap');
@@ -87,7 +87,10 @@ export const Pools = () => {
         description={loading ? t('pools_loading_desc') : t('pools_count', { count: pools.length })}
       >
         <div className='flex gap-1 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl mt-4 w-fit'>
-          {(['DinoVox', 'XExchange'] as DexFilter[]).map((dex) => (
+          {(withJExchange
+            ? (['DinoVox', 'XExchange', 'JExchange'] as DexFilter[])
+            : (['DinoVox', 'XExchange'] as DexFilter[])
+          ).map((dex) => (
             <button
               key={dex}
               onClick={() => setDexFilter(dex)}
@@ -156,7 +159,15 @@ export const Pools = () => {
                       {resBUsd != null && resBUsd > 0 && <p className='text-[10px] text-gray-400 mt-0.5'>{formatUsd(resBUsd)}</p>}
                     </div>
                   </div>
-                  <p className='text-[10px] text-gray-400 mt-2 font-mono truncate'>{pool.address}</p>
+                  <a
+                    href={`${explorerAddress}/accounts/${pool.address}/tokens`}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    title={t('pools_view_explorer')}
+                    className='block text-[10px] text-gray-400 hover:text-amber-500 hover:underline mt-2 font-mono truncate'
+                  >
+                    {pool.address}
+                  </a>
                 </div>
               );
             })

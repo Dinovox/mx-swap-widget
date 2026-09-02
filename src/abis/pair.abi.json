@@ -1,0 +1,405 @@
+{
+    "buildInfo": {
+        "contractCrate": {
+            "name": "pair",
+            "version": "0.0.2"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.63.3"
+        }
+    },
+    "name": "PairContract",
+    "constructor": {
+        "docs": [
+            "Called once by the factory right after deploying this SC.",
+            "token_a and token_b are already sorted lexicographically by the factory.",
+            "lp_display_name and lp_ticker are validated by the factory at create_pair time",
+            "and stored here so issueLpToken needs no arguments."
+        ],
+        "inputs": [
+            {
+                "name": "token_a",
+                "type": "TokenIdentifier"
+            },
+            {
+                "name": "token_b",
+                "type": "TokenIdentifier"
+            },
+            {
+                "name": "factory_address",
+                "type": "Address"
+            },
+            {
+                "name": "accumulator_address",
+                "type": "Address"
+            },
+            {
+                "name": "lp_display_name",
+                "type": "bytes"
+            },
+            {
+                "name": "lp_ticker",
+                "type": "bytes"
+            }
+        ],
+        "outputs": []
+    },
+    "upgradeConstructor": {
+        "inputs": [],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "docs": [
+                "Issue the LP fungible token and set all local roles (mint/burn) in a single call.",
+                "Name and ticker were stored at init time by the factory — no args needed.",
+                "Called by the factory in a second transaction, which forwards the 0.05 EGLD cost."
+            ],
+            "name": "issueLpToken",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "payableInTokens": [
+                "EGLD"
+            ],
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Add liquidity — requires exactly 2 ESDT payments: token_a and token_b.",
+                "Returns LP tokens. Any excess of the over-provided token is refunded."
+            ],
+            "name": "addLiquidity",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [
+                {
+                    "name": "a_min",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "b_min",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Add liquidity with a single token — the deposited amount is split internally",
+                "(virtual swap, same fee/AMM formulas as swap()) so the resulting pair lands on",
+                "the pool's ratio, then deposited as a normal two-sided add. The protocol fee on",
+                "the virtual-swap portion is still sent to the accumulator, exactly as a real",
+                "swap would — a single-side deposit is not a way to bypass the protocol fee.",
+                "Accepts token_a OR token_b — auto-detected from the single payment."
+            ],
+            "name": "addLiquiditySingle",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [
+                {
+                    "name": "min_lp",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Remove liquidity — send LP tokens, receive token_a and token_b."
+            ],
+            "name": "removeLiquidity",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [
+                {
+                    "name": "a_min",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "b_min",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Swap token_in for token_out.",
+                "Accepts token_a or token_b as payment, outputs the other.",
+                "Can be called directly or by the router."
+            ],
+            "name": "swap",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [
+                {
+                    "name": "token_out",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "min_out",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "EsdtTokenPayment"
+                }
+            ]
+        },
+        {
+            "name": "setFeeBps",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "fee_bps",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setProtocolFeePct",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "pct",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setAccumulator",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "address",
+                    "type": "Address"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Synchronise the stored reserves with the actual SC token balances.",
+                "",
+                "Needed when tokens are sent directly to the contract (without going through",
+                "addLiquidity) — those tokens would otherwise be permanently stuck because",
+                "the pair tracks reserves separately from actual balances.",
+                "Anyone can call this; it can only increase reserves, which benefits LP holders."
+            ],
+            "name": "syncReserves",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "recoverEgld",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "getReserves",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                },
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "getTokens",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "type": "TokenIdentifier"
+                }
+            ]
+        },
+        {
+            "name": "getLpToken",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "TokenIdentifier"
+                }
+            ]
+        },
+        {
+            "name": "isActive",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Simulate a swap — returns the expected output for a given input amount."
+            ],
+            "name": "getAmountOut",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "token_in",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "amount_in",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Quote for addLiquiditySingle — call this right before building the tx to",
+                "compute a fresh min_lp (same anti-sandwich protection pattern as getAmountOut",
+                "for swap(): avoids re-implementing the quadratic client-side)."
+            ],
+            "name": "quoteAddLiquiditySingle",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "token_in",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "amount_in",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "getLpSupply",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "getVersion",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Manually register an existing LP token (migration path).",
+                "Use this instead of issueLpToken when the token already exists and",
+                "mint/burn roles have been transferred to this SC on-chain beforehand."
+            ],
+            "name": "setLpToken",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token_id",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "pause",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "unpause",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "isPaused",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "bool"
+                }
+            ]
+        }
+    ],
+    "promisesCallbackNames": [
+        "lp_issue_callback"
+    ],
+    "events": [
+        {
+            "identifier": "pauseContract",
+            "inputs": []
+        },
+        {
+            "identifier": "unpauseContract",
+            "inputs": []
+        }
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {
+        "EsdtTokenPayment": {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "token_identifier",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "token_nonce",
+                    "type": "u64"
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint"
+                }
+            ]
+        }
+    }
+}

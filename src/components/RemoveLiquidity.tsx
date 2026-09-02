@@ -40,7 +40,18 @@ export const RemoveLiquidity = () => {
   const [tokens, setTokens] = useState<Record<string, DexToken>>({});
   const [selectedPoolAddress, setSelectedPoolAddress] = useState<string>("");
   const [poolsLoading, setPoolsLoading] = useState(true);
-  const [lpTotalMinted, setLpTotalMinted] = useState<string | null>(null);
+  // Fresh reserveA/reserveB/lpSupply for the selected pool, from the *detail*
+  // endpoint rather than the bulk /pools list `selectedPool` below comes from.
+  // Pulling all three from one single-pool response (instead of mixing the
+  // list snapshot's reserves with a separately-queried live supply) keeps
+  // them from the same moment — otherwise a swap/arbitrage that just
+  // rebalanced the pool leaves the withdrawal estimate quietly wrong (it did:
+  // a live 100% withdrawal returned noticeably more than this screen quoted).
+  const [poolDetail, setPoolDetail] = useState<{
+    reserveA: string;
+    reserveB: string;
+    lpSupply: string;
+  } | null>(null);
   const [percentage, setPercentage] = useState(0);
 
   useEffect(() => {
@@ -81,20 +92,44 @@ export const RemoveLiquidity = () => {
       })
       .catch(console.error)
       .finally(() => setPoolsLoading(false));
-  }, [apiUrl, searchParams]);
+    // `searchParams` is deliberately not a dependency: useWidgetSearchParams()
+    // returns a brand new URLSearchParams instance on every render (it isn't
+    // memoized), so listing it here retriggers this effect on every render it
+    // itself causes (setPools/setPoolsLoading) — an infinite fetch loop. Only
+    // `apiUrl` should drive a re-fetch; the `?pool=` param is only ever read
+    // once, at mount, to preselect a pool.
+  }, [apiUrl]); // eslint-disable-line
 
   const selectedPool = pools.find((p) => p.address === selectedPoolAddress);
 
   useEffect(() => {
-    if (!selectedPool?.lpToken || !networkApiAddress) {
-      setLpTotalMinted(null);
+    if (!apiUrl || !selectedPool?.address) {
+      setPoolDetail(null);
       return;
     }
+    let cancelled = false;
     axios
-      .get(`/tokens/${selectedPool.lpToken}`, { baseURL: networkApiAddress })
-      .then((res) => setLpTotalMinted(res.data?.minted ?? null))
-      .catch(() => setLpTotalMinted(null));
-  }, [selectedPool?.lpToken, networkApiAddress]);
+      .get(`${apiUrl}/pools/${selectedPool.address}`)
+      .then((res) => {
+        if (cancelled) return;
+        const d = res.data;
+        if (d?.reserveA != null && d?.reserveB != null && d?.lpSupply != null) {
+          setPoolDetail({
+            reserveA: d.reserveA,
+            reserveB: d.reserveB,
+            lpSupply: d.lpSupply,
+          });
+        } else {
+          setPoolDetail(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPoolDetail(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, selectedPool?.address]);
 
   // Reset percentage when pool changes
   useEffect(() => {
@@ -108,7 +143,12 @@ export const RemoveLiquidity = () => {
   });
   const lpBalanceRaw = lpTokenBalances?.[0]?.balance ?? "0";
 
-  const trueMinted = lpTotalMinted ?? selectedPool?.lpSupply ?? "0";
+  // reserveA/reserveB/lpSupply always come from poolDetail together (falling
+  // back to the list snapshot only if the detail fetch hasn't resolved yet /
+  // failed) — never mix a fresh one with a stale other.
+  const reserveA = poolDetail?.reserveA ?? selectedPool?.reserveA ?? "0";
+  const reserveB = poolDetail?.reserveB ?? selectedPool?.reserveB ?? "0";
+  const trueMinted = poolDetail?.lpSupply ?? selectedPool?.lpSupply ?? "0";
   const safeLpSupply = new BigNumber(trueMinted).isZero()
     ? new BigNumber(1)
     : new BigNumber(trueMinted);
@@ -131,14 +171,14 @@ export const RemoveLiquidity = () => {
   const outA =
     selectedPool && percentage > 0
       ? new BigNumber(lpAmountRaw)
-          .multipliedBy(selectedPool.reserveA)
+          .multipliedBy(reserveA)
           .dividedBy(safeLpSupply)
           .toFixed(0, BigNumber.ROUND_DOWN)
       : "0";
   const outB =
     selectedPool && percentage > 0
       ? new BigNumber(lpAmountRaw)
-          .multipliedBy(selectedPool.reserveB)
+          .multipliedBy(reserveB)
           .dividedBy(safeLpSupply)
           .toFixed(0, BigNumber.ROUND_DOWN)
       : "0";
