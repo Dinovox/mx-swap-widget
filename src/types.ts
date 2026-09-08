@@ -16,6 +16,12 @@ export interface DexToken {
 export type SwapToken = DexToken;
 
 /** Full pool info returned by the DEX API */
+/** Trailing-window swap-fee APR estimate — see /pools and /pools/{address}. */
+export interface PoolApr {
+  aprPct: string;
+  windowDays: number;
+}
+
 export interface PoolInfo {
   address: string;
   tokenA: string;
@@ -26,6 +32,7 @@ export interface PoolInfo {
   lpSupply?: string;
   isActive: boolean;
   lpTokenPriceUsd?: string | null;
+  apr?: PoolApr | null;
 }
 
 /** Pool with liquidity data — fields required for add/remove liquidity operations */
@@ -35,6 +42,7 @@ export interface LiquidityPool extends Required<Pick<PoolInfo, 'lpToken' | 'rese
   tokenB: string;
   isActive: boolean;
   lpTokenPriceUsd?: string | null;
+  apr?: PoolApr | null;
 }
 
 /** User's LP position for a specific pool */

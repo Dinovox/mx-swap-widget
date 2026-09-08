@@ -263,6 +263,20 @@ export const Swap = () => {
     return map;
   }, [allWalletTokensRaw]);
 
+  // Fallback price per identifier, sourced from the network API's own account-tokens
+  // response (already fetched above for balances — `price` comes along for free).
+  // DinoVox's own price graph doesn't always resolve every token (e.g. freshly
+  // discovered pools, or ones outside its routing graph) even when the network API
+  // already has a market price for it — without this fallback, such a token would
+  // silently show no price/USD value anywhere despite genuinely having one.
+  const walletPriceMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const w of allWalletTokensRaw as Array<{ identifier?: string; price?: number }>) {
+      if (w?.identifier && w?.price != null) map.set(w.identifier, w.price);
+    }
+    return map;
+  }, [allWalletTokensRaw]);
+
   // Held amount + USD value per token identifier, used to display balances in the
   // token selector and to sort it wallet-holdings-first.
   const tokenBalances = useMemo(() => {
@@ -273,13 +287,14 @@ export const Swap = () => {
       if (!raw) continue;
       const amount = new BigNumber(raw).shiftedBy(-tok.decimals);
       if (amount.isZero()) continue;
+      const price = tok.priceUsd ?? walletPriceMap.get(tok.identifier);
       map[tok.identifier] = {
         amount: amount.toNumber(),
-        usd: tok.priceUsd ? amount.multipliedBy(tok.priceUsd).toNumber() : null,
+        usd: price != null ? amount.multipliedBy(price).toNumber() : null,
       };
     }
     return map;
-  }, [tokens, egldBalance, walletBalanceMap]);
+  }, [tokens, egldBalance, walletBalanceMap, walletPriceMap]);
 
   // Tokens held by the wallet first (largest USD value first, dust included so it can
   // be sold too), then the remaining tokens in their original order.
@@ -666,28 +681,43 @@ export const Swap = () => {
           .toFixed(6, BigNumber.ROUND_DOWN)
       : null;
 
+  // Falls back to the network API's own market price (already fetched above for
+  // the balance lookups) when DinoVox's price graph hasn't resolved this token —
+  // see walletPriceMap for why that can happen for a token that genuinely has a
+  // price. Used everywhere a unit price or a USD value is shown for these two.
+  const tokenInPriceUsd =
+    tokenIn?.priceUsd ??
+    (tokenInBalances?.[0]?.price != null
+      ? String(tokenInBalances[0].price)
+      : null);
+  const tokenOutPriceUsd =
+    tokenOut?.priceUsd ??
+    (tokenOutBalances?.[0]?.price != null
+      ? String(tokenOutBalances[0].price)
+      : null);
+
   const amountInUsd =
-    tokenIn?.priceUsd && Number(amountInDisplay) > 0
-      ? formatUsd(tokenIn.priceUsd, Number(amountInDisplay))
+    tokenInPriceUsd && Number(amountInDisplay) > 0
+      ? formatUsd(tokenInPriceUsd, Number(amountInDisplay))
       : null;
 
   const amountOutUsd =
-    tokenOut?.priceUsd && Number(amountOutDisplay) > 0
-      ? formatUsd(tokenOut.priceUsd, Number(amountOutDisplay))
+    tokenOutPriceUsd && Number(amountOutDisplay) > 0
+      ? formatUsd(tokenOutPriceUsd, Number(amountOutDisplay))
       : null;
 
   const balanceInUsd =
-    tokenIn?.priceUsd &&
+    tokenInPriceUsd &&
     tokenInBalanceDisplay &&
     Number(tokenInBalanceDisplay) > 0
-      ? formatUsd(tokenIn.priceUsd, Number(tokenInBalanceDisplay))
+      ? formatUsd(tokenInPriceUsd, Number(tokenInBalanceDisplay))
       : null;
 
   const balanceOutUsd =
-    tokenOut?.priceUsd &&
+    tokenOutPriceUsd &&
     tokenOutBalanceDisplay &&
     Number(tokenOutBalanceDisplay) > 0
-      ? formatUsd(tokenOut.priceUsd, Number(tokenOutBalanceDisplay))
+      ? formatUsd(tokenOutPriceUsd, Number(tokenOutBalanceDisplay))
       : null;
 
   const priceImpactPct = quote
@@ -866,9 +896,9 @@ export const Swap = () => {
                     />
                   </a>
                 )}
-                {tokenIn && formatUnitPrice(tokenIn.priceUsd) && (
+                {tokenIn && formatUnitPrice(tokenInPriceUsd) && (
                   <span className="text-[10px] font-semibold text-gray-400">
-                    {formatUnitPrice(tokenIn.priceUsd)}
+                    {formatUnitPrice(tokenInPriceUsd)}
                   </span>
                 )}
               </div>
@@ -988,9 +1018,9 @@ export const Swap = () => {
                     />
                   </a>
                 )}
-                {tokenOut && formatUnitPrice(tokenOut.priceUsd) && (
+                {tokenOut && formatUnitPrice(tokenOutPriceUsd) && (
                   <span className="text-[10px] font-semibold text-gray-400">
-                    {formatUnitPrice(tokenOut.priceUsd)}
+                    {formatUnitPrice(tokenOutPriceUsd)}
                   </span>
                 )}
               </div>
@@ -1443,7 +1473,7 @@ export const Swap = () => {
                         : arbError
                           ? t("btn_quote_unavailable")
                           : t("btn_arb")
-                      : !amountIn || Number(amountIn) <= 0
+                      : !activeAmountStr || Number(activeAmountStr) <= 0
                         ? t("btn_enter_amount")
                         : quoteLoading
                           ? t("btn_calculating")

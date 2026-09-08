@@ -95,6 +95,7 @@ export const AddLiquidity = () => {
     chainId,
     onSignTransactions,
     explorerAddress,
+    withJExchange,
   } = useSwapConfig();
   const goTo = useGoTo();
   const { t } = useTranslation("swap");
@@ -122,6 +123,9 @@ export const AddLiquidity = () => {
 
   const [amountA, setAmountA] = useState("");
   const [amountB, setAmountB] = useState("");
+  // True while fetching a market quote to suggest the other side's amount on a
+  // first deposit (empty pool) — see the effect below.
+  const [initialRatioLoading, setInitialRatioLoading] = useState(false);
   const lastEdited = useRef<"A" | "B">("A");
   const [pool, setPool] = useState<LiquidityPool | null>(null);
   const [poolLoading, setPoolLoading] = useState(false);
@@ -522,6 +526,60 @@ export const AddLiquidity = () => {
     );
   };
 
+  // First deposit into this pair (pool empty, or not created yet) — no on-chain
+  // reserve ratio to auto-balance against, so handleAmountA/B above leave the
+  // other field untouched. Suggest a starting amount from the aggregator's own
+  // market quote instead, purely as a convenience: only fills the *other* field
+  // once, and only while it's still empty — never overwrites an amount the user
+  // (or a prior quote) already set, and never blocks the form on failure (no
+  // route just means we can't suggest one, not a form error).
+  useEffect(() => {
+    if (mode !== "double" || poolHasLiquidity || !tokenA || !tokenB) return;
+    const side = lastEdited.current;
+    const sourceAmount = side === "A" ? amountA : amountB;
+    const otherAmount = side === "A" ? amountB : amountA;
+    if (!sourceAmount || Number(sourceAmount) <= 0) return;
+    if (otherAmount && Number(otherAmount) > 0) return;
+
+    const sourceToken = side === "A" ? tokenA : tokenB;
+    const targetToken = side === "A" ? tokenB : tokenA;
+    const setTarget = side === "A" ? setAmountB : setAmountA;
+
+    let cancelled = false;
+    setInitialRatioLoading(true);
+    const handle = setTimeout(async () => {
+      try {
+        const amountInRaw = new BigNumber(sourceAmount)
+          .shiftedBy(sourceToken.decimals)
+          .toFixed(0, BigNumber.ROUND_DOWN);
+        const { data } = await axios.get(`${apiUrl}/quote`, {
+          params: {
+            tokenIn: sourceToken.identifier,
+            tokenOut: targetToken.identifier,
+            amountIn: amountInRaw,
+            slippageBps: 100,
+            ...(withJExchange ? { withjex: "true" } : {}),
+          },
+        });
+        if (cancelled) return;
+        setTarget(
+          new BigNumber(data.amountOut)
+            .shiftedBy(-targetToken.decimals)
+            .toFixed(6, BigNumber.ROUND_DOWN),
+        );
+      } catch {
+        // No route / no liquidity elsewhere — nothing to suggest, silently.
+      } finally {
+        if (!cancelled) setInitialRatioLoading(false);
+      }
+    }, 400);
+    return () => {
+      cancelled = true;
+      setInitialRatioLoading(false);
+      clearTimeout(handle);
+    };
+  }, [mode, poolHasLiquidity, tokenA, tokenB, amountA, amountB, apiUrl, withJExchange]);
+
   useEffect(() => {
     if (
       mode !== "double" ||
@@ -896,7 +954,7 @@ export const AddLiquidity = () => {
                 className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${aErr ? "border-red-400 focus:ring-red-400" : "border-gray-200 dark:border-[#444] focus:ring-amber-500"}`}
               />
             </div>
-            {amountAUsd && !aErr && (
+            {amountAUsd && (
               <p className="mt-1 text-[10px] text-gray-400 text-right">
                 ≈ {amountAUsd}
               </p>
@@ -916,6 +974,11 @@ export const AddLiquidity = () => {
           {mode === "single" && (
             <p className="text-center text-[11px] text-gray-400 -mt-1 mb-1 px-2">
               {t("add_single_hint")}
+            </p>
+          )}
+          {mode === "double" && initialRatioLoading && (
+            <p className="text-center text-[11px] text-gray-400 -mt-1 mb-1 px-2 animate-pulse">
+              {t("calculating")}
             </p>
           )}
 
@@ -967,7 +1030,7 @@ export const AddLiquidity = () => {
                 className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${bErr ? "border-red-400 focus:ring-red-400" : "border-gray-200 dark:border-[#444] focus:ring-amber-500"}`}
               />
             </div>
-            {amountBUsd && !bErr && (
+            {amountBUsd && (
               <p className="mt-1 text-[10px] text-gray-400 text-right">
                 ≈ {amountBUsd}
               </p>

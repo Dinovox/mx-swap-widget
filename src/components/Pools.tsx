@@ -4,9 +4,20 @@ import { useTranslation } from 'react-i18next';
 import useLoadTranslations from '../hooks/useLoadTranslations';
 import axios from 'axios';
 import BigNumber from 'bignumber.js';
+import { Info } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { useSwapConfig } from '../context/SwapConfigContext';
 import type { DexFilter, LiquidityPool, TokenMeta } from '../types';
+
+const VOXEGLD_IDENTIFIER = 'VOXEGLD-5872e5';
+
+/** Aggregate over the exact pool set /pools returns — already scoped to the dexType filter. */
+interface PoolsSummary {
+  poolCount: number;
+  poolCountPriced: number;
+  tvlUsd: string | null;
+  volume24hSwapCount: number;
+}
 
 function formatUsd(value: number): string {
   if (value < 0.01) return '<$0.01';
@@ -31,6 +42,7 @@ export const Pools = () => {
   useLoadTranslations('swap');
 
   const [pools, setPools] = React.useState<LiquidityPool[]>([]);
+  const [summary, setSummary] = React.useState<PoolsSummary | null>(null);
   const [tokenMap, setTokenMap] = React.useState<Record<string, TokenMeta>>({});
   const [loading, setLoading] = React.useState(true);
   const [dexFilter, setDexFilter] = React.useState<DexFilter>('DinoVox');
@@ -44,6 +56,9 @@ export const Pools = () => {
     ]).then(([poolsRes, tokensRes]) => {
       const activePools: LiquidityPool[] = (poolsRes.data.pools || []).filter((p: LiquidityPool) => p.isActive);
       setPools(activePools);
+      // Already scoped to this exact dexType filter server-side — no
+      // client-side re-aggregation needed when switching tabs.
+      setSummary(poolsRes.data.summary ?? null);
       const map: Record<string, TokenMeta> = {};
       for (const t of (tokensRes.data.tokens || [])) {
         map[t.identifier] = { identifier: t.identifier, ticker: t.ticker ?? t.identifier.split('-')[0], decimals: t.decimals ?? 18, priceUsd: t.priceUsd ?? null };
@@ -104,6 +119,24 @@ export const Pools = () => {
             </button>
           ))}
         </div>
+        {summary && (
+          <div className='rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/10 px-4 py-3 mt-4 flex flex-wrap items-center justify-between gap-2'>
+            <span className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+              {t('pools_summary_tvl')}
+            </span>
+            <div className='flex items-center gap-3'>
+              <span className='font-bold text-amber-600 dark:text-amber-400 text-base'>
+                {summary.tvlUsd != null ? formatUsd(parseFloat(summary.tvlUsd)) : '—'}
+              </span>
+              <span className='text-[10px] text-gray-400'>
+                {t('pools_summary_stats', {
+                  poolCount: summary.poolCount,
+                  swapCount: summary.volume24hSwapCount,
+                })}
+              </span>
+            </div>
+          </div>
+        )}
         <div className='space-y-3 mt-4'>
           {loading ? (
             <div className='flex justify-center py-10'>
@@ -135,6 +168,24 @@ export const Pools = () => {
                       {tvl != null && tvl > 0 && (
                         <span className='text-[10px] font-semibold text-gray-400'>
                           TVL {formatUsd(tvl)}
+                        </span>
+                      )}
+                      {pool.apr && (
+                        <span className='inline-flex items-center gap-1 text-[10px] font-bold text-green-600 dark:text-green-400'>
+                          {t('pools_apr', { pct: parseFloat(pool.apr.aprPct).toFixed(2) })}
+                          <span
+                            className='cursor-help'
+                            title={[
+                              t('pools_apr_tooltip_intro'),
+                              '',
+                              `• ${t('pools_apr_tooltip_window', { days: pool.apr.windowDays })}`,
+                              ...(pool.tokenA === VOXEGLD_IDENTIFIER || pool.tokenB === VOXEGLD_IDENTIFIER
+                                ? ['', `• ${t('pools_apr_tooltip_voxegld')}`]
+                                : []),
+                            ].join('\n')}
+                          >
+                            <Info className='w-3 h-3 text-gray-400' />
+                          </span>
                         </span>
                       )}
                     </div>
