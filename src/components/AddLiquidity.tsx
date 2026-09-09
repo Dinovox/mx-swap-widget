@@ -95,7 +95,6 @@ export const AddLiquidity = () => {
     chainId,
     onSignTransactions,
     explorerAddress,
-    withJExchange,
   } = useSwapConfig();
   const goTo = useGoTo();
   const { t } = useTranslation("swap");
@@ -558,7 +557,6 @@ export const AddLiquidity = () => {
             tokenOut: targetToken.identifier,
             amountIn: amountInRaw,
             slippageBps: 100,
-            ...(withJExchange ? { withjex: "true" } : {}),
           },
         });
         if (cancelled) return;
@@ -578,7 +576,7 @@ export const AddLiquidity = () => {
       setInitialRatioLoading(false);
       clearTimeout(handle);
     };
-  }, [mode, poolHasLiquidity, tokenA, tokenB, amountA, amountB, apiUrl, withJExchange]);
+  }, [mode, poolHasLiquidity, tokenA, tokenB, amountA, amountB, apiUrl]);
 
   useEffect(() => {
     if (
@@ -1065,6 +1063,28 @@ export const AddLiquidity = () => {
             </div>
           )}
 
+          {pool && !pool.isActive && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-4 mt-4">
+              <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                {t("add_pool_inactive_title")}
+              </p>
+              <p className="text-xs text-amber-500 mt-1">
+                {t("add_pool_inactive_desc")}
+              </p>
+              <button
+                onClick={() =>
+                  goTo("create-pool", {
+                    tokenX: tokenA?.identifier ?? "",
+                    tokenY: tokenB?.identifier ?? "",
+                  })
+                }
+                className="mt-3 px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition"
+              >
+                {t("add_pool_inactive_btn")}
+              </button>
+            </div>
+          )}
+
           {pool && (
             <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4 mt-4 space-y-2">
               <div className="flex items-center justify-between">
@@ -1119,7 +1139,7 @@ export const AddLiquidity = () => {
                   )}
                 </span>
               </div>
-              {poolApr && (
+              {poolApr?.aprPct != null && (
                 <div className="flex justify-between items-center text-sm pt-2 mt-1 border-t border-gray-200 dark:border-[#333]">
                   <span className="flex items-center gap-1 text-gray-500">
                     {t("add_pool_apr", { days: poolApr.windowDays })}

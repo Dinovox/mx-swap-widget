@@ -98,7 +98,6 @@ export const Swap = () => {
     chainId,
     explorerAddress,
     onSignTransactions,
-    withJExchange,
   } = useSwapConfig();
   const goTo = useGoTo();
   const p = getThemePalette(theme);
@@ -487,10 +486,6 @@ export const Swap = () => {
             ? { amountIn: rawAmount }
             : { amountOut: rawAmount }),
           slippageBps: Math.round(slippage * 10000),
-          // TEMPORARY test flag — see SwapConfig.withJExchange. Omitted
-          // entirely (not even "false") when off, matching the API's
-          // opt-in-only contract.
-          ...(withJExchange ? { withjex: "true" } : {}),
         },
       });
       setQuote(data);
@@ -518,7 +513,6 @@ export const Swap = () => {
     isArb,
     isWrapUnwrap,
     slippage,
-    withJExchange,
   ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

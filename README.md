@@ -75,7 +75,6 @@ export const SwapPage = () => (
 | `onConnect` | `() => void` | — | Called when the user clicks "Connect wallet" while unauthenticated. Pass your app's unlock handler. When omitted the button is disabled. |
 | `language` | `string` | `navigator.language` | Language code (`'en'`, `'fr'`) |
 | `theme` | `'light' \| 'dark' \| 'mid'` | *(inherit)* | Pin the widget theme independently of the host app. When omitted the widget follows the host app's `dark` class on `<html>`. |
-| `withJExchange` | `boolean` | `false` | **Temporary test flag.** Enables JExchange as a routing/liquidity source: passes `withjex=true` to `/quote`, and shows a "JExchange" tab on the Pools view. Requires the on-chain Aggregator contract to have JExchange support deployed, or a route through it will fail on submit. Will be removed once JExchange routing is default. |
 
 ---
 

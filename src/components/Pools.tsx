@@ -36,7 +36,7 @@ function formatReserve(raw: string, decimals: number): string {
 }
 
 export const Pools = () => {
-  const { apiUrl, explorerAddress, withJExchange } = useSwapConfig();
+  const { apiUrl, explorerAddress } = useSwapConfig();
   const goTo = useGoTo();
   const { t } = useTranslation('swap');
   useLoadTranslations('swap');
@@ -102,10 +102,7 @@ export const Pools = () => {
         description={loading ? t('pools_loading_desc') : t('pools_count', { count: pools.length })}
       >
         <div className='flex gap-1 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl mt-4 w-fit'>
-          {(withJExchange
-            ? (['DinoVox', 'XExchange', 'JExchange'] as DexFilter[])
-            : (['DinoVox', 'XExchange'] as DexFilter[])
-          ).map((dex) => (
+          {(['DinoVox', 'XExchange', 'JExchange'] as DexFilter[]).map((dex) => (
             <button
               key={dex}
               onClick={() => setDexFilter(dex)}
@@ -170,7 +167,7 @@ export const Pools = () => {
                           TVL {formatUsd(tvl)}
                         </span>
                       )}
-                      {pool.apr && (
+                      {pool.apr?.aprPct != null && (
                         <span className='inline-flex items-center gap-1 text-[10px] font-bold text-green-600 dark:text-green-400'>
                           {t('pools_apr', { pct: parseFloat(pool.apr.aprPct).toFixed(2) })}
                           <span
