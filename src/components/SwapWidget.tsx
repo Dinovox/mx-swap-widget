@@ -19,7 +19,13 @@ export const SwapWidget: React.FC<SwapWidgetProps> = (props) => {
   const { language, theme } = outerConfig;
   const { view, goTo } = useSwapView();
 
-  // When theme is not pinned, mirror the host app's <html> dark class reactively
+  // When theme is not pinned, mirror the host app's <html> dark class reactively.
+  // Deliberately *not* falling back to prefers-color-scheme: a host with its own
+  // light/dark toggle (e.g. our own dapp) signals "light" by simply not having the
+  // class, which looks identical to "this host doesn't manage dark mode at all" —
+  // a media-query fallback can't tell those apart, and would override an explicit
+  // light choice whenever the OS/browser happens to prefer dark. A host that isn't
+  // covered by this class convention should pass `theme="dark"` explicitly instead.
   const [hostDark, setHostDark] = useState(
     () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
   );

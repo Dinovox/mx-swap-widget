@@ -2,10 +2,10 @@
 
 Plug-and-play swap & liquidity widget for [MultiversX](https://multiversx.com) dApps, built by [DinoVox](https://dinovox.com).
 
-- Token swap with multi-hop routing across DinoVox and XExchange pools
+- Token swap with multi-hop routing across DinoVox, XExchange, and JExchange pools
 - Arbitrage detection (same-token circular swap)
 - EGLD ↔ WEGLD wrap / unwrap
-- Liquidity management: add (two tokens, or a single token auto-split via the pair v2 `addLiquiditySingle` endpoint), remove, create pools, browse pools
+- Liquidity management: add (two tokens, or a single token auto-split via the pair v2 `addLiquiditySingle` endpoint), remove, create pools, browse pools with live reserves, APR estimate and recent swap activity
 - Bidirectional amount input (type what you want to receive, get the required input)
 - Internal SPA routing via URL anchors — no page reloads, no host router dependency
 - Built-in translations (English & French), works without `react-i18next` in the host app
@@ -69,10 +69,16 @@ export const SwapPage = () => (
 | `apiUrl` | `string` | DinoVox mainnet API | Base URL of the DEX API |
 | `routerAddress` | `string` | DinoVox router | Router smart contract address |
 | `aggregatorAddress` | `string` | DinoVox aggregator | Aggregator smart contract address |
+| `voxEgldAddress` | `string` | DinoVox VOX-EGLD | VOX-EGLD (liquid staking) smart contract address |
 | `factoryAddress` | `string` | DinoVox factory | Factory smart contract address |
 | `wrapContract` | `string` | DinoVox wrap contract | EGLD ↔ WEGLD wrap contract address |
 | `wegldIdentifier` | `string` | `WEGLD-bd4d79` | WEGLD token identifier |
 | `onConnect` | `() => void` | — | Called when the user clicks "Connect wallet" while unauthenticated. Pass your app's unlock handler. When omitted the button is disabled. |
+| `onSignTransactions` | `(txs, info) => Promise<unknown>` | *(internal signing)* | Called when the widget needs to sign & broadcast a transaction. Pass your app's own `signAndSendTransactions` (from sdk-dapp) so the widget never touches the signing provider directly — avoids module-scope issues in production Vite bundles. Falls back to the widget's internal signing flow when omitted. |
+| `address` | `string` | *(auto-detected)* | Wallet address. Pass from the host app's own account hook (e.g. `useGetAccount()`) to guarantee wallet detection in production. Falls back to the widget's own detection when omitted. |
+| `networkApiAddress` | `string` | `https://api.multiversx.com` | MultiversX API base URL. Pass from the host app's own `useGetNetworkConfig()` for the same reason as `address`. |
+| `chainId` | `string` | `'1'` | MultiversX chain ID. Use `'D'` for devnet, `'T'` for testnet. |
+| `explorerAddress` | `string` | `https://explorer.multiversx.com` | MultiversX explorer base URL — used for on-chain links (pool contracts, transactions). |
 | `language` | `string` | `navigator.language` | Language code (`'en'`, `'fr'`) |
 | `theme` | `'light' \| 'dark' \| 'mid'` | *(inherit)* | Pin the widget theme independently of the host app. When omitted the widget follows the host app's `dark` class on `<html>`. |
 
