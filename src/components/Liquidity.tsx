@@ -125,30 +125,30 @@ export const Liquidity = () => {
   }, [walletTokens, pools, networkApiAddress, tokenMeta, apiUrl]);
 
   return (
-    <div className="flex flex-col w-full gap-6">
+    <div className="dvx:flex dvx:flex-col dvx:w-full dvx:gap-6">
       <Card
-        className="border-2 border-cyan-500/20"
+        className="dvx:border-2 dvx:border-cyan-500/20"
         title={
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">💧</span>
-              <span className="text-lg font-black tracking-tight">
+          <div className="dvx:flex dvx:flex-col dvx:sm:flex-row dvx:items-start dvx:sm:items-center dvx:justify-between dvx:w-full dvx:gap-4">
+            <div className="dvx:flex dvx:items-center dvx:gap-3">
+              <span className="dvx:text-xl">💧</span>
+              <span className="dvx:text-lg dvx:font-black dvx:tracking-tight">
                 {t("liquidity_title")}
               </span>
             </div>
-            <div className="flex gap-1 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl shadow-inner w-full sm:w-auto">
+            <div className="dvx:flex dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:shadow-inner dvx:w-full dvx:sm:w-auto">
               <button
                 onClick={() => goTo("swap")}
-                className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5"
+                className="dvx:flex-1 dvx:sm:flex-initial dvx:px-3 dvx:sm:px-4 dvx:py-2 dvx:text-sm dvx:font-bold dvx:rounded-lg dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-900 dvx:dark:hover:text-white dvx:transition-all dvx:hover:bg-white/50 dvx:dark:hover:bg-white/5"
               >
                 Swap
               </button>
-              <button className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-black rounded-lg bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all">
+              <button className="dvx:flex-1 dvx:sm:flex-initial dvx:px-3 dvx:sm:px-4 dvx:py-2 dvx:text-sm dvx:font-black dvx:rounded-lg dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:text-amber-500 dvx:shadow-md dvx:transition-all">
                 {t("tab_liquidity")}
               </button>
               <button
                 onClick={() => goTo("pools")}
-                className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5"
+                className="dvx:flex-1 dvx:sm:flex-initial dvx:px-3 dvx:sm:px-4 dvx:py-2 dvx:text-sm dvx:font-bold dvx:rounded-lg dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-900 dvx:dark:hover:text-white dvx:transition-all dvx:hover:bg-white/50 dvx:dark:hover:bg-white/5"
               >
                 Pools
               </button>
@@ -157,22 +157,22 @@ export const Liquidity = () => {
         }
         description={t("liquidity_card_desc")}
       >
-        <div className="space-y-4 mt-4">
+        <div className="dvx:space-y-4 dvx:mt-4">
           {!poolsLoading && userPositions.length === 0 ? (
-            <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-6 text-center">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <div className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:p-6 dvx:text-center">
+              <p className="dvx:text-sm dvx:text-gray-500 dvx:dark:text-gray-400 dvx:mb-4">
                 {t("liquidity_empty")}
               </p>
               <button
                 onClick={() => goTo("add-liquidity")}
                 style={{ minHeight: "36px" }}
-                className="dinoButton w-full text-base"
+                className="dinoButton dvx:w-full dvx:text-base"
               >
                 {t("liquidity_add")}
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="dvx:space-y-4">
               {(() => {
                 const totalUsd = userPositions.reduce((acc, pos) => {
                   if (!pos.pool.lpTokenPriceUsd) return acc;
@@ -184,11 +184,11 @@ export const Liquidity = () => {
                 return (
                   <>
                     {totalUsd > 0 && (
-                      <div className="rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/10 px-4 py-3 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      <div className="dvx:rounded-2xl dvx:border dvx:border-amber-200 dvx:dark:border-amber-800/50 dvx:bg-amber-50 dvx:dark:bg-amber-900/10 dvx:px-4 dvx:py-3 dvx:flex dvx:items-center dvx:justify-between">
+                        <span className="dvx:text-xs dvx:font-semibold dvx:text-gray-500 dvx:dark:text-gray-400 dvx:uppercase dvx:tracking-wider">
                           {t("liquidity_total_value")}
                         </span>
-                        <span className="font-bold text-amber-600 dark:text-amber-400 text-base">
+                        <span className="dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400 dvx:text-base">
                           {formatUsd(totalUsd)}
                         </span>
                       </div>
@@ -227,33 +227,33 @@ export const Liquidity = () => {
                       return (
                         <div
                           key={pos.pool.address}
-                          className="rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#2a2a2a] p-4"
+                          className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:p-4"
                         >
-                          <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 mb-3">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <span className="font-bold text-gray-900 dark:text-white uppercase truncate">
+                          <div className="dvx:flex dvx:flex-col dvx:xs:flex-row dvx:items-start dvx:xs:items-center dvx:justify-between dvx:gap-3 dvx:mb-3">
+                            <div className="dvx:min-w-0">
+                              <div className="dvx:flex dvx:items-center dvx:gap-2 dvx:mb-0.5">
+                                <span className="dvx:font-bold dvx:text-gray-900 dvx:dark:text-white dvx:uppercase dvx:truncate">
                                   {lpTokenTicker}
                                 </span>
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 font-semibold border border-amber-200 dark:border-amber-800 flex-shrink-0">
+                                <span className="dvx:text-xs dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-amber-100 dvx:text-amber-600 dvx:dark:bg-amber-900/30 dvx:dark:text-amber-400 dvx:font-semibold dvx:border dvx:border-amber-200 dvx:dark:border-amber-800 dvx:flex-shrink-0">
                                   LP
                                 </span>
                               </div>
-                              <p className="text-xs text-gray-500 font-medium truncate">
+                              <p className="dvx:text-xs dvx:text-gray-500 dvx:font-medium dvx:truncate">
                                 {pos.pool.tokenA.split("-")[0]} /{" "}
                                 {pos.pool.tokenB.split("-")[0]}
                               </p>
                             </div>
-                            <div className="xs:text-right w-full xs:w-auto">
-                              <p className="font-bold text-gray-900 dark:text-white mb-0.5">
+                            <div className="dvx:xs:text-right dvx:w-full dvx:xs:w-auto">
+                              <p className="dvx:font-bold dvx:text-gray-900 dvx:dark:text-white dvx:mb-0.5">
                                 {displayBalance} LP
                               </p>
                               {posUsd !== null && posUsd > 0 && (
-                                <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold mb-1">
+                                <p className="dvx:text-xs dvx:text-amber-600 dvx:dark:text-amber-400 dvx:font-semibold dvx:mb-1">
                                   ≈ {formatUsd(posUsd)}
                                 </p>
                               )}
-                              <div className="flex gap-3 xs:justify-end">
+                              <div className="dvx:flex dvx:gap-3 dvx:xs:justify-end">
                                 <button
                                   onClick={() =>
                                     goTo("add-liquidity", {
@@ -261,7 +261,7 @@ export const Liquidity = () => {
                                       tokenB: pos.pool.tokenB,
                                     })
                                   }
-                                  className="text-xs font-bold text-green-500 hover:text-green-600 transition underline decoration-dashed"
+                                  className="dvx:text-xs dvx:font-bold dvx:text-green-500 dvx:bg-transparent dvx:hover:text-green-600 dvx:transition dvx:underline dvx:decoration-dashed"
                                 >
                                   {t("liquidity_add_btn")}
                                 </button>
@@ -271,36 +271,36 @@ export const Liquidity = () => {
                                       pool: pos.pool.address,
                                     })
                                   }
-                                  className="text-xs font-bold text-red-500 hover:text-red-600 transition underline decoration-dashed"
+                                  className="dvx:text-xs dvx:font-bold dvx:text-red-500 dvx:bg-transparent dvx:hover:text-red-600 dvx:transition dvx:underline dvx:decoration-dashed"
                                 >
                                   {t("liquidity_remove_btn")}
                                 </button>
                               </div>
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="rounded-xl bg-gray-50 dark:bg-[#1e1e1e] border border-gray-100 dark:border-[#333] px-3 py-2 text-xs">
-                              <p className="text-gray-400 mb-0.5">
+                          <div className="dvx:grid dvx:grid-cols-2 dvx:gap-2">
+                            <div className="dvx:rounded-xl dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:border dvx:border-gray-100 dvx:dark:border-[#333] dvx:px-3 dvx:py-2 dvx:text-xs">
+                              <p className="dvx:text-gray-400 dvx:mb-0.5">
                                 ≈ {pos.pool.tokenA.split("-")[0]}
                               </p>
-                              <p className="font-bold text-gray-900 dark:text-white">
+                              <p className="dvx:font-bold dvx:text-gray-900 dvx:dark:text-white">
                                 {estimatedA}
                               </p>
                               {estimatedAUsd != null && estimatedAUsd > 0 && (
-                                <p className="text-gray-400 mt-0.5">
+                                <p className="dvx:text-gray-400 dvx:mt-0.5">
                                   {formatUsd(estimatedAUsd)}
                                 </p>
                               )}
                             </div>
-                            <div className="rounded-xl bg-gray-50 dark:bg-[#1e1e1e] border border-gray-100 dark:border-[#333] px-3 py-2 text-xs">
-                              <p className="text-gray-400 mb-0.5">
+                            <div className="dvx:rounded-xl dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:border dvx:border-gray-100 dvx:dark:border-[#333] dvx:px-3 dvx:py-2 dvx:text-xs">
+                              <p className="dvx:text-gray-400 dvx:mb-0.5">
                                 ≈ {pos.pool.tokenB.split("-")[0]}
                               </p>
-                              <p className="font-bold text-gray-900 dark:text-white">
+                              <p className="dvx:font-bold dvx:text-gray-900 dvx:dark:text-white">
                                 {estimatedB}
                               </p>
                               {estimatedBUsd != null && estimatedBUsd > 0 && (
-                                <p className="text-gray-400 mt-0.5">
+                                <p className="dvx:text-gray-400 dvx:mt-0.5">
                                   {formatUsd(estimatedBUsd)}
                                 </p>
                               )}
@@ -315,7 +315,7 @@ export const Liquidity = () => {
               <button
                 onClick={() => goTo("add-liquidity")}
                 style={{ minHeight: "36px" }}
-                className="dinoButton w-full text-base"
+                className="dinoButton dvx:w-full dvx:text-base"
               >
                 {t("liquidity_add")}
               </button>

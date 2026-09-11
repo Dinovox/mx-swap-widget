@@ -246,33 +246,33 @@ export const RemoveLiquidity = () => {
     !!selectedPool && percentage > 0 && new BigNumber(lpBalanceRaw).gt(0);
 
   return (
-    <div className="flex flex-col w-full gap-6">
+    <div className="dvx:flex dvx:flex-col dvx:w-full dvx:gap-6">
       <Card
-        className="border-2 border-cyan-500/20"
+        className="dvx:border-2 dvx:border-cyan-500/20"
         title={
-          <div className="flex items-center gap-3 w-full">
+          <div className="dvx:flex dvx:items-center dvx:gap-3 dvx:w-full">
             <button
               onClick={() => goTo("liquidity")}
-              className="p-1.5 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition flex-shrink-0"
+              className="dvx:p-1.5 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-lg dvx:hover:bg-gray-200 dvx:dark:hover:bg-[#2a2a2a] dvx:transition dvx:flex-shrink-0"
             >
-              <ArrowLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+              <ArrowLeft className="dvx:w-4 dvx:h-4 dvx:text-gray-600 dvx:dark:text-gray-300" />
             </button>
-            <span className="text-xl">🔓</span>
-            <span className="text-lg font-black tracking-tight">
+            <span className="dvx:text-xl">🔓</span>
+            <span className="dvx:text-lg dvx:font-black dvx:tracking-tight">
               Retirer Liquidité
             </span>
           </div>
         }
         description="Retirez vos LP tokens pour récupérer vos actifs"
       >
-        <div className="space-y-4 mt-4">
+        <div className="dvx:space-y-4 dvx:mt-4">
           {/* Pool selector */}
-          <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">
+          <div className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:p-4">
+            <p className="dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400 dvx:mb-2">
               Sélectionner une Pool
             </p>
             <select
-              className="w-full rounded-xl border border-gray-200 dark:border-[#444] bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="dvx:w-full dvx:rounded-xl dvx:border dvx:border-gray-200 dvx:dark:border-[#444] dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-2.5 dvx:text-sm dvx:font-medium dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 dvx:focus:ring-amber-500"
               value={selectedPoolAddress}
               onChange={(e) => setSelectedPoolAddress(e.target.value)}
               disabled={poolsLoading}
@@ -291,27 +291,27 @@ export const RemoveLiquidity = () => {
 
           {/* Percentage slider */}
           {selectedPool && (
-            <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <div className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:p-4 dvx:space-y-3">
+              <div className="dvx:flex dvx:items-center dvx:justify-between">
+                <p className="dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400">
                   Montant à retirer
                 </p>
-                <span className="text-[10px] text-gray-400">
+                <span className="dvx:text-[10px] dvx:text-gray-400">
                   Balance :{" "}
-                  <span className="text-amber-500">{lpBalanceDisplay} LP</span>
+                  <span className="dvx:text-amber-500">{lpBalanceDisplay} LP</span>
                 </span>
               </div>
 
               {/* Big percentage display */}
-              <div className="text-center">
-                <span className="text-4xl font-black text-gray-900 dark:text-white">
+              <div className="dvx:text-center">
+                <span className="dvx:text-4xl dvx:font-black dvx:text-gray-900 dvx:dark:text-white">
                   {percentage}
                 </span>
-                <span className="text-2xl font-black text-gray-400 ml-1">
+                <span className="dvx:text-2xl dvx:font-black dvx:text-gray-400 dvx:ml-1">
                   %
                 </span>
                 {percentage > 0 && (
-                  <p className="text-[10px] text-gray-400 mt-1">
+                  <p className="dvx:text-[10px] dvx:text-gray-400 dvx:mt-1">
                     {lpAmountDisplay} LP
                   </p>
                 )}
@@ -325,19 +325,19 @@ export const RemoveLiquidity = () => {
                 step={1}
                 value={percentage}
                 onChange={(e) => setPercentage(Number(e.target.value))}
-                className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-amber-500 bg-gray-200 dark:bg-[#333]"
+                className="dvx:w-full dvx:h-2 dvx:rounded-lg dvx:appearance-none dvx:cursor-pointer dvx:accent-amber-500 dvx:bg-gray-200 dvx:dark:bg-[#333]"
               />
 
               {/* Preset buttons */}
-              <div className="grid grid-cols-4 gap-2">
+              <div className="dvx:grid dvx:grid-cols-4 dvx:gap-2">
                 {PRESETS.map((p) => (
                   <button
                     key={p}
                     onClick={() => setPercentage(p)}
-                    className={`py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                    className={`dvx:py-1.5 dvx:rounded-lg dvx:text-xs dvx:font-bold dvx:transition-colors ${
                       percentage === p
-                        ? "bg-amber-500 text-white"
-                        : "bg-gray-200 dark:bg-[#2a2a2a] text-gray-600 dark:text-gray-400 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                        ? "dvx:bg-amber-500 dvx:text-white"
+                        : "dvx:bg-gray-200 dvx:dark:bg-[#2a2a2a] dvx:text-gray-600 dvx:dark:text-gray-400 dvx:hover:bg-amber-100 dvx:dark:hover:bg-amber-900/30"
                     }`}
                   >
                     {p === 100 ? "MAX" : `${p}%`}
@@ -350,40 +350,40 @@ export const RemoveLiquidity = () => {
           {/* Estimated receive */}
           {selectedPool && percentage > 0 && new BigNumber(outA).gt(0) && (
             <>
-              <div className="flex justify-center -my-2 relative z-10">
-                <div className="rounded-full p-1.5 bg-[#ffffff] dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333]">
-                  <ArrowDown className="w-4 h-4 text-amber-500" />
+              <div className="dvx:flex dvx:justify-center dvx:-my-2 dvx:relative dvx:z-10">
+                <div className="dvx:rounded-full dvx:p-1.5 dvx:bg-[#ffffff] dvx:dark:bg-[#1a1a1a] dvx:border dvx:border-gray-200 dvx:dark:border-[#333]">
+                  <ArrowDown className="dvx:w-4 dvx:h-4 dvx:text-amber-500" />
                 </div>
               </div>
-              <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] p-4 space-y-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 text-center">
+              <div className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-[#ffffff] dvx:dark:bg-[#1a1a1a] dvx:p-4 dvx:space-y-3">
+                <p className="dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400 dvx:text-center">
                   Vous recevrez (estimation)
                 </p>
-                <div className="flex items-center justify-between">
+                <div className="dvx:flex dvx:items-center dvx:justify-between">
                   <div>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    <p className="dvx:text-sm dvx:font-bold dvx:text-gray-900 dvx:dark:text-white">
                       {outADisplay}{" "}
-                      <span className="text-gray-400 font-medium">
+                      <span className="dvx:text-gray-400 dvx:font-medium">
                         {tickerA}
                       </span>
                     </p>
                     {outAUsd && (
-                      <p className="text-[10px] text-gray-400 mt-0.5">
+                      <p className="dvx:text-[10px] dvx:text-gray-400 dvx:mt-0.5">
                         ≈ {outAUsd}
                       </p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="dvx:flex dvx:items-center dvx:justify-between">
                   <div>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    <p className="dvx:text-sm dvx:font-bold dvx:text-gray-900 dvx:dark:text-white">
                       {outBDisplay}{" "}
-                      <span className="text-gray-400 font-medium">
+                      <span className="dvx:text-gray-400 dvx:font-medium">
                         {tickerB}
                       </span>
                     </p>
                     {outBUsd && (
-                      <p className="text-[10px] text-gray-400 mt-0.5">
+                      <p className="dvx:text-[10px] dvx:text-gray-400 dvx:mt-0.5">
                         ≈ {outBUsd}
                       </p>
                     )}
@@ -397,7 +397,7 @@ export const RemoveLiquidity = () => {
             onClick={!address ? onConnect : handleTx}
             disabled={!address ? !onConnect : !canSubmit}
             style={{ minHeight: "36px" }}
-            className="dinoButton w-full text-base mt-4 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="dinoButton dvx:w-full dvx:text-base dvx:mt-4 dvx:disabled:opacity-40 dvx:disabled:cursor-not-allowed"
           >
             {!address
               ? "Connectez votre wallet"

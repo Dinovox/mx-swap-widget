@@ -823,29 +823,29 @@ export const Swap = () => {
 
   /* ---------- Render ---------- */
   return (
-    <div className="flex flex-col w-full gap-6">
+    <div className="dvx:flex dvx:flex-col dvx:w-full dvx:gap-6">
       <Card
-        className="border-2 border-cyan-500/20"
+        className="dvx:border-2 dvx:border-cyan-500/20"
         title={
-          <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between w-full gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">🔄</span>
-              <span className="text-lg font-black tracking-tight">Swap</span>
+          <div className="dvx:flex dvx:flex-col dvx:xs:flex-row dvx:items-start dvx:xs:items-center dvx:justify-between dvx:w-full dvx:gap-4">
+            <div className="dvx:flex dvx:items-center dvx:gap-3">
+              <span className="dvx:text-xl">🔄</span>
+              <span className="dvx:text-lg dvx:font-black dvx:tracking-tight">Swap</span>
             </div>
             {/* Tabs: Swap / Liquidité */}
             <div
               style={p.tabBar}
-              className="flex gap-1.5 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl shadow-inner w-full xs:w-auto"
+              className="dvx:flex dvx:gap-1.5 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:shadow-inner dvx:w-full dvx:xs:w-auto"
             >
               <button
                 style={p.activeTab}
-                className="flex-1 xs:flex-initial px-4 sm:px-6 py-2 text-sm font-black rounded-lg bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all"
+                className="dvx:flex-1 dvx:xs:flex-initial dvx:px-4 dvx:sm:px-6 dvx:py-2 dvx:text-sm dvx:font-black dvx:rounded-lg dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:text-amber-500 dvx:shadow-md dvx:transition-all"
               >
                 {t("tab_swap")}
               </button>
               <button
                 onClick={() => goTo("liquidity")}
-                className="flex-1 xs:flex-initial px-4 sm:px-6 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5"
+                className="dvx:flex-1 dvx:xs:flex-initial dvx:px-4 dvx:sm:px-6 dvx:py-2 dvx:text-sm dvx:font-bold dvx:rounded-lg dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-900 dvx:dark:hover:text-white dvx:transition-all dvx:hover:bg-white/50 dvx:dark:hover:bg-white/5"
               >
                 {t("tab_liquidity")}
               </button>
@@ -854,15 +854,15 @@ export const Swap = () => {
         }
         description={t("card_description")}
       >
-        <div className="space-y-2 mt-4">
+        <div className="dvx:space-y-2 dvx:mt-4">
           {/* ---- Token In ---- */}
           <div
             style={p.inner}
-            className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4"
+            className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:p-4"
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <div className="dvx:flex dvx:items-center dvx:justify-between dvx:mb-2">
+              <div className="dvx:flex dvx:items-center dvx:gap-2 dvx:flex-wrap">
+                <p className="dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400">
                   {t("you_send")}
                 </p>
                 {tokenIn && (
@@ -870,7 +870,7 @@ export const Swap = () => {
                     href={`${explorerAddress}/tokens/${tokenIn.identifier}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] font-bold text-amber-500 hover:text-amber-400 hover:underline transition-colors"
+                    className="dvx:text-[10px] dvx:font-bold dvx:text-amber-500 dvx:hover:text-amber-400 dvx:hover:underline dvx:transition-colors"
                   >
                     {tokenIn.ticker} ↗
                   </a>
@@ -881,47 +881,47 @@ export const Swap = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     title="View on e-compass"
-                    className="hover:opacity-70 transition-opacity"
+                    className="dvx:hover:opacity-70 dvx:transition-opacity"
                   >
                     <img
                       src={eCompassLogo}
                       alt="e-compass"
-                      className="h-6 w-6"
+                      className="dvx:h-6 dvx:w-6"
                     />
                   </a>
                 )}
                 {tokenIn && formatUnitPrice(tokenInPriceUsd) && (
-                  <span className="text-[10px] font-semibold text-gray-400">
+                  <span className="dvx:text-[10px] dvx:font-semibold dvx:text-gray-400">
                     {formatUnitPrice(tokenInPriceUsd)}
                   </span>
                 )}
               </div>
               {quoteLoading && activeField === "out" && (
-                <span className="text-[10px] text-gray-400 animate-pulse uppercase tracking-wider flex-shrink-0">
+                <span className="dvx:text-[10px] dvx:text-gray-400 dvx:animate-pulse dvx:uppercase dvx:tracking-wider dvx:flex-shrink-0">
                   {t("calculating")}
                 </span>
               )}
             </div>
             {address && tokenInBalanceDisplay && (
-              <div className="flex justify-end mb-3">
+              <div className="dvx:flex dvx:justify-end dvx:mb-3">
                 <button
                   onClick={handleMax}
-                  className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-amber-500 hover:text-amber-600 transition-colors"
+                  className="dvx:flex dvx:items-center dvx:gap-1.5 dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:transition-colors"
                 >
-                  <span className="text-gray-400">{t("balance")} :</span>
+                  <span className="dvx:text-gray-400">{t("balance")} :</span>
                   {tokenInBalanceDisplay}
                   {balanceInUsd && (
-                    <span className="text-gray-400 font-normal">
+                    <span className="dvx:text-gray-400 dvx:font-normal">
                       ≈ {balanceInUsd}
                     </span>
                   )}
-                  <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded text-[9px] font-bold">
+                  <span className="dvx:bg-amber-100 dvx:dark:bg-amber-900/30 dvx:text-amber-600 dvx:dark:text-amber-400 dvx:px-1.5 dvx:py-0.5 dvx:rounded dvx:text-[9px] dvx:font-bold">
                     MAX
                   </span>
                 </button>
               </div>
             )}
-            <div className="flex items-center gap-3">
+            <div className="dvx:flex dvx:items-center dvx:gap-3">
               <TokenSelect
                 value={tokenIn}
                 onChange={(t) => {
@@ -945,46 +945,46 @@ export const Swap = () => {
                   setQuote(null);
                 }}
                 style={p.input}
-                className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-colors ${
+                className={`dvx:w-28 dvx:xs:w-36 dvx:flex-shrink-0 dvx:rounded-xl dvx:border dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-2.5 dvx:text-right dvx:text-sm dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 dvx:transition-colors ${
                   insufficientBalance
-                    ? "border-red-400 dark:border-red-500 focus:ring-red-400"
+                    ? "dvx:border-red-400 dvx:dark:border-red-500 dvx:focus:ring-red-400"
                     : activeField === "in"
-                      ? "border-amber-400 dark:border-amber-500 focus:ring-amber-500"
-                      : "border-gray-200 dark:border-[#444] focus:ring-amber-500"
+                      ? "dvx:border-amber-400 dvx:dark:border-amber-500 dvx:focus:ring-amber-500"
+                      : "dvx:border-gray-200 dvx:dark:border-[#444] dvx:focus:ring-amber-500"
                 }`}
               />
             </div>
             {amountInUsd && !insufficientBalance && (
-              <p className="mt-1 text-[10px] text-gray-400 text-right">
+              <p className="dvx:mt-1 dvx:text-[10px] dvx:text-gray-400 dvx:text-right">
                 ≈ {amountInUsd}
               </p>
             )}
             {insufficientBalance && (
-              <p className="mt-2 text-[10px] font-semibold text-red-500 text-right">
+              <p className="dvx:mt-2 dvx:text-[10px] dvx:font-semibold dvx:text-red-500 dvx:text-right">
                 {t("insufficient_balance")}
               </p>
             )}
           </div>
 
           {/* ---- Invert button ---- */}
-          <div className="flex justify-center -my-0.5 relative z-10">
+          <div className="dvx:flex dvx:justify-center dvx:-my-0.5 dvx:relative dvx:z-10">
             <button
               onClick={invertTokens}
               style={p.invertBtn}
-              className="rounded-full p-2 bg-[#ffffff] dark:bg-[#2a2a2a] border border-gray-200 dark:border-[#444] shadow-sm hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+              className="dvx:rounded-full dvx:p-2 dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:border dvx:border-gray-200 dvx:dark:border-[#444] dvx:shadow-sm dvx:hover:bg-amber-50 dvx:dark:hover:bg-amber-900/20 dvx:transition-colors"
             >
-              <ArrowUpDown className="h-4 w-4 text-amber-500" />
+              <ArrowUpDown className="dvx:h-4 dvx:w-4 dvx:text-amber-500" />
             </button>
           </div>
 
           {/* ---- Token Out ---- */}
           <div
             style={p.inner}
-            className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4"
+            className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:p-4"
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <div className="dvx:flex dvx:items-center dvx:justify-between dvx:mb-2">
+              <div className="dvx:flex dvx:items-center dvx:gap-2 dvx:flex-wrap">
+                <p className="dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400">
                   {t("you_receive")}
                 </p>
                 {tokenOut && (
@@ -992,7 +992,7 @@ export const Swap = () => {
                     href={`${explorerAddress}/tokens/${tokenOut.identifier}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[10px] font-bold text-amber-500 hover:text-amber-400 hover:underline transition-colors"
+                    className="dvx:text-[10px] dvx:font-bold dvx:text-amber-500 dvx:hover:text-amber-400 dvx:hover:underline dvx:transition-colors"
                   >
                     {tokenOut.ticker} ↗
                   </a>
@@ -1003,43 +1003,43 @@ export const Swap = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     title="View on e-compass"
-                    className="hover:opacity-70 transition-opacity"
+                    className="dvx:hover:opacity-70 dvx:transition-opacity"
                   >
                     <img
                       src={eCompassLogo}
                       alt="e-compass"
-                      className="h-6 w-6"
+                      className="dvx:h-6 dvx:w-6"
                     />
                   </a>
                 )}
                 {tokenOut && formatUnitPrice(tokenOutPriceUsd) && (
-                  <span className="text-[10px] font-semibold text-gray-400">
+                  <span className="dvx:text-[10px] dvx:font-semibold dvx:text-gray-400">
                     {formatUnitPrice(tokenOutPriceUsd)}
                   </span>
                 )}
               </div>
               {quoteLoading && activeField === "in" && (
-                <span className="text-[10px] text-gray-400 animate-pulse uppercase tracking-wider flex-shrink-0">
+                <span className="dvx:text-[10px] dvx:text-gray-400 dvx:animate-pulse dvx:uppercase dvx:tracking-wider dvx:flex-shrink-0">
                   {t("calculating")}
                 </span>
               )}
             </div>
             {address && tokenOutBalanceDisplay && (
-              <div className="flex justify-end mb-3">
-                <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+              <div className="dvx:flex dvx:justify-end dvx:mb-3">
+                <span className="dvx:flex dvx:items-center dvx:gap-1.5 dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400">
                   {t("balance")} :{" "}
-                  <span className="text-amber-500">
+                  <span className="dvx:text-amber-500">
                     {tokenOutBalanceDisplay}
                   </span>
                   {balanceOutUsd && (
-                    <span className="font-normal normal-case">
+                    <span className="dvx:font-normal dvx:normal-case">
                       ≈ {balanceOutUsd}
                     </span>
                   )}
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-3">
+            <div className="dvx:flex dvx:items-center dvx:gap-3">
               <TokenSelect
                 value={tokenOut}
                 onChange={(t) => {
@@ -1063,15 +1063,15 @@ export const Swap = () => {
                   setQuote(null);
                 }}
                 style={p.input}
-                className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 transition-colors ${
+                className={`dvx:w-28 dvx:xs:w-36 dvx:flex-shrink-0 dvx:rounded-xl dvx:border dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-2.5 dvx:text-right dvx:text-sm dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 dvx:transition-colors ${
                   activeField === "out"
-                    ? "border-amber-400 dark:border-amber-500 focus:ring-amber-500"
-                    : "border-gray-200 dark:border-[#444] focus:ring-amber-500"
+                    ? "dvx:border-amber-400 dvx:dark:border-amber-500 dvx:focus:ring-amber-500"
+                    : "dvx:border-gray-200 dvx:dark:border-[#444] dvx:focus:ring-amber-500"
                 }`}
               />
             </div>
             {amountOutUsd && (
-              <p className="mt-1 text-[10px] text-gray-400 text-right">
+              <p className="dvx:mt-1 dvx:text-[10px] dvx:text-gray-400 dvx:text-right">
                 ≈ {amountOutUsd}
               </p>
             )}
@@ -1079,7 +1079,7 @@ export const Swap = () => {
 
           {/* ---- Wrap/Unwrap info ---- */}
           {isWrapUnwrap && !!amountIn && Number(amountIn) > 0 && (
-            <div className="rounded-2xl border border-cyan-200 dark:border-cyan-800/50 bg-cyan-50 dark:bg-cyan-900/10 px-4 py-3 text-sm text-cyan-700 dark:text-cyan-400">
+            <div className="dvx:rounded-2xl dvx:border dvx:border-cyan-200 dvx:dark:border-cyan-800/50 dvx:bg-cyan-50 dvx:dark:bg-cyan-900/10 dvx:px-4 dvx:py-3 dvx:text-sm dvx:text-cyan-700 dvx:dark:text-cyan-400">
               {isWrap ? t("wrap_info") : t("unwrap_info")}
             </div>
           )}
@@ -1088,61 +1088,61 @@ export const Swap = () => {
           {!isWrapUnwrap && quote && (
             <div
               style={p.quoteSection}
-              className={`rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] px-4 py-3 space-y-2.5 text-sm transition-opacity duration-300 ${quoteLoading ? "opacity-50" : "opacity-100"}`}
+              className={`dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-[#ffffff] dvx:dark:bg-[#1a1a1a] dvx:px-4 dvx:py-3 dvx:space-y-2.5 dvx:text-sm dvx:transition-opacity dvx:duration-300 ${quoteLoading ? "dvx:opacity-50" : "dvx:opacity-100"}`}
             >
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500 dark:text-gray-400">
+              <div className="dvx:flex dvx:justify-between dvx:items-center">
+                <span className="dvx:text-gray-500 dvx:dark:text-gray-400">
                   {t("price_impact")}
                 </span>
-                <span className={`font-semibold ${impactColor}`}>
+                <span className={`dvx:font-semibold ${impactColor}`}>
                   {priceImpactPct}%
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500 dark:text-gray-400">
+              <div className="dvx:flex dvx:justify-between dvx:items-center">
+                <span className="dvx:text-gray-500 dvx:dark:text-gray-400">
                   {t("hops")}
                 </span>
-                <span className="font-medium text-gray-900 dark:text-white">
+                <span className="dvx:font-medium dvx:text-gray-900 dvx:dark:text-white">
                   {quote.hops}
                 </span>
               </div>
-              <div className="pt-2 border-t border-gray-100 dark:border-[#2a2a2a]">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">
+              <div className="dvx:pt-2 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#2a2a2a]">
+                <div className="dvx:flex dvx:items-center dvx:justify-between dvx:mb-2">
+                  <p className="dvx:text-[10px] dvx:uppercase dvx:tracking-wider dvx:font-semibold dvx:text-gray-400">
                     {t("route")}
                   </p>
                   <button
                     onClick={() => fetchQuote()}
                     disabled={quoteLoading}
-                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-amber-500 transition-colors disabled:opacity-40"
+                    className="dvx:flex dvx:items-center dvx:gap-1 dvx:text-[10px] dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-amber-500 dvx:transition-colors dvx:disabled:opacity-40"
                     title="Rafraîchir le prix"
                   >
                     <RefreshCw
-                      className={`h-3 w-3 ${quoteLoading ? "animate-spin" : ""}`}
+                      className={`dvx:h-3 dvx:w-3 ${quoteLoading ? "dvx:animate-spin" : ""}`}
                     />
-                    <span className="tabular-nums">{refreshCountdown}s</span>
+                    <span className="dvx:tabular-nums">{refreshCountdown}s</span>
                   </button>
                 </div>
-                <div className="flex items-center flex-wrap gap-0">
+                <div className="dvx:flex dvx:items-center dvx:flex-wrap dvx:gap-0">
                   {/* First token */}
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200">
+                  <span className="dvx:text-xs dvx:font-semibold dvx:px-2.5 dvx:py-1 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-800 dvx:dark:text-gray-200">
                     {tokenIn?.ticker ?? quote.route[0]?.tokenIn}
                   </span>
                   {/* Wrap connector when EGLD in (skipped for the direct stake route, which never wraps) */}
                   {isEgldIn && !isStakeRoute && (
                     <React.Fragment>
-                      <div className="flex flex-col items-center mx-1">
-                        <span className="text-[9px] font-bold text-gray-400">
+                      <div className="dvx:flex dvx:flex-col dvx:items-center dvx:mx-1">
+                        <span className="dvx:text-[9px] dvx:font-bold dvx:text-gray-400">
                           wrap
                         </span>
-                        <div className="flex items-center gap-0.5">
-                          <div className="h-px w-4 bg-gray-300 dark:bg-gray-600" />
-                          <span className="text-[10px] leading-none text-gray-400">
+                        <div className="dvx:flex dvx:items-center dvx:gap-0.5">
+                          <div className="dvx:h-px dvx:w-4 dvx:bg-gray-300 dvx:dark:bg-gray-600" />
+                          <span className="dvx:text-[10px] dvx:leading-none dvx:text-gray-400">
                             ▶
                           </span>
                         </div>
                       </div>
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200">
+                      <span className="dvx:text-xs dvx:font-semibold dvx:px-2.5 dvx:py-1 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-800 dvx:dark:text-gray-200">
                         WEGLD
                       </span>
                     </React.Fragment>
@@ -1183,25 +1183,25 @@ export const Swap = () => {
                     return (
                       <React.Fragment key={i}>
                         {/* Connector */}
-                        <div className="flex flex-col items-center mx-1">
+                        <div className="dvx:flex dvx:flex-col dvx:items-center dvx:mx-1">
                           <a
                             href={`${explorerAddress}/accounts/${hop.pair}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`text-[9px] font-bold hover:underline ${hopHighImpact ? "text-red-500" : dexStyle.label}`}
+                            className={`dvx:text-[9px] dvx:font-bold dvx:hover:underline ${hopHighImpact ? "dvx:text-red-500" : dexStyle.label}`}
                             title={hop.pair}
                           >
                             {dexStyle.name} ↗
                           </a>
-                          <div className="flex items-center gap-0.5">
+                          <div className="dvx:flex dvx:items-center dvx:gap-0.5">
                             <div
-                              className={`h-px w-4 ${
-                                hopHighImpact ? "bg-red-500" : dexStyle.line
+                              className={`dvx:h-px dvx:w-4 ${
+                                hopHighImpact ? "dvx:bg-red-500" : dexStyle.line
                               }`}
                             />
                             <span
-                              className={`text-[10px] leading-none ${
-                                hopHighImpact ? "text-red-500" : dexStyle.label
+                              className={`dvx:text-[10px] dvx:leading-none ${
+                                hopHighImpact ? "dvx:text-red-500" : dexStyle.label
                               }`}
                             >
                               {hopHighImpact ? "⚠" : "▶"}
@@ -1209,7 +1209,7 @@ export const Swap = () => {
                           </div>
                         </div>
                         {/* Token out */}
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200">
+                        <span className="dvx:text-xs dvx:font-semibold dvx:px-2.5 dvx:py-1 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-800 dvx:dark:text-gray-200">
                           {ticker}
                         </span>
                       </React.Fragment>
@@ -1217,18 +1217,18 @@ export const Swap = () => {
                   })}
                   {isEgldOut && (
                     <React.Fragment>
-                      <div className="flex flex-col items-center mx-1">
-                        <span className="text-[9px] font-bold text-gray-400">
+                      <div className="dvx:flex dvx:flex-col dvx:items-center dvx:mx-1">
+                        <span className="dvx:text-[9px] dvx:font-bold dvx:text-gray-400">
                           unwrap
                         </span>
-                        <div className="flex items-center gap-0.5">
-                          <div className="h-px w-4 bg-gray-300 dark:bg-gray-600" />
-                          <span className="text-[10px] leading-none text-gray-400">
+                        <div className="dvx:flex dvx:items-center dvx:gap-0.5">
+                          <div className="dvx:h-px dvx:w-4 dvx:bg-gray-300 dvx:dark:bg-gray-600" />
+                          <span className="dvx:text-[10px] dvx:leading-none dvx:text-gray-400">
                             ▶
                           </span>
                         </div>
                       </div>
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#2a2a2a] text-gray-800 dark:text-gray-200">
+                      <span className="dvx:text-xs dvx:font-semibold dvx:px-2.5 dvx:py-1 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-800 dvx:dark:text-gray-200">
                         EGLD
                       </span>
                     </React.Fragment>
@@ -1247,9 +1247,9 @@ export const Swap = () => {
                     (h) => h.dexType === "DinoVox" || !h.dexType,
                   );
                   return (
-                    <div className="mt-2 flex flex-col gap-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-3 py-2 text-xs text-red-600 dark:text-red-400">
-                      <div className="flex items-start gap-2">
-                        <span className="mt-0.5 shrink-0">⚠</span>
+                    <div className="dvx:mt-2 dvx:flex dvx:flex-col dvx:gap-2 dvx:rounded-lg dvx:bg-red-50 dvx:dark:bg-red-900/20 dvx:border dvx:border-red-200 dvx:dark:border-red-800/50 dvx:px-3 dvx:py-2 dvx:text-xs dvx:text-red-600 dvx:dark:text-red-400">
+                      <div className="dvx:flex dvx:items-start dvx:gap-2">
+                        <span className="dvx:mt-0.5 dvx:shrink-0">⚠</span>
                         <span>{t("high_impact_warning")}</span>
                       </div>
                       {hasDinoVoxHop &&
@@ -1267,7 +1267,7 @@ export const Swap = () => {
                               onClick={() =>
                                 goTo("add-liquidity", { tokenA, tokenB })
                               }
-                              className="self-start underline font-semibold hover:text-red-700 dark:hover:text-red-300 transition"
+                              className="dvx:self-start dvx:underline dvx:font-semibold dvx:bg-transparent dvx:hover:text-red-700 dvx:dark:hover:text-red-300 dvx:transition"
                             >
                               {t("add_liquidity_cta")}
                             </button>
@@ -1277,19 +1277,19 @@ export const Swap = () => {
                   );
                 })()}
               </div>
-              <div className="pt-2 border-t border-gray-100 dark:border-[#2a2a2a] flex items-center justify-between">
-                <span className="text-gray-500 dark:text-gray-400">
+              <div className="dvx:pt-2 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#2a2a2a] dvx:flex dvx:items-center dvx:justify-between">
+                <span className="dvx:text-gray-500 dvx:dark:text-gray-400">
                   {t("slippage")}
                 </span>
-                <div className="flex gap-1">
+                <div className="dvx:flex dvx:gap-1">
                   {SLIPPAGE_PRESETS.map((s) => (
                     <button
                       key={s}
                       onClick={() => setSlippage(s)}
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors ${
+                      className={`dvx:px-2.5 dvx:py-0.5 dvx:rounded-full dvx:text-xs dvx:font-semibold dvx:transition-colors ${
                         slippage === s
-                          ? "bg-yellow-500 text-white"
-                          : "bg-gray-100 dark:bg-[#2a2a2a] text-gray-600 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30"
+                          ? "dvx:bg-yellow-500 dvx:text-white"
+                          : "dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-600 dvx:dark:text-gray-400 dvx:hover:bg-yellow-100 dvx:dark:hover:bg-yellow-900/30"
                       }`}
                     >
                       {(s * 100).toFixed(1)}%
@@ -1297,13 +1297,13 @@ export const Swap = () => {
                   ))}
                 </div>
               </div>
-              <div className="pt-2 border-t border-gray-100 dark:border-[#2a2a2a] flex items-center justify-between">
-                <span className="text-gray-500 dark:text-gray-400">
+              <div className="dvx:pt-2 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#2a2a2a] dvx:flex dvx:items-center dvx:justify-between">
+                <span className="dvx:text-gray-500 dvx:dark:text-gray-400">
                   {t("min_received")}
                 </span>
-                <span className="font-semibold text-gray-900 dark:text-white">
+                <span className="dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white">
                   {minAmountOutDisplay}{" "}
-                  <span className="text-gray-400 text-xs">
+                  <span className="dvx:text-gray-400 dvx:text-xs">
                     {tokenOut?.ticker}
                   </span>
                 </span>
@@ -1313,13 +1313,13 @@ export const Swap = () => {
 
           {/* ---- Arb details ---- */}
           {isArb && arb && !arbLoading && (
-            <div className="rounded-2xl border border-green-200 dark:border-green-800/50 bg-green-50 dark:bg-green-900/10 px-4 py-3 space-y-2.5 text-sm">
+            <div className="dvx:rounded-2xl dvx:border dvx:border-green-200 dvx:dark:border-green-800/50 dvx:bg-green-50 dvx:dark:bg-green-900/10 dvx:px-4 dvx:py-3 dvx:space-y-2.5 dvx:text-sm">
               {/* Profit */}
-              <div className="flex justify-between items-center">
-                <span className="text-green-700 dark:text-green-400 font-semibold">
+              <div className="dvx:flex dvx:justify-between dvx:items-center">
+                <span className="dvx:text-green-700 dvx:dark:text-green-400 dvx:font-semibold">
                   {t("arb_profit")}
                 </span>
-                <span className="font-bold text-green-600 dark:text-green-400">
+                <span className="dvx:font-bold dvx:text-green-600 dvx:dark:text-green-400">
                   +{arbProfitDisplay} {tokenIn?.ticker} (
                   {(arb.profitBps / 100).toFixed(2)}%)
                 </span>
@@ -1327,12 +1327,12 @@ export const Swap = () => {
 
               {/* Route */}
               {arb.route && arb.route.length > 0 && (
-                <div className="pt-2 border-t border-green-200 dark:border-green-800/50">
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-green-700/60 dark:text-green-400/60 mb-2">
+                <div className="dvx:pt-2 dvx:border-t dvx:border-green-200 dvx:dark:border-green-800/50">
+                  <p className="dvx:text-[10px] dvx:uppercase dvx:tracking-wider dvx:font-semibold dvx:text-green-700/60 dvx:dark:text-green-400/60 dvx:mb-2">
                     {t("route")}
                   </p>
-                  <div className="flex items-center flex-wrap gap-0">
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200">
+                  <div className="dvx:flex dvx:items-center dvx:flex-wrap dvx:gap-0">
+                    <span className="dvx:text-xs dvx:font-semibold dvx:px-2.5 dvx:py-1 dvx:rounded-full dvx:bg-green-100 dvx:dark:bg-green-900/40 dvx:text-green-800 dvx:dark:text-green-200">
                       {tokenIn?.ticker}
                     </span>
                     {arb.route.map((hop, i) => {
@@ -1342,43 +1342,43 @@ export const Swap = () => {
                       const dexStyle =
                         hop.dexType === "XExchange"
                           ? {
-                              line: "bg-blue-400",
+                              line: "bg-blue-400 dark:bg-blue-500",
                               label: "text-blue-600 dark:text-blue-400",
                               name: "XExchange",
                             }
                           : hop.dexType === "JExchange"
                             ? {
-                                line: "bg-purple-400",
+                                line: "bg-purple-400 dark:bg-purple-500",
                                 label: "text-purple-600 dark:text-purple-400",
                                 name: "JExchange",
                               }
                             : {
-                                line: "bg-green-400",
+                                line: "bg-green-400 dark:bg-green-500",
                                 label: "text-green-600 dark:text-green-400",
                                 name: "DinoVox",
                               };
                       return (
                         <React.Fragment key={i}>
-                          <div className="flex flex-col items-center mx-1">
+                          <div className="dvx:flex dvx:flex-col dvx:items-center dvx:mx-1">
                             <a
                               href={`${explorerAddress}/accounts/${hop.pair}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className={`text-[9px] font-bold hover:underline ${dexStyle.label}`}
+                              className={`dvx:text-[9px] dvx:font-bold dvx:hover:underline ${dexStyle.label}`}
                               title={hop.pair}
                             >
                               {dexStyle.name} ↗
                             </a>
-                            <div className="flex items-center gap-0.5">
-                              <div className={`h-px w-4 ${dexStyle.line}`} />
+                            <div className="dvx:flex dvx:items-center dvx:gap-0.5">
+                              <div className={`dvx:h-px dvx:w-4 ${dexStyle.line}`} />
                               <span
-                                className={`text-[10px] leading-none ${dexStyle.label}`}
+                                className={`dvx:text-[10px] dvx:leading-none ${dexStyle.label}`}
                               >
                                 ▶
                               </span>
                             </div>
                           </div>
-                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200">
+                          <span className="dvx:text-xs dvx:font-semibold dvx:px-2.5 dvx:py-1 dvx:rounded-full dvx:bg-green-100 dvx:dark:bg-green-900/40 dvx:text-green-800 dvx:dark:text-green-200">
                             {ticker}
                           </span>
                         </React.Fragment>
@@ -1389,19 +1389,19 @@ export const Swap = () => {
               )}
 
               {/* Slippage */}
-              <div className="pt-2 border-t border-green-200 dark:border-green-800/50 flex items-center justify-between">
-                <span className="text-green-700/70 dark:text-green-400/70">
+              <div className="dvx:pt-2 dvx:border-t dvx:border-green-200 dvx:dark:border-green-800/50 dvx:flex dvx:items-center dvx:justify-between">
+                <span className="dvx:text-green-700/70 dvx:dark:text-green-400/70">
                   {t("slippage")}
                 </span>
-                <div className="flex gap-1">
+                <div className="dvx:flex dvx:gap-1">
                   {SLIPPAGE_PRESETS.map((s) => (
                     <button
                       key={s}
                       onClick={() => setSlippage(s)}
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors ${
+                      className={`dvx:px-2.5 dvx:py-0.5 dvx:rounded-full dvx:text-xs dvx:font-semibold dvx:transition-colors ${
                         slippage === s
-                          ? "bg-green-500 text-white"
-                          : "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50"
+                          ? "dvx:bg-green-500 dvx:text-white"
+                          : "dvx:bg-green-100 dvx:dark:bg-green-900/30 dvx:text-green-700 dvx:dark:text-green-400 dvx:hover:bg-green-200 dvx:dark:hover:bg-green-900/50"
                       }`}
                     >
                       {(s * 100).toFixed(1)}%
@@ -1414,7 +1414,7 @@ export const Swap = () => {
 
           {/* ---- Arb loading / error ---- */}
           {isArb && arbLoading && (
-            <div className="text-center text-xs text-gray-400 animate-pulse py-2">
+            <div className="dvx:text-center dvx:text-xs dvx:text-gray-400 dvx:animate-pulse dvx:py-2">
               {t("calculating")}
             </div>
           )}
@@ -1423,7 +1423,7 @@ export const Swap = () => {
           {((!isWrapUnwrap && !isArb && quoteError) ||
             (isArb && arbError) ||
             txError) && (
-            <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+            <div className="dvx:rounded-xl dvx:bg-red-50 dvx:dark:bg-red-900/20 dvx:border dvx:border-red-200 dvx:dark:border-red-800/50 dvx:px-4 dvx:py-3 dvx:text-sm dvx:text-red-600 dvx:dark:text-red-400">
               {isArb ? arbError : (quoteError ?? txError)}
             </div>
           )}
@@ -1447,10 +1447,10 @@ export const Swap = () => {
                   }
                 : { minHeight: "36px" }
             }
-            className={`dinoButton orange w-full text-base ${
+            className={`dinoButton orange dvx:w-full dvx:text-base ${
               !tokenIn || !tokenOut
-                ? "!bg-orange-400 dark:!bg-orange-500 !border-orange-600 dark:!border-orange-700 !text-orange-950 dark:!text-orange-950 font-bold !opacity-100 hover:!bg-orange-500 hover:!border-orange-700 dark:hover:!bg-orange-400"
-                : "disabled:opacity-40 disabled:cursor-not-allowed"
+                ? "dvx:!bg-orange-400 dvx:dark:!bg-orange-500 dvx:!border-orange-600 dvx:dark:!border-orange-700 dvx:!text-orange-950 dvx:dark:!text-orange-950 dvx:font-bold dvx:!opacity-100 dvx:hover:!bg-orange-500 dvx:hover:!border-orange-700 dvx:dark:hover:!bg-orange-400"
+                : "dvx:disabled:opacity-40 dvx:disabled:cursor-not-allowed"
             }`}
           >
             {!address

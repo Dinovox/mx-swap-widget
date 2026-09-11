@@ -1,8 +1,246 @@
 /* Tailwind utilities only — no preflight reset to avoid conflicts with host app.
    !important ensures widget styles are never overridden by the host app's CSS. */
 /* Tailwind utilities only — no preflight reset to avoid conflicts with host app */
-@import "tailwindcss/theme" layer(theme);
-@import "tailwindcss/utilities" layer(utilities);
+/* A previous version of this file `@import`ed Google's Inter stylesheet here,
+   reasoning that the `.dinovox-swap-widget` font-family declaration below is
+   only as good as whatever font is actually registered. That reasoning was
+   right but the fix was wrong: `@font-face` (which is what a Google Fonts
+   stylesheet ultimately declares) CANNOT be scoped — unlike every other rule
+   in this file, there is no selector, no `:where()`, no descendant combinator
+   that limits it to `.dinovox-swap-widget`. It registers the family name
+   ‘Inter’ for the *entire document* the instant this stylesheet loads. In
+   dinotool-v2, which already declares its own `@font-face` for ‘Inter’ (a
+   static, regular-only cut), that gave the page TWO competing declarations
+   for the same family — the browser's tie-break between them made body text
+   across the *entire app* (nav sidebar included, far from the swap widget)
+   render at a visibly heavier weight than before, on pages that never render
+   this widget at all. Reverted: rely on a plain system-font stack instead
+   (see `.dinovox-swap-widget` below) — not pixel-identical to Inter, but it
+   can never collide with a host's own font choices the way a real web-font
+   import can. The token-row height difference this was chasing is instead
+   handled with an explicit row height (see TokenSelect.tsx) that doesn't
+   depend on which font actually renders. */
+@import "tailwindcss/theme" layer(theme) prefix(dvx);
+@import "tailwindcss/utilities" layer(utilities) prefix(dvx);
 
 /* Dark mode: triggered by .dark on any ancestor, unless a .light ancestor overrides it */
 @custom-variant dark (&:is(.dark *):not(:is(.light *)));
+
+/*
+ * Default look for the primary CTA button (.dinoButton), used across every
+ * view (Swap, Add/Remove Liquidity, Create Pool, Liquidity). This class was
+ * previously left undefined here entirely, relying on the host app to supply
+ * a global `.dinoButton` rule — worked inside DinoVox's own dapp (which
+ * defines one), left the button as completely unstyled native chrome in any
+ * other host. A first pass only moved the *color* here (bg-amber-500 etc.),
+ * which fixed the "unstyled chrome" case but still silently borrowed its
+ * shape from DinoVox's own dapp-wide `.dinoButton` (dinotool-v2's
+ * src/styles/globals.css) — height, padding, pill radius, uppercase tracking,
+ * box-shadow, the .dark variant, and the .orange/.blue/.reverse color
+ * modifiers (`.orange` is what the main Swap CTA actually uses) were never
+ * defined here, so any host without that exact global class rendered a flat,
+ * unsized rectangle instead of the intended pill button, and `.orange` did
+ * nothing at all. Reproduced in full below so the widget no longer depends
+ * on a same-named class happening to exist in the host's own stylesheet.
+ * The 'mid' theme is untouched: its buttons already get an inline gradient
+ * `style` that wins over this class regardless.
+ *
+ * Every declaration in this file gets `!important` appended post-build (see
+ * vite.config.ts::addImportantToDistCss), same as the rest of the widget's
+ * compiled CSS — so a host that wants a genuinely different `.dinoButton`
+ * look needs `!important` on their own rule too. That's not a new
+ * restriction introduced here, just the same contract every other style in
+ * this widget already has.
+ *
+ * Scoped under `.dinovox-swap-widget` (the SwapWidget.tsx root wrapper) —
+ * a bare `.dinoButton` here would cut both ways: dinotool-v2 also has a
+ * same-named, app-wide "Standardized Button DA" class (globals.css), and
+ * once this stylesheet is loaded anywhere on the page, an unscoped
+ * `!important` rule would hijack the styling of *every* `.dinoButton` in
+ * the host app, not just the widget's own — buttons on completely unrelated
+ * pages (e.g. the "AIDE" pill) would silently pick up this look instead of
+ * the host's. The descendant selector keeps this additive to the widget's
+ * own subtree, same principle as the `:where(...)` reset below (there we
+ * want zero priority so the host's classes win; here we want full priority
+ * but only inside the widget).
+ */
+.dinovox-swap-widget .dinoButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 20px;
+  margin: 0;
+
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+  -webkit-font-smoothing: antialiased;
+
+  background-color: #facc15; /* amber-400 */
+  color: #422006; /* amber-950 */
+  border: 2px solid #eab308; /* amber-500 */
+  border-radius: 9999px;
+
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+  cursor: pointer;
+}
+
+.dinovox-swap-widget .dinoButton:is(.dark *):not(:is(.light *)) {
+  background-color: #eab308;
+  border-color: #ca8a04;
+  color: #422006;
+}
+
+.dinovox-swap-widget .dinoButton:hover {
+  background-color: #eab308;
+  border-color: #ca8a04;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(250, 204, 21, 0.35);
+}
+
+.dinovox-swap-widget .dinoButton:is(.dark *):not(:is(.light *)):hover {
+  background-color: #facc15;
+  border-color: #eab308;
+}
+
+.dinovox-swap-widget .dinoButton:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.dinovox-swap-widget .dinoButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: grayscale(0.2);
+}
+
+/* Reverse / secondary variant */
+.dinovox-swap-widget .dinoButton.reverse {
+  background-color: transparent;
+  color: #ca8a04;
+  border: 2px solid #eab308;
+}
+
+.dinovox-swap-widget .dinoButton.reverse:is(.dark *):not(:is(.light *)) {
+  color: #facc15;
+  border-color: #eab308;
+}
+
+.dinovox-swap-widget .dinoButton.reverse:hover {
+  background-color: rgba(250, 204, 21, 0.1);
+  border-color: #ca8a04;
+  color: #a16207;
+}
+
+.dinovox-swap-widget .dinoButton.reverse:is(.dark *):not(:is(.light *)):hover {
+  background-color: rgba(250, 204, 21, 0.1);
+  border-color: #facc15;
+  color: #fef08a;
+}
+
+/* Orange variant — used by the main Swap CTA (Swap.tsx) */
+.dinovox-swap-widget .dinoButton.orange {
+  background-color: #f97316; /* orange-500 */
+  color: #ffffff;
+  border-color: #c2410c; /* orange-700 */
+}
+
+.dinovox-swap-widget .dinoButton.orange:hover {
+  background-color: #ea580c; /* orange-600 */
+  border-color: #c2410c;
+  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.35);
+}
+
+/* Blue variant — used for guide/info links styled as a button */
+.dinovox-swap-widget .dinoButton.blue {
+  background-color: #3b82f6; /* blue-500 */
+  color: #ffffff;
+  border-color: #1d4ed8; /* blue-700 */
+}
+
+.dinovox-swap-widget .dinoButton.blue:hover {
+  background-color: #2563eb; /* blue-600 */
+  border-color: #1d4ed8;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.35);
+}
+
+/*
+ * Minimal reset, scoped to the widget's own root (the wrapper div in
+ * SwapWidget.tsx carries `.dinovox-swap-widget`) — never touches anything
+ * outside the widget. This file ships without Tailwind's preflight on
+ * purpose (see top of file) to avoid fighting a host's own reset, but that
+ * means a host with no reset of its own (no Tailwind, or Tailwind without
+ * preflight) leaves every button/select/input inside the widget in native
+ * browser chrome, and text falls back to whatever default font the page
+ * never set.
+ *
+ * Every selector below is wrapped in `:where(...)` so it contributes ZERO
+ * specificity — same trick AntD uses for its own base rules (see dinotool-v2's
+ * globals.css comment on `.ant-*` overrides). This has to be a true "preflight"
+ * (lowest priority, freely overridden by any component class), not an
+ * override: a first version used a plain `.dinovox-swap-widget button`
+ * selector, which put it *above* plain Tailwind utility classes like the
+ * `px-4 py-2` on the Swap/Liquidity tab buttons (class+element beats a bare
+ * class) — combined with the build's blanket `!important`, that unconditionally
+ * stripped every button's own padding/margin across the whole widget. Real
+ * Tailwind preflight avoids this the same way: `button, input, select {...}`
+ * is a bare element selector, the lowest specificity there is.
+ */
+:where(.dinovox-swap-widget),
+:where(.dinovox-swap-widget) :where(*, *::before, *::after) {
+  box-sizing: border-box;
+}
+
+.dinovox-swap-widget {
+  /* System stack only — no remote 'Inter' claim (see the @import removal note
+     above): this can never collide with a host's own font-face registration,
+     at the cost of not being pixel-identical to a host that does load Inter. */
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+:where(.dinovox-swap-widget) :where(button, select, input) {
+  font-family: inherit;
+  font-size: 100%;
+  font-weight: inherit;
+  line-height: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+}
+
+:where(.dinovox-swap-widget) :where(button, select) {
+  background-color: transparent;
+  background-image: none;
+  border: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Same story as the button/select/input reset above, caught by the token
+   dropdown specifically: every row stacks two <p> tags (ticker + identifier),
+   and Bootstrap's Reboot — unlike Tailwind's own preflight, which this file
+   deliberately doesn't ship — gives every <p> a `margin-bottom: 1rem` by
+   default (browsers' own UA stylesheet adds top+bottom margin too). A host
+   with Tailwind's preflight already zeroes this app-wide (leaked in exactly
+   the way dinotool-v2's did), so the gap only shows up in a host that
+   doesn't, like mx-faucet's Bootstrap-only setup — same class of bug as
+   .dinoButton and the Inter @import above, just on <p>/<h*> this time. */
+:where(.dinovox-swap-widget) :where(h1, h2, h3, h4, h5, h6, p, pre, blockquote, figure, dl, dd) {
+  margin: 0;
+}
+
+:where(.dinovox-swap-widget) :where(ol, ul, menu) {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

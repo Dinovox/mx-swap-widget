@@ -71,29 +71,29 @@ export const Pools = () => {
   const getDecimals = (id: string) => tokenMap[id]?.decimals ?? 18;
 
   return (
-    <div className='flex flex-col w-full gap-6'>
+    <div className='dvx:flex dvx:flex-col dvx:w-full dvx:gap-6'>
       <Card
-        className='border-2 border-cyan-500/20'
+        className='dvx:border-2 dvx:border-cyan-500/20'
         title={
-          <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4'>
-            <div className='flex items-center gap-3'>
-              <span className='text-xl'>🌊</span>
-              <span className='text-lg font-black tracking-tight'>{t('pools_title')}</span>
+          <div className='dvx:flex dvx:flex-col dvx:sm:flex-row dvx:items-start dvx:sm:items-center dvx:justify-between dvx:w-full dvx:gap-4'>
+            <div className='dvx:flex dvx:items-center dvx:gap-3'>
+              <span className='dvx:text-xl'>🌊</span>
+              <span className='dvx:text-lg dvx:font-black dvx:tracking-tight'>{t('pools_title')}</span>
             </div>
-            <div className='flex gap-1 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl shadow-inner w-full sm:w-auto overflow-x-auto'>
+            <div className='dvx:flex dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:shadow-inner dvx:w-full dvx:sm:w-auto dvx:overflow-x-auto'>
               <button
                 onClick={() => goTo('swap')}
-                className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5 whitespace-nowrap'
+                className='dvx:flex-1 dvx:sm:flex-initial dvx:px-3 dvx:sm:px-4 dvx:py-2 dvx:text-sm dvx:font-bold dvx:rounded-lg dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-900 dvx:dark:hover:text-white dvx:transition-all dvx:hover:bg-white/50 dvx:dark:hover:bg-white/5 dvx:whitespace-nowrap'
               >
                 {t('tab_swap')}
               </button>
               <button
                 onClick={() => goTo('liquidity')}
-                className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-bold rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all hover:bg-white/50 dark:hover:bg-white/5 whitespace-nowrap'
+                className='dvx:flex-1 dvx:sm:flex-initial dvx:px-3 dvx:sm:px-4 dvx:py-2 dvx:text-sm dvx:font-bold dvx:rounded-lg dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-900 dvx:dark:hover:text-white dvx:transition-all dvx:hover:bg-white/50 dvx:dark:hover:bg-white/5 dvx:whitespace-nowrap'
               >
                 {t('tab_liquidity')}
               </button>
-              <button className='flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-sm font-black rounded-lg bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md transition-all whitespace-nowrap'>
+              <button className='dvx:flex-1 dvx:sm:flex-initial dvx:px-3 dvx:sm:px-4 dvx:py-2 dvx:text-sm dvx:font-black dvx:rounded-lg dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:text-amber-500 dvx:shadow-md dvx:transition-all dvx:whitespace-nowrap'>
                 {t('pools_title')}
               </button>
             </div>
@@ -101,15 +101,15 @@ export const Pools = () => {
         }
         description={loading ? t('pools_loading_desc') : t('pools_count', { count: pools.length })}
       >
-        <div className='flex gap-1 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl mt-4 w-fit'>
+        <div className='dvx:flex dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:mt-4 dvx:w-fit'>
           {(['DinoVox', 'XExchange', 'JExchange'] as DexFilter[]).map((dex) => (
             <button
               key={dex}
               onClick={() => setDexFilter(dex)}
-              className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+              className={`dvx:px-4 dvx:py-1.5 dvx:text-xs dvx:font-bold dvx:rounded-lg dvx:transition-all ${
                 dexFilter === dex
-                  ? 'bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md'
-                  : 'text-gray-400 hover:text-gray-700 dark:hover:text-white'
+                  ? 'dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:text-amber-500 dvx:shadow-md'
+                  : 'dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-700 dvx:dark:hover:text-white'
               }`}
             >
               {dex}
@@ -117,15 +117,15 @@ export const Pools = () => {
           ))}
         </div>
         {summary && (
-          <div className='rounded-2xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/10 px-4 py-3 mt-4 flex flex-wrap items-center justify-between gap-2'>
-            <span className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+          <div className='dvx:rounded-2xl dvx:border dvx:border-amber-200 dvx:dark:border-amber-800/50 dvx:bg-amber-50 dvx:dark:bg-amber-900/10 dvx:px-4 dvx:py-3 dvx:mt-4 dvx:flex dvx:flex-wrap dvx:items-center dvx:justify-between dvx:gap-2'>
+            <span className='dvx:text-xs dvx:font-semibold dvx:text-gray-500 dvx:dark:text-gray-400 dvx:uppercase dvx:tracking-wider'>
               {t('pools_summary_tvl')}
             </span>
-            <div className='flex items-center gap-3'>
-              <span className='font-bold text-amber-600 dark:text-amber-400 text-base'>
+            <div className='dvx:flex dvx:items-center dvx:gap-3'>
+              <span className='dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400 dvx:text-base'>
                 {summary.tvlUsd != null ? formatUsd(parseFloat(summary.tvlUsd)) : '—'}
               </span>
-              <span className='text-[10px] text-gray-400'>
+              <span className='dvx:text-[10px] dvx:text-gray-400'>
                 {t('pools_summary_stats', {
                   poolCount: summary.poolCount,
                   swapCount: summary.volume24hSwapCount,
@@ -134,13 +134,13 @@ export const Pools = () => {
             </div>
           </div>
         )}
-        <div className='space-y-3 mt-4'>
+        <div className='dvx:space-y-3 dvx:mt-4'>
           {loading ? (
-            <div className='flex justify-center py-10'>
-              <div className='w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin' />
+            <div className='dvx:flex dvx:justify-center dvx:py-10'>
+              <div className='dvx:w-6 dvx:h-6 dvx:border-2 dvx:border-amber-500 dvx:border-t-transparent dvx:rounded-full dvx:animate-spin' />
             </div>
           ) : pools.length === 0 ? (
-            <p className='text-center text-sm text-gray-500 dark:text-gray-400 py-8'>{t('pools_empty')}</p>
+            <p className='dvx:text-center dvx:text-sm dvx:text-gray-500 dvx:dark:text-gray-400 dvx:py-8'>{t('pools_empty')}</p>
           ) : (
             pools.map((pool) => {
               const tickerA = getTicker(pool.tokenA);
@@ -157,21 +157,21 @@ export const Pools = () => {
                 ? parseFloat(pool.lpTokenPriceUsd) * new BigNumber(pool.lpSupply).shiftedBy(-18).toNumber()
                 : (resAUsd != null && resBUsd != null) ? resAUsd + resBUsd : null;
               return (
-                <div key={pool.address} className='rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4'>
-                  <div className='flex items-center justify-between mb-3'>
-                    <div className='flex items-center gap-2 flex-wrap'>
-                      <span className='font-black text-gray-900 dark:text-white text-base'>{tickerA} / {tickerB}</span>
-                      <span className='text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 font-semibold border border-green-200 dark:border-green-800 uppercase'>{t('pools_active')}</span>
+                <div key={pool.address} className='dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:p-4'>
+                  <div className='dvx:flex dvx:items-center dvx:justify-between dvx:mb-3'>
+                    <div className='dvx:flex dvx:items-center dvx:gap-2 dvx:flex-wrap'>
+                      <span className='dvx:font-black dvx:text-gray-900 dvx:dark:text-white dvx:text-base'>{tickerA} / {tickerB}</span>
+                      <span className='dvx:text-[10px] dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-green-100 dvx:text-green-600 dvx:dark:bg-green-900/30 dvx:dark:text-green-400 dvx:font-semibold dvx:border dvx:border-green-200 dvx:dark:border-green-800 dvx:uppercase'>{t('pools_active')}</span>
                       {tvl != null && tvl > 0 && (
-                        <span className='text-[10px] font-semibold text-gray-400'>
+                        <span className='dvx:text-[10px] dvx:font-semibold dvx:text-gray-400'>
                           TVL {formatUsd(tvl)}
                         </span>
                       )}
                       {pool.apr?.aprPct != null && (
-                        <span className='inline-flex items-center gap-1 text-[10px] font-bold text-green-600 dark:text-green-400'>
+                        <span className='dvx:inline-flex dvx:items-center dvx:gap-1 dvx:text-[10px] dvx:font-bold dvx:text-green-600 dvx:dark:text-green-400'>
                           {t('pools_apr', { pct: parseFloat(pool.apr.aprPct).toFixed(2) })}
                           <span
-                            className='cursor-help'
+                            className='dvx:cursor-help'
                             title={[
                               t('pools_apr_tooltip_intro'),
                               '',
@@ -181,7 +181,7 @@ export const Pools = () => {
                                 : []),
                             ].join('\n')}
                           >
-                            <Info className='w-3 h-3 text-gray-400' />
+                            <Info className='dvx:w-3 dvx:h-3 dvx:text-gray-400' />
                           </span>
                         </span>
                       )}
@@ -189,22 +189,22 @@ export const Pools = () => {
                     {dexFilter === 'DinoVox' && (
                       <button
                         onClick={() => goTo('add-liquidity', { tokenA: pool.tokenA, tokenB: pool.tokenB })}
-                        className='text-xs font-bold text-amber-500 hover:text-amber-600 transition'
+                        className='dvx:text-xs dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:transition'
                       >
                         {t('pools_add')}
                       </button>
                     )}
                   </div>
-                  <div className='grid grid-cols-2 gap-3'>
-                    <div className='rounded-xl bg-[#ffffff] dark:bg-[#2a2a2a] border border-gray-100 dark:border-[#333] px-3 py-2'>
-                      <p className='text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5'>{t('pools_reserve')} {tickerA}</p>
-                      <p className='font-bold text-gray-900 dark:text-white text-sm'>{resA} <span className='text-gray-400 font-medium'>{tickerA}</span></p>
-                      {resAUsd != null && resAUsd > 0 && <p className='text-[10px] text-gray-400 mt-0.5'>{formatUsd(resAUsd)}</p>}
+                  <div className='dvx:grid dvx:grid-cols-2 dvx:gap-3'>
+                    <div className='dvx:rounded-xl dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:border dvx:border-gray-100 dvx:dark:border-[#333] dvx:px-3 dvx:py-2'>
+                      <p className='dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400 dvx:mb-0.5'>{t('pools_reserve')} {tickerA}</p>
+                      <p className='dvx:font-bold dvx:text-gray-900 dvx:dark:text-white dvx:text-sm'>{resA} <span className='dvx:text-gray-400 dvx:font-medium'>{tickerA}</span></p>
+                      {resAUsd != null && resAUsd > 0 && <p className='dvx:text-[10px] dvx:text-gray-400 dvx:mt-0.5'>{formatUsd(resAUsd)}</p>}
                     </div>
-                    <div className='rounded-xl bg-[#ffffff] dark:bg-[#2a2a2a] border border-gray-100 dark:border-[#333] px-3 py-2'>
-                      <p className='text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5'>{t('pools_reserve')} {tickerB}</p>
-                      <p className='font-bold text-gray-900 dark:text-white text-sm'>{resB} <span className='text-gray-400 font-medium'>{tickerB}</span></p>
-                      {resBUsd != null && resBUsd > 0 && <p className='text-[10px] text-gray-400 mt-0.5'>{formatUsd(resBUsd)}</p>}
+                    <div className='dvx:rounded-xl dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:border dvx:border-gray-100 dvx:dark:border-[#333] dvx:px-3 dvx:py-2'>
+                      <p className='dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400 dvx:mb-0.5'>{t('pools_reserve')} {tickerB}</p>
+                      <p className='dvx:font-bold dvx:text-gray-900 dvx:dark:text-white dvx:text-sm'>{resB} <span className='dvx:text-gray-400 dvx:font-medium'>{tickerB}</span></p>
+                      {resBUsd != null && resBUsd > 0 && <p className='dvx:text-[10px] dvx:text-gray-400 dvx:mt-0.5'>{formatUsd(resBUsd)}</p>}
                     </div>
                   </div>
                   <a
@@ -212,7 +212,7 @@ export const Pools = () => {
                     target='_blank'
                     rel='noopener noreferrer'
                     title={t('pools_view_explorer')}
-                    className='block text-[10px] text-gray-400 hover:text-amber-500 hover:underline mt-2 font-mono truncate'
+                    className='dvx:block dvx:text-[10px] dvx:text-gray-400 dvx:hover:text-amber-500 dvx:hover:underline dvx:mt-2 dvx:font-mono dvx:truncate'
                   >
                     {pool.address}
                   </a>
@@ -222,7 +222,7 @@ export const Pools = () => {
           )}
           <button
             onClick={() => goTo('create-pool')}
-            className='w-full py-3 rounded-xl border-2 border-amber-500 text-amber-500 font-bold hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors mt-2'
+            className='dvx:w-full dvx:py-3 dvx:rounded-xl dvx:border-2 dvx:border-amber-500 dvx:text-amber-500 dvx:font-bold dvx:bg-transparent dvx:hover:bg-amber-50 dvx:dark:hover:bg-amber-900/20 dvx:transition-colors dvx:mt-2'
           >
             {t('pools_create')}
           </button>

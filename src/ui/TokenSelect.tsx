@@ -2,14 +2,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSwapConfig } from '../context/SwapConfigContext';
 import { getThemePalette } from './themePalette';
+import { getNearestThemeAncestor } from '../helpers/domTheme';
 
 function useIsDark(ref: React.RefObject<HTMLElement | null>) {
   const [isDark, setIsDark] = useState(false);
   useEffect(() => {
-    const check = () => setIsDark(!!ref.current?.closest('.dark'));
+    const check = () => setIsDark(getNearestThemeAncestor(ref.current) === 'dark');
     check();
+    // subtree: true — a host may toggle .dark/.light somewhere below <html>,
+    // not just on document.documentElement itself.
     const observer = new MutationObserver(check);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'], subtree: false });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'], subtree: true });
     return () => observer.disconnect();
   }, [ref]);
   return isDark;
@@ -74,7 +77,7 @@ export function TokenLogo({ url, ticker }: { url?: string | null; ticker: string
   const [error, setError] = useState(false);
   if (!url || error) {
     return (
-      <span className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-[10px] font-bold text-amber-700 dark:text-amber-300 shrink-0">
+      <span className="dvx:w-6 dvx:h-6 dvx:rounded-full dvx:bg-amber-100 dvx:dark:bg-amber-900 dvx:flex dvx:items-center dvx:justify-center dvx:text-[10px] dvx:font-bold dvx:text-amber-700 dvx:dark:text-amber-300 dvx:shrink-0">
         {ticker.slice(0, 2)}
       </span>
     );
@@ -83,7 +86,7 @@ export function TokenLogo({ url, ticker }: { url?: string | null; ticker: string
     <img
       src={url}
       alt={ticker}
-      className="w-6 h-6 rounded-full object-contain shrink-0"
+      className="dvx:w-6 dvx:h-6 dvx:rounded-full dvx:object-contain dvx:shrink-0"
       onError={() => setError(true)}
     />
   );
@@ -130,26 +133,26 @@ export function TokenSelect<T extends TokenSelectToken>({
   }, [open]);
 
   return (
-    <div ref={ref} className={`relative flex-1 ${className}`}>
+    <div ref={ref} className={`dvx:relative dvx:flex-1 ${className}`}>
       <button
         type="button"
         disabled={loading}
         onClick={() => setOpen((o) => !o)}
         style={p.tokenBtn}
-        className="w-full flex items-center gap-2 rounded-xl border border-gray-200 dark:border-[#444] bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
+        className="dvx:w-full dvx:flex dvx:items-center dvx:gap-2 dvx:rounded-xl dvx:border dvx:border-gray-200 dvx:dark:border-[#444] dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-2.5 dvx:text-sm dvx:font-medium dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 dvx:focus:ring-amber-500 dvx:disabled:opacity-50"
       >
         {loading ? (
-          <span className="flex-1 text-left text-gray-400">{t('token_loading')}</span>
+          <span className="dvx:flex-1 dvx:text-left dvx:text-gray-400">{t('token_loading')}</span>
         ) : value ? (
           <>
             <TokenLogo url={value.logoUrl} ticker={value.ticker} />
-            <span className="flex-1 text-left">{value.ticker}</span>
+            <span className="dvx:flex-1 dvx:text-left">{value.ticker}</span>
           </>
         ) : (
-          <span className="flex-1 text-left text-gray-400">{t('token_select')}</span>
+          <span className="dvx:flex-1 dvx:text-left dvx:text-gray-400">{t('token_select')}</span>
         )}
         <svg
-          className={`w-4 h-4 text-gray-400 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`}
+          className={`dvx:w-4 dvx:h-4 dvx:text-gray-400 dvx:transition-transform dvx:shrink-0 ${open ? 'dvx:rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -162,9 +165,9 @@ export function TokenSelect<T extends TokenSelectToken>({
       {open && (
         <div
           style={{ backgroundColor: dropdownBg, ...p.dropdown, minWidth: '260px' }}
-          className="absolute z-50 mt-1 w-full rounded-xl border border-gray-200 dark:border-[#444] shadow-lg overflow-hidden"
+          className="dvx:absolute dvx:z-50 dvx:mt-1 dvx:w-full dvx:rounded-xl dvx:border dvx:border-gray-200 dvx:dark:border-[#444] dvx:shadow-lg dvx:overflow-hidden"
         >
-          <div className="px-2 pt-2 pb-1">
+          <div className="dvx:px-2 dvx:pt-2 dvx:pb-1">
             <input
               ref={searchRef}
               type="text"
@@ -172,12 +175,12 @@ export function TokenSelect<T extends TokenSelectToken>({
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('token_search')}
               style={p.searchInput}
-              className="w-full rounded-lg border border-gray-200 dark:border-[#555] bg-gray-50 dark:bg-[#1e1e1e] px-3 py-1.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="dvx:w-full dvx:rounded-lg dvx:border dvx:border-gray-200 dvx:dark:border-[#555] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:px-3 dvx:py-1.5 dvx:text-sm dvx:text-gray-900 dvx:dark:text-white dvx:placeholder-gray-400 dvx:focus:outline-none dvx:focus:ring-2 dvx:focus:ring-amber-500"
             />
           </div>
-          <div className="max-h-64 overflow-y-auto">
+          <div className="dvx:max-h-64 dvx:overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="px-3 py-3 text-sm text-gray-400 text-center">{t('token_no_results')}</p>
+              <p className="dvx:px-3 dvx:py-3 dvx:text-sm dvx:text-gray-400 dvx:text-center">{t('token_no_results')}</p>
             ) : (
               (() => {
                 const hasHeldTokens = !!balances && filtered.some((tok) => balances[tok.identifier]);
@@ -195,14 +198,14 @@ export function TokenSelect<T extends TokenSelectToken>({
                   if (hasHeldTokens && bal && !walletHeaderShown) {
                     walletHeaderShown = true;
                     header = (
-                      <p className="px-3 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                      <p className="dvx:px-3 dvx:pt-2.5 dvx:pb-1 dvx:text-[10px] dvx:font-bold dvx:uppercase dvx:tracking-wider dvx:text-gray-400">
                         {t('token_group_wallet')}
                       </p>
                     );
                   } else if (hasHeldTokens && !bal && !otherHeaderShown) {
                     otherHeaderShown = true;
                     header = (
-                      <p className="px-3 pt-2.5 pb-1 mt-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 border-t border-gray-100 dark:border-[#333]">
+                      <p className="dvx:px-3 dvx:pt-2.5 dvx:pb-1 dvx:mt-1 dvx:text-[10px] dvx:font-bold dvx:uppercase dvx:tracking-wider dvx:text-gray-400 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#333]">
                         {t('token_group_other')}
                       </p>
                     );
@@ -215,30 +218,30 @@ export function TokenSelect<T extends TokenSelectToken>({
                         type="button"
                         onClick={() => { onChange(tok); setOpen(false); }}
                         style={itemStyle}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-amber-50 dark:hover:bg-[#333] ${
+                        className={`dvx:w-full dvx:min-h-[52px] dvx:flex dvx:items-center dvx:gap-2.5 dvx:px-3 dvx:py-2 dvx:bg-transparent dvx:hover:bg-amber-50 dvx:dark:hover:bg-[#333] ${
                           isSelected
-                            ? 'bg-amber-50 dark:bg-[#333]'
+                            ? 'dvx:bg-amber-50 dvx:dark:bg-[#333]'
                             : ''
                         }`}
                       >
                         <TokenLogo url={tok.logoUrl} ticker={tok.ticker} />
-                        <div className="flex-1 min-w-0 text-left">
-                          <p className={`text-sm font-bold truncate leading-tight ${isSelected ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'}`}>
+                        <div className="dvx:flex-1 dvx:min-w-0 dvx:text-left">
+                          <p className={`dvx:text-sm dvx:font-bold dvx:truncate dvx:leading-tight ${isSelected ? 'dvx:text-amber-600 dvx:dark:text-amber-400' : 'dvx:text-gray-900 dvx:dark:text-white'}`}>
                             {tok.ticker}
                           </p>
-                          <p className="text-[10px] text-gray-400 font-normal leading-tight">{tok.identifier.split('-')[1] ?? ''}</p>
+                          <p className="dvx:text-[10px] dvx:text-gray-400 dvx:font-normal dvx:leading-tight">{tok.identifier.split('-')[1] ?? ''}</p>
                         </div>
                         {bal ? (
-                          <div className="text-right shrink-0 leading-tight">
-                            <p className={`text-xs font-semibold ${isSelected ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-200'}`}>
+                          <div className="dvx:text-right dvx:shrink-0 dvx:leading-tight">
+                            <p className={`dvx:text-xs dvx:font-semibold ${isSelected ? 'dvx:text-amber-600 dvx:dark:text-amber-400' : 'dvx:text-gray-700 dvx:dark:text-gray-200'}`}>
                               {formatTokenAmount(bal.amount)}
                             </p>
                             {bal.usd != null && (
-                              <p className="text-[10px] text-gray-400 font-normal">{formatUsdValue(bal.usd)}</p>
+                              <p className="dvx:text-[10px] dvx:text-gray-400 dvx:font-normal">{formatUsdValue(bal.usd)}</p>
                             )}
                           </div>
                         ) : tok.priceUsd ? (
-                          <span className="text-[11px] text-gray-400 font-medium shrink-0">{formatTokenPrice(tok.priceUsd)}</span>
+                          <span className="dvx:text-[11px] dvx:text-gray-400 dvx:font-medium dvx:shrink-0">{formatTokenPrice(tok.priceUsd)}</span>
                         ) : null}
                       </button>
                     </React.Fragment>

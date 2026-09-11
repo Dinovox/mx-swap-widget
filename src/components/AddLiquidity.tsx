@@ -856,20 +856,20 @@ export const AddLiquidity = () => {
     singleLpPreview !== null ? poolShareAfter(singleLpPreview) : null;
 
   return (
-    <div className="flex flex-col w-full gap-6">
+    <div className="dvx:flex dvx:flex-col dvx:w-full dvx:gap-6">
       <Card
-        className="border-2 border-cyan-500/20"
+        className="dvx:border-2 dvx:border-cyan-500/20"
         title={
-          <div className="flex flex-col xs:flex-row items-start xs:items-center gap-3 w-full">
-            <div className="flex items-center gap-3">
+          <div className="dvx:flex dvx:flex-col dvx:xs:flex-row dvx:items-start dvx:xs:items-center dvx:gap-3 dvx:w-full">
+            <div className="dvx:flex dvx:items-center dvx:gap-3">
               <button
                 onClick={() => goTo("liquidity")}
-                className="p-1.5 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2a2a] transition flex-shrink-0"
+                className="dvx:p-1.5 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-lg dvx:hover:bg-gray-200 dvx:dark:hover:bg-[#2a2a2a] dvx:transition dvx:flex-shrink-0"
               >
-                <ArrowLeft className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                <ArrowLeft className="dvx:w-4 dvx:h-4 dvx:text-gray-600 dvx:dark:text-gray-300" />
               </button>
-              <span className="text-xl">➕</span>
-              <span className="text-lg font-black tracking-tight whitespace-nowrap">
+              <span className="dvx:text-xl">➕</span>
+              <span className="dvx:text-lg dvx:font-black dvx:tracking-tight dvx:whitespace-nowrap">
                 {t("add_card_title")}
               </span>
             </div>
@@ -877,15 +877,15 @@ export const AddLiquidity = () => {
         }
         description={t("add_card_desc")}
       >
-        <div className="space-y-2 mt-4">
-          <div className="flex gap-1 p-1 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl shadow-inner mb-2">
+        <div className="dvx:space-y-2 dvx:mt-4">
+          <div className="dvx:flex dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:shadow-inner dvx:mb-2">
             <button
               type="button"
               onClick={() => setMode("double")}
-              className={`flex-1 px-3 py-2 text-xs font-bold rounded-lg transition-all ${
+              className={`dvx:flex-1 dvx:px-3 dvx:py-2 dvx:text-xs dvx:font-bold dvx:rounded-lg dvx:transition-all ${
                 mode === "double"
-                  ? "bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md"
-                  : "text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  ? "dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:text-amber-500 dvx:shadow-md"
+                  : "dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-900 dvx:dark:hover:text-white"
               }`}
             >
               {t("add_mode_double")}
@@ -897,25 +897,25 @@ export const AddLiquidity = () => {
               title={
                 !poolHasLiquidity ? t("add_single_requires_pool") : undefined
               }
-              className={`flex-1 px-3 py-2 text-xs font-bold rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`dvx:flex-1 dvx:px-3 dvx:py-2 dvx:text-xs dvx:font-bold dvx:rounded-lg dvx:transition-all dvx:disabled:opacity-40 dvx:disabled:cursor-not-allowed ${
                 mode === "single"
-                  ? "bg-[#ffffff] dark:bg-[#2a2a2a] text-amber-500 shadow-md"
-                  : "text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  ? "dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:text-amber-500 dvx:shadow-md"
+                  : "dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-900 dvx:dark:hover:text-white"
               }`}
             >
               {t("add_mode_single")}
             </button>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+          <div className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:p-4">
+            <div className="dvx:flex dvx:items-center dvx:justify-between dvx:mb-3">
+              <p className="dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400">
                 {t("add_token1")}
               </p>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+              <div className="dvx:flex dvx:items-center dvx:gap-2">
+                <span className="dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-500">
                   {t("balance")}:{" "}
-                  <span className="text-amber-500">{balanceDisplayA}</span>
+                  <span className="dvx:text-amber-500">{balanceDisplayA}</span>
                 </span>
                 {tokenA && balanceRawA !== "0" && (
                   <button
@@ -926,7 +926,7 @@ export const AddLiquidity = () => {
                           .toFixed(tokenA.decimals, BigNumber.ROUND_DOWN),
                       )
                     }
-                    className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition"
+                    className="dvx:text-[10px] dvx:font-bold dvx:px-1.5 dvx:py-0.5 dvx:rounded dvx:bg-amber-500/20 dvx:text-amber-500 dvx:hover:bg-amber-500/30 dvx:transition"
                   >
                     MAX
                   </button>
@@ -934,7 +934,7 @@ export const AddLiquidity = () => {
               </div>
             </div>
             <div
-              className={`flex items-center gap-3 transition-opacity ${mode === "single" && singleSide !== "A" ? "opacity-50" : ""}`}
+              className={`dvx:flex dvx:items-center dvx:gap-3 dvx:transition-opacity ${mode === "single" && singleSide !== "A" ? "dvx:opacity-50" : ""}`}
             >
               <TokenSelect
                 value={tokenA}
@@ -949,46 +949,46 @@ export const AddLiquidity = () => {
                 placeholder="0.0"
                 value={amountA}
                 onChange={(e) => handleAmountA(e.target.value)}
-                className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${aErr ? "border-red-400 focus:ring-red-400" : "border-gray-200 dark:border-[#444] focus:ring-amber-500"}`}
+                className={`dvx:w-28 dvx:xs:w-36 dvx:flex-shrink-0 dvx:rounded-xl dvx:border dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-2.5 dvx:text-right dvx:text-sm dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 ${aErr ? "dvx:border-red-400 dvx:focus:ring-red-400" : "dvx:border-gray-200 dvx:dark:border-[#444] dvx:focus:ring-amber-500"}`}
               />
             </div>
             {amountAUsd && (
-              <p className="mt-1 text-[10px] text-gray-400 text-right">
+              <p className="dvx:mt-1 dvx:text-[10px] dvx:text-gray-400 dvx:text-right">
                 ≈ {amountAUsd}
               </p>
             )}
           </div>
 
-          <div className="flex justify-center -my-3 relative z-10">
-            <div className="rounded-full p-1.5 bg-[#ffffff] dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333]">
+          <div className="dvx:flex dvx:justify-center dvx:-my-3 dvx:relative dvx:z-10">
+            <div className="dvx:rounded-full dvx:p-1.5 dvx:bg-[#ffffff] dvx:dark:bg-[#1a1a1a] dvx:border dvx:border-gray-200 dvx:dark:border-[#333]">
               {mode === "single" ? (
-                <Shuffle className="w-4 h-4 text-amber-500" />
+                <Shuffle className="dvx:w-4 dvx:h-4 dvx:text-amber-500" />
               ) : (
-                <Plus className="w-4 h-4 text-amber-500" />
+                <Plus className="dvx:w-4 dvx:h-4 dvx:text-amber-500" />
               )}
             </div>
           </div>
 
           {mode === "single" && (
-            <p className="text-center text-[11px] text-gray-400 -mt-1 mb-1 px-2">
+            <p className="dvx:text-center dvx:text-[11px] dvx:text-gray-400 dvx:-mt-1 dvx:mb-1 dvx:px-2">
               {t("add_single_hint")}
             </p>
           )}
           {mode === "double" && initialRatioLoading && (
-            <p className="text-center text-[11px] text-gray-400 -mt-1 mb-1 px-2 animate-pulse">
+            <p className="dvx:text-center dvx:text-[11px] dvx:text-gray-400 dvx:-mt-1 dvx:mb-1 dvx:px-2 dvx:animate-pulse">
               {t("calculating")}
             </p>
           )}
 
-          <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+          <div className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:p-4">
+            <div className="dvx:flex dvx:items-center dvx:justify-between dvx:mb-3">
+              <p className="dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400">
                 {t("add_token2")}
               </p>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+              <div className="dvx:flex dvx:items-center dvx:gap-2">
+                <span className="dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-500">
                   {t("balance")}:{" "}
-                  <span className="text-amber-500">{balanceDisplayB}</span>
+                  <span className="dvx:text-amber-500">{balanceDisplayB}</span>
                 </span>
                 {tokenB && balanceRawB !== "0" && (
                   <button
@@ -999,7 +999,7 @@ export const AddLiquidity = () => {
                           .toFixed(tokenB.decimals, BigNumber.ROUND_DOWN),
                       )
                     }
-                    className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 transition"
+                    className="dvx:text-[10px] dvx:font-bold dvx:px-1.5 dvx:py-0.5 dvx:rounded dvx:bg-amber-500/20 dvx:text-amber-500 dvx:hover:bg-amber-500/30 dvx:transition"
                   >
                     MAX
                   </button>
@@ -1007,7 +1007,7 @@ export const AddLiquidity = () => {
               </div>
             </div>
             <div
-              className={`flex items-center gap-3 transition-opacity ${mode === "single" && singleSide !== "B" ? "opacity-50" : ""}`}
+              className={`dvx:flex dvx:items-center dvx:gap-3 dvx:transition-opacity ${mode === "single" && singleSide !== "B" ? "dvx:opacity-50" : ""}`}
             >
               <TokenSelect
                 value={tokenB}
@@ -1025,28 +1025,28 @@ export const AddLiquidity = () => {
                 placeholder="0.0"
                 value={amountB}
                 onChange={(e) => handleAmountB(e.target.value)}
-                className={`w-28 xs:w-36 flex-shrink-0 rounded-xl border bg-[#ffffff] dark:bg-[#2a2a2a] px-3 py-2.5 text-right text-sm font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${bErr ? "border-red-400 focus:ring-red-400" : "border-gray-200 dark:border-[#444] focus:ring-amber-500"}`}
+                className={`dvx:w-28 dvx:xs:w-36 dvx:flex-shrink-0 dvx:rounded-xl dvx:border dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-2.5 dvx:text-right dvx:text-sm dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 ${bErr ? "dvx:border-red-400 dvx:focus:ring-red-400" : "dvx:border-gray-200 dvx:dark:border-[#444] dvx:focus:ring-amber-500"}`}
               />
             </div>
             {amountBUsd && (
-              <p className="mt-1 text-[10px] text-gray-400 text-right">
+              <p className="dvx:mt-1 dvx:text-[10px] dvx:text-gray-400 dvx:text-right">
                 ≈ {amountBUsd}
               </p>
             )}
           </div>
 
           {poolLoading && (
-            <p className="text-center text-xs text-gray-500 mt-4 animate-pulse">
+            <p className="dvx:text-center dvx:text-xs dvx:text-gray-500 dvx:mt-4 dvx:animate-pulse">
               {t("add_pool_searching")}
             </p>
           )}
 
           {!poolLoading && tokenA && tokenB && !pool && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-4 mt-4">
-              <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+            <div className="dvx:rounded-xl dvx:border dvx:border-amber-200 dvx:bg-amber-50 dvx:dark:bg-amber-900/20 dvx:dark:border-amber-800 dvx:p-4 dvx:mt-4">
+              <p className="dvx:text-sm dvx:font-semibold dvx:text-amber-600 dvx:dark:text-amber-400">
                 {t("add_no_pool_title")}
               </p>
-              <p className="text-xs text-amber-500 mt-1">
+              <p className="dvx:text-xs dvx:text-amber-500 dvx:mt-1">
                 {t("add_no_pool_desc")}
               </p>
               <button
@@ -1056,7 +1056,7 @@ export const AddLiquidity = () => {
                     tokenY: tokenB?.identifier ?? "",
                   })
                 }
-                className="mt-3 px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition"
+                className="dvx:mt-3 dvx:px-4 dvx:py-2 dvx:bg-amber-500 dvx:text-white dvx:rounded-lg dvx:text-xs dvx:font-bold dvx:hover:bg-amber-600 dvx:transition"
               >
                 {t("add_no_pool_btn")}
               </button>
@@ -1064,11 +1064,11 @@ export const AddLiquidity = () => {
           )}
 
           {pool && !pool.isActive && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-4 mt-4">
-              <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+            <div className="dvx:rounded-xl dvx:border dvx:border-amber-200 dvx:bg-amber-50 dvx:dark:bg-amber-900/20 dvx:dark:border-amber-800 dvx:p-4 dvx:mt-4">
+              <p className="dvx:text-sm dvx:font-semibold dvx:text-amber-600 dvx:dark:text-amber-400">
                 {t("add_pool_inactive_title")}
               </p>
-              <p className="text-xs text-amber-500 mt-1">
+              <p className="dvx:text-xs dvx:text-amber-500 dvx:mt-1">
                 {t("add_pool_inactive_desc")}
               </p>
               <button
@@ -1078,7 +1078,7 @@ export const AddLiquidity = () => {
                     tokenY: tokenB?.identifier ?? "",
                   })
                 }
-                className="mt-3 px-4 py-2 bg-amber-500 text-white rounded-lg text-xs font-bold hover:bg-amber-600 transition"
+                className="dvx:mt-3 dvx:px-4 dvx:py-2 dvx:bg-amber-500 dvx:text-white dvx:rounded-lg dvx:text-xs dvx:font-bold dvx:hover:bg-amber-600 dvx:transition"
               >
                 {t("add_pool_inactive_btn")}
               </button>
@@ -1086,9 +1086,9 @@ export const AddLiquidity = () => {
           )}
 
           {pool && (
-            <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#1e1e1e] p-4 mt-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <div className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:p-4 dvx:mt-4 dvx:space-y-2">
+              <div className="dvx:flex dvx:items-center dvx:justify-between">
+                <p className="dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400">
                   {t("add_pool_reserves")}
                 </p>
                 <a
@@ -1096,55 +1096,55 @@ export const AddLiquidity = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   title={pool.address}
-                  className="text-[10px] font-semibold text-amber-500 hover:text-amber-600 hover:underline"
+                  className="dvx:text-[10px] dvx:font-semibold dvx:text-amber-500 dvx:hover:text-amber-600 dvx:hover:underline"
                 >
                   {t("add_pool_view_explorer")} ↗
                 </a>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="flex items-center gap-1.5 text-gray-500">
+              <div className="dvx:flex dvx:justify-between dvx:items-center dvx:text-sm">
+                <span className="dvx:flex dvx:items-center dvx:gap-1.5 dvx:text-gray-500">
                   <TokenLogo
                     url={tokenA?.logoUrl}
                     ticker={tokenA?.ticker ?? "?"}
                   />
                   {tokenA?.ticker}
                 </span>
-                <span className="flex items-baseline justify-end gap-2 text-right">
-                  <span className="font-semibold text-gray-900 dark:text-white">
+                <span className="dvx:flex dvx:items-baseline dvx:justify-end dvx:gap-2 dvx:text-right">
+                  <span className="dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white">
                     {reserveADisplay ?? "0"}
                   </span>
                   {reserveAUsd && (
-                    <span className="text-[10px] text-gray-400">
+                    <span className="dvx:text-[10px] dvx:text-gray-400">
                       {reserveAUsd}
                     </span>
                   )}
                 </span>
               </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="flex items-center gap-1.5 text-gray-500">
+              <div className="dvx:flex dvx:justify-between dvx:items-center dvx:text-sm">
+                <span className="dvx:flex dvx:items-center dvx:gap-1.5 dvx:text-gray-500">
                   <TokenLogo
                     url={tokenB?.logoUrl}
                     ticker={tokenB?.ticker ?? "?"}
                   />
                   {tokenB?.ticker}
                 </span>
-                <span className="flex items-baseline justify-end gap-2 text-right">
-                  <span className="font-semibold text-gray-900 dark:text-white">
+                <span className="dvx:flex dvx:items-baseline dvx:justify-end dvx:gap-2 dvx:text-right">
+                  <span className="dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white">
                     {reserveBDisplay ?? "0"}
                   </span>
                   {reserveBUsd && (
-                    <span className="text-[10px] text-gray-400">
+                    <span className="dvx:text-[10px] dvx:text-gray-400">
                       {reserveBUsd}
                     </span>
                   )}
                 </span>
               </div>
               {poolApr?.aprPct != null && (
-                <div className="flex justify-between items-center text-sm pt-2 mt-1 border-t border-gray-200 dark:border-[#333]">
-                  <span className="flex items-center gap-1 text-gray-500">
+                <div className="dvx:flex dvx:justify-between dvx:items-center dvx:text-sm dvx:pt-2 dvx:mt-1 dvx:border-t dvx:border-gray-200 dvx:dark:border-[#333]">
+                  <span className="dvx:flex dvx:items-center dvx:gap-1 dvx:text-gray-500">
                     {t("add_pool_apr", { days: poolApr.windowDays })}
                     <span
-                      className="cursor-help"
+                      className="dvx:cursor-help"
                       title={[
                         t("add_pool_apr_tooltip_intro"),
                         "",
@@ -1155,30 +1155,30 @@ export const AddLiquidity = () => {
                           : []),
                       ].join("\n")}
                     >
-                      <Info className="w-3 h-3 text-gray-400" />
+                      <Info className="dvx:w-3 dvx:h-3 dvx:text-gray-400" />
                     </span>
                   </span>
-                  <span className="font-bold text-green-500">
+                  <span className="dvx:font-bold dvx:text-green-500">
                     {parseFloat(poolApr.aprPct).toFixed(2)}%
                   </span>
                 </div>
               )}
               {recentSwaps.length > 0 && (
-                <div className="pt-2 mt-1 border-t border-gray-200 dark:border-[#333]">
+                <div className="dvx:pt-2 dvx:mt-1 dvx:border-t dvx:border-gray-200 dvx:dark:border-[#333]">
                   <button
                     type="button"
                     onClick={() => setRecentSwapsExpanded((v) => !v)}
-                    className="w-full flex items-center justify-between text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition"
+                    className="dvx:w-full dvx:flex dvx:items-center dvx:justify-between dvx:text-sm dvx:text-gray-500 dvx:bg-transparent dvx:hover:text-gray-700 dvx:dark:hover:text-gray-300 dvx:transition"
                   >
                     <span>
                       {t("add_pool_recent_swaps", { count: recentSwaps.length })}
                     </span>
                     <ChevronDown
-                      className={`w-4 h-4 transition-transform ${recentSwapsExpanded ? "rotate-180" : ""}`}
+                      className={`dvx:w-4 dvx:h-4 dvx:transition-transform ${recentSwapsExpanded ? "dvx:rotate-180" : ""}`}
                     />
                   </button>
                   {recentSwapsExpanded && (
-                    <div className="mt-2 space-y-1.5">
+                    <div className="dvx:mt-2 dvx:space-y-1.5">
                       {recentSwaps.map((swap) => {
                         const tIn =
                           swap.tokenIn === tokenA?.identifier
@@ -1208,18 +1208,18 @@ export const AddLiquidity = () => {
                             href={`${explorerAddress}/transactions/${swap.txHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center justify-between gap-2 text-xs rounded-lg px-2.5 py-1.5 bg-[#ffffff] dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-[#252525] transition"
+                            className="dvx:flex dvx:items-center dvx:justify-between dvx:gap-2 dvx:text-xs dvx:rounded-lg dvx:px-2.5 dvx:py-1.5 dvx:bg-[#ffffff] dvx:dark:bg-[#1a1a1a] dvx:hover:bg-gray-100 dvx:dark:hover:bg-[#252525] dvx:transition"
                           >
-                            <span className="flex items-center gap-1 min-w-0 text-gray-700 dark:text-gray-300">
-                              <span className="truncate">
+                            <span className="dvx:flex dvx:items-center dvx:gap-1 dvx:min-w-0 dvx:text-gray-700 dvx:dark:text-gray-300">
+                              <span className="dvx:truncate">
                                 {amtIn} {tIn?.ticker ?? "?"}
                               </span>
-                              <ArrowRight className="w-3 h-3 text-gray-400 shrink-0" />
-                              <span className="truncate">
+                              <ArrowRight className="dvx:w-3 dvx:h-3 dvx:text-gray-400 dvx:shrink-0" />
+                              <span className="dvx:truncate">
                                 {amtOut} {tOut?.ticker ?? "?"}
                               </span>
                             </span>
-                            <span className="text-gray-400 shrink-0">
+                            <span className="dvx:text-gray-400 dvx:shrink-0">
                               {formatRelativeTime(swap.timestamp, t)}
                             </span>
                           </a>
@@ -1230,7 +1230,7 @@ export const AddLiquidity = () => {
                 </div>
               )}
               {!poolHasLiquidity && (
-                <p className="text-[11px] text-gray-400 pt-1">
+                <p className="dvx:text-[11px] dvx:text-gray-400 dvx:pt-1">
                   {t("add_pool_empty")}
                 </p>
               )}
@@ -1238,10 +1238,10 @@ export const AddLiquidity = () => {
           )}
 
           {mode === "double" && pool && lpPreview !== null && (
-            <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] p-4 mt-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t("add_lp_preview")}</span>
-                <span className="font-bold text-amber-500">
+            <div className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-[#ffffff] dvx:dark:bg-[#1a1a1a] dvx:p-4 dvx:mt-4 dvx:space-y-2">
+              <div className="dvx:flex dvx:justify-between dvx:text-sm">
+                <span className="dvx:text-gray-500">{t("add_lp_preview")}</span>
+                <span className="dvx:font-bold dvx:text-amber-500">
                   {formatTokenAmount(
                     new BigNumber(lpPreview.toString()).shiftedBy(-18),
                     18,
@@ -1250,19 +1250,19 @@ export const AddLiquidity = () => {
                 </span>
               </div>
               {doublePoolShare && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">{t("add_pool_share")}</span>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                <div className="dvx:flex dvx:justify-between dvx:text-xs">
+                  <span className="dvx:text-gray-500">{t("add_pool_share")}</span>
+                  <span className="dvx:font-medium dvx:text-gray-700 dvx:dark:text-gray-300">
                     {formatPoolShare(doublePoolShare)}
                   </span>
                 </div>
               )}
               {refundA > 0n && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">
+                <div className="dvx:flex dvx:justify-between dvx:text-xs">
+                  <span className="dvx:text-gray-500">
                     {t("add_refund", { ticker: tokenA?.ticker })}
                   </span>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                  <span className="dvx:font-medium dvx:text-gray-700 dvx:dark:text-gray-300">
                     {formatTokenAmount(
                       new BigNumber(refundA.toString()).shiftedBy(
                         -(tokenA?.decimals ?? 18),
@@ -1272,11 +1272,11 @@ export const AddLiquidity = () => {
                 </div>
               )}
               {refundB > 0n && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-500">
+                <div className="dvx:flex dvx:justify-between dvx:text-xs">
+                  <span className="dvx:text-gray-500">
                     {t("add_refund", { ticker: tokenB?.ticker })}
                   </span>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                  <span className="dvx:font-medium dvx:text-gray-700 dvx:dark:text-gray-300">
                     {formatTokenAmount(
                       new BigNumber(refundB.toString()).shiftedBy(
                         -(tokenB?.decimals ?? 18),
@@ -1286,7 +1286,7 @@ export const AddLiquidity = () => {
                 </div>
               )}
               {lpPreview < 1000n && !poolHasLiquidity && (
-                <p className="text-xs text-red-500 mt-2">
+                <p className="dvx:text-xs dvx:text-red-500 dvx:mt-2">
                   {t("add_min_deposit")}
                 </p>
               )}
@@ -1298,19 +1298,19 @@ export const AddLiquidity = () => {
             (singleQuoteLoading ||
               singleLpPreview !== null ||
               singleQuoteError) && (
-              <div className="rounded-2xl border border-gray-200 dark:border-[#333] bg-[#ffffff] dark:bg-[#1a1a1a] p-4 mt-4 space-y-3">
-                <div className="flex justify-between text-sm items-center">
-                  <span className="text-gray-500">{t("add_lp_preview")}</span>
+              <div className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-[#ffffff] dvx:dark:bg-[#1a1a1a] dvx:p-4 dvx:mt-4 dvx:space-y-3">
+                <div className="dvx:flex dvx:justify-between dvx:text-sm dvx:items-center">
+                  <span className="dvx:text-gray-500">{t("add_lp_preview")}</span>
                   {singleQuoteLoading ? (
-                    <span className="text-xs text-gray-400 animate-pulse">
+                    <span className="dvx:text-xs dvx:text-gray-400 dvx:animate-pulse">
                       {t("calculating")}
                     </span>
                   ) : singleQuoteError ? (
-                    <span className="text-xs text-red-500">
+                    <span className="dvx:text-xs dvx:text-red-500">
                       {t("add_single_quote_unavailable")}
                     </span>
                   ) : singleLpPreview !== null ? (
-                    <span className="font-bold text-amber-500">
+                    <span className="dvx:font-bold dvx:text-amber-500">
                       {formatTokenAmount(
                         new BigNumber(singleLpPreview.toString()).shiftedBy(-18),
                         18,
@@ -1320,28 +1320,28 @@ export const AddLiquidity = () => {
                   ) : null}
                 </div>
                 {singlePoolShare && !singleQuoteError && (
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">{t("add_pool_share")}</span>
-                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                  <div className="dvx:flex dvx:justify-between dvx:text-xs">
+                    <span className="dvx:text-gray-500">{t("add_pool_share")}</span>
+                    <span className="dvx:font-medium dvx:text-gray-700 dvx:dark:text-gray-300">
                       {formatPoolShare(singlePoolShare)}
                     </span>
                   </div>
                 )}
                 {singleLpPreview !== null && !singleQuoteError && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                  <div className="dvx:flex dvx:items-center dvx:justify-between">
+                    <span className="dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400">
                       {t("slippage")}
                     </span>
-                    <div className="flex gap-1">
+                    <div className="dvx:flex dvx:gap-1">
                       {SINGLE_SLIPPAGE_PRESETS.map((s) => (
                         <button
                           key={s}
                           type="button"
                           onClick={() => setSingleSlippage(s)}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition ${
+                          className={`dvx:px-2 dvx:py-1 dvx:rounded-lg dvx:text-[10px] dvx:font-bold dvx:transition ${
                             singleSlippage === s
-                              ? "bg-amber-500 text-white"
-                              : "bg-gray-100 dark:bg-[#2a2a2a] text-gray-500 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                              ? "dvx:bg-amber-500 dvx:text-white"
+                              : "dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-500 dvx:hover:bg-amber-100 dvx:dark:hover:bg-amber-900/30"
                           }`}
                         >
                           {(s * 100).toFixed(1)}%
@@ -1384,7 +1384,7 @@ export const AddLiquidity = () => {
                     singleLpPreview === null
             }
             style={{ minHeight: "36px" }}
-            className="dinoButton w-full text-base mt-4 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="dinoButton dvx:w-full dvx:text-base dvx:mt-4 dvx:disabled:opacity-40 dvx:disabled:cursor-not-allowed"
           >
             {!address
               ? t("add_btn_connect")
