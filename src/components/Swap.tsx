@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useWidgetSearchParams } from "../hooks/useWidgetSearchParams";
 import { useGoTo } from "../context/SwapViewContext";
 import useLoadTranslations from "../hooks/useLoadTranslations";
-import { ArrowUpDown, RefreshCw } from "lucide-react";
+import { ArrowUpDown, RefreshCw, GitBranch } from "lucide-react";
 import { Address, Transaction } from "@multiversx/sdk-core";
 import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
@@ -98,6 +98,7 @@ export const Swap = () => {
     chainId,
     explorerAddress,
     onSignTransactions,
+    enableMultiroute,
   } = useSwapConfig();
   const goTo = useGoTo();
   const p = getThemePalette(theme);
@@ -144,6 +145,19 @@ export const Swap = () => {
     !!quote &&
     (quote.source === "stake" ||
       quote.route.every((h) => h.dexType === "LiquidStaking"));
+
+  // ---- Multiroute split (test feature, opt-in via SwapConfig.enableMultiroute) ----
+  // splitAvailable reflects what the *current* quote actually offers; useSplitRoute
+  // is the user's own choice, reset whenever tokens/amounts change so an old opt-in
+  // never silently carries over to a different swap.
+  const [useSplitRoute, setUseSplitRoute] = useState(false);
+  const splitAvailable =
+    !!enableMultiroute &&
+    !!quote?.splitComparison &&
+    quote.splitComparison.better === "split" &&
+    !!quote.txs?.length &&
+    !!quote.routes?.length;
+  const useSplit = splitAvailable && useSplitRoute;
 
   /* ---- Arb ---- */
   const [arb, setArb] = useState<ArbResponse | null>(null);
@@ -486,6 +500,11 @@ export const Swap = () => {
             ? { amountIn: rawAmount }
             : { amountOut: rawAmount }),
           slippageBps: Math.round(slippage * 10000),
+          // multiroute is exact-input only — the backend silently ignores it
+          // alongside amountOut, so don't bother sending it in that case.
+          ...(enableMultiroute && activeField === "in"
+            ? { multiroute: "true" }
+            : {}),
         },
       });
       setQuote(data);
@@ -568,6 +587,7 @@ export const Swap = () => {
       setAmountOut("");
     }
     setQuote(null);
+    setUseSplitRoute(false);
   };
 
   /* ---------- Execute swap / arb ---------- */
@@ -579,38 +599,76 @@ export const Swap = () => {
     setIsSending(true);
 
     try {
-      const { tx } = isArb ? arb! : quote!;
-
       const allowedReceivers = [
         routerAddress,
         aggregatorAddress,
         voxEgldAddress,
       ].map((a) => a.toLowerCase());
-      if (!allowedReceivers.includes(tx.scAddress.toLowerCase())) {
-        setTxError(`Receiver refusé : ${tx.scAddress}`);
-        return;
+
+      if (useSplit && quote?.txs?.length) {
+        // Multiroute split: N independent multiPairSwap transactions, signed
+        // together in one batch. sdk-dapp assigns them sequential nonces
+        // (nonce, nonce+1, ...) in array order — no atomicity, one leg can
+        // fail while the others go through.
+        const invalidTx = quote.txs.find(
+          (txMeta) => !allowedReceivers.includes(txMeta.scAddress.toLowerCase()),
+        );
+        if (invalidTx) {
+          setTxError(`Receiver refusé : ${invalidTx.scAddress}`);
+          return;
+        }
+
+        const transactions = quote.txs.map(
+          (txMeta) =>
+            new Transaction({
+              value: BigInt(txMeta.egldValue),
+              data: new TextEncoder().encode(txMeta.txData),
+              receiver: new Address(txMeta.scAddress),
+              sender: new Address(address),
+              gasLimit: BigInt(txMeta.gasLimit),
+              gasPrice: BigInt(GAS_PRICE),
+              chainID: chainId!,
+              version: 1,
+            }),
+        );
+
+        await signAndSendTransactions({
+          onSignTransactions,
+          transactions,
+          transactionsDisplayInfo: {
+            processingMessage: t("processing_split", { n: transactions.length }),
+            errorMessage: t("error_split"),
+            successMessage: t("success_split"),
+          },
+        });
+      } else {
+        const { tx } = isArb ? arb! : quote!;
+        if (!allowedReceivers.includes(tx.scAddress.toLowerCase())) {
+          setTxError(`Receiver refusé : ${tx.scAddress}`);
+          return;
+        }
+
+        const transaction = new Transaction({
+          value: BigInt(tx.egldValue),
+          data: new TextEncoder().encode(tx.txData),
+          receiver: new Address(tx.scAddress),
+          sender: new Address(address),
+          gasLimit: BigInt(tx.gasLimit),
+          gasPrice: BigInt(GAS_PRICE),
+          chainID: chainId!,
+          version: 1,
+        });
+
+        await signAndSendTransactions({
+          onSignTransactions,
+          transactions: [transaction],
+          transactionsDisplayInfo: {
+            processingMessage: t("processing"),
+            errorMessage: t("error_tx"),
+            successMessage: t("success_tx"),
+          },
+        });
       }
-
-      const transaction = new Transaction({
-        value: BigInt(tx.egldValue),
-        data: new TextEncoder().encode(tx.txData),
-        receiver: new Address(tx.scAddress),
-        sender: new Address(address),
-        gasLimit: BigInt(tx.gasLimit),
-        gasPrice: BigInt(GAS_PRICE),
-        chainID: chainId!,
-        version: 1,
-      });
-
-      await signAndSendTransactions({
-        onSignTransactions,
-        transactions: [transaction],
-        transactionsDisplayInfo: {
-          processingMessage: t("processing"),
-          errorMessage: t("error_tx"),
-          successMessage: t("success_tx"),
-        },
-      });
 
       // Reset
       setAmountIn("");
@@ -618,6 +676,7 @@ export const Swap = () => {
       setActiveField("in");
       setQuote(null);
       setArb(null);
+      setUseSplitRoute(false);
       setBalanceRefreshKey((k) => k + 1);
     } catch (err: any) {
       console.error("[SwapWidget] handleSwap error:", err);
@@ -642,7 +701,11 @@ export const Swap = () => {
             .shiftedBy(-(tokenIn?.decimals ?? 18))
             .toFixed(6, BigNumber.ROUND_DOWN)
         : quote
-          ? new BigNumber(quote.amountOut)
+          ? new BigNumber(
+              useSplit && quote.splitComparison
+                ? quote.splitComparison.amountOutSplit
+                : quote.amountOut,
+            )
               .shiftedBy(-(tokenOut?.decimals ?? 18))
               .toFixed(6, BigNumber.ROUND_DOWN)
           : "";
@@ -669,11 +732,35 @@ export const Swap = () => {
       ? new BigNumber(
           isStakeRoute
             ? quote.amountOut
-            : applySlippage(quote.amountOut, slippage).toString(),
+            : applySlippage(
+                useSplit && quote.splitComparison
+                  ? quote.splitComparison.amountOutSplit
+                  : quote.amountOut,
+                slippage,
+              ).toString(),
         )
           .shiftedBy(-(tokenOut?.decimals ?? 18))
           .toFixed(6, BigNumber.ROUND_DOWN)
       : null;
+
+  // How many more tokens the split's minimum-received actually guarantees over the
+  // single route's, at the same slippage — the concrete number behind the bps figure
+  // shown on the split toggle, so the user isn't left mentally diffing two amounts
+  // themselves after flipping the checkbox.
+  const splitMinOutDeltaDisplay = (() => {
+    if (!quote?.splitComparison) return null;
+    const singleMinOutRaw = isStakeRoute
+      ? quote.amountOut
+      : applySlippage(quote.splitComparison.amountOutSingle, slippage).toString();
+    const splitMinOutRaw = applySlippage(
+      quote.splitComparison.amountOutSplit,
+      slippage,
+    ).toString();
+    return new BigNumber(splitMinOutRaw)
+      .minus(singleMinOutRaw)
+      .shiftedBy(-(tokenOut?.decimals ?? 18))
+      .toFixed(6, BigNumber.ROUND_DOWN);
+  })();
 
   // Falls back to the network API's own market price (already fetched above for
   // the balance lookups) when DinoVox's price graph hasn't resolved this token —
@@ -927,6 +1014,7 @@ export const Swap = () => {
                 onChange={(t) => {
                   setTokenIn(t);
                   setQuote(null);
+                  setUseSplitRoute(false);
                 }}
                 tokens={sortedTokens}
                 balances={tokenBalances}
@@ -943,6 +1031,7 @@ export const Swap = () => {
                   setAmountIn(e.target.value);
                   setAmountOut("");
                   setQuote(null);
+                  setUseSplitRoute(false);
                 }}
                 style={p.input}
                 className={`dvx:w-28 dvx:xs:w-36 dvx:flex-shrink-0 dvx:rounded-xl dvx:border dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-2.5 dvx:text-right dvx:text-sm dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 dvx:transition-colors ${
@@ -1045,6 +1134,7 @@ export const Swap = () => {
                 onChange={(t) => {
                   setTokenOut(t);
                   setQuote(null);
+                  setUseSplitRoute(false);
                 }}
                 tokens={sortedTokens}
                 balances={tokenBalances}
@@ -1061,6 +1151,7 @@ export const Swap = () => {
                   setAmountOut(e.target.value);
                   setAmountIn("");
                   setQuote(null);
+                  setUseSplitRoute(false);
                 }}
                 style={p.input}
                 className={`dvx:w-28 dvx:xs:w-36 dvx:flex-shrink-0 dvx:rounded-xl dvx:border dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-2.5 dvx:text-right dvx:text-sm dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 dvx:transition-colors ${
@@ -1277,6 +1368,101 @@ export const Swap = () => {
                   );
                 })()}
               </div>
+
+              {/* ---- Multiroute split (test feature, opt-in) ---- */}
+              {splitAvailable && quote.splitComparison && (
+                <div className="dvx:pt-2 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#2a2a2a]">
+                  <label className="dvx:flex dvx:items-start dvx:gap-2 dvx:cursor-pointer dvx:select-none">
+                    <input
+                      type="checkbox"
+                      checked={useSplitRoute}
+                      onChange={(e) => setUseSplitRoute(e.target.checked)}
+                      className="dvx:mt-0.5 dvx:accent-amber-500"
+                    />
+                    <span className="dvx:text-xs dvx:text-gray-600 dvx:dark:text-gray-300">
+                      <span className="dvx:flex dvx:items-center dvx:gap-1">
+                        <GitBranch className="dvx:h-3 dvx:w-3 dvx:flex-shrink-0 dvx:text-amber-500" />
+                        <span className="dvx:font-semibold">
+                          {t("multiroute_toggle", {
+                            n: quote.txs?.length ?? quote.routes?.length ?? 0,
+                          })}
+                        </span>
+                      </span>
+                      <span className="dvx:mt-0.5 dvx:flex dvx:items-baseline dvx:gap-1.5 dvx:font-semibold dvx:tabular-nums dvx:text-green-600 dvx:dark:text-green-400">
+                        <span>
+                          +
+                          {parseFloat(
+                            quote.splitComparison.improvementBps ?? "0",
+                          ).toFixed(2)}{" "}
+                          bps
+                        </span>
+                        {splitMinOutDeltaDisplay && (
+                          <>
+                            <span className="dvx:opacity-50">·</span>
+                            <span>
+                              +{splitMinOutDeltaDisplay} {tokenOut?.ticker}{" "}
+                              {t("multiroute_more_received")}
+                            </span>
+                          </>
+                        )}
+                      </span>
+                    </span>
+                  </label>
+
+                  {useSplitRoute && (
+                    <>
+                      <p className="dvx:mt-2 dvx:text-[10px] dvx:text-amber-600 dvx:dark:text-amber-400">
+                        {t("multiroute_partial_warning")}
+                      </p>
+                      {quote.routes && quote.routes.length > 0 && (
+                        <div className="dvx:mt-2 dvx:space-y-1.5">
+                          <p className="dvx:text-[10px] dvx:uppercase dvx:tracking-wider dvx:font-semibold dvx:text-gray-400">
+                            {t("multiroute_legs_label")}
+                          </p>
+                          {quote.routes.map((leg, idx) => {
+                            const legPct =
+                              quote.amountIn && quote.amountIn !== "0"
+                                ? new BigNumber(leg.amountIn)
+                                    .dividedBy(quote.amountIn)
+                                    .multipliedBy(100)
+                                : null;
+                            return (
+                              <div
+                                key={idx}
+                                className="dvx:flex dvx:items-center dvx:flex-wrap dvx:gap-0.5 dvx:text-xs"
+                              >
+                                <span className="dvx:text-[10px] dvx:font-bold dvx:text-gray-400 dvx:mr-1">
+                                  #{idx + 1}
+                                </span>
+                                {legPct && (
+                                  <span className="dvx:text-[10px] dvx:font-bold dvx:text-amber-500 dvx:mr-1.5 dvx:tabular-nums">
+                                    {legPct.toFixed(legPct.isGreaterThanOrEqualTo(10) ? 0 : 1)}%
+                                  </span>
+                                )}
+                                <span className="dvx:text-xs dvx:font-semibold dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-800 dvx:dark:text-gray-200">
+                                  {tokenIn?.ticker ?? leg.hops[0]?.tokenIn}
+                                </span>
+                                {leg.hops.map((hop, i) => (
+                                  <React.Fragment key={i}>
+                                    <span className="dvx:mx-1 dvx:text-[10px] dvx:text-gray-400">
+                                      ▶
+                                    </span>
+                                    <span className="dvx:text-xs dvx:font-semibold dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-800 dvx:dark:text-gray-200">
+                                      {tokens.find((t) => t.identifier === hop.tokenOut)
+                                        ?.ticker ?? hop.tokenOut}
+                                    </span>
+                                  </React.Fragment>
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="dvx:pt-2 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#2a2a2a] dvx:flex dvx:items-center dvx:justify-between">
                 <span className="dvx:text-gray-500 dvx:dark:text-gray-400">
                   {t("slippage")}

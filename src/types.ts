@@ -86,6 +86,26 @@ export interface QuoteTx {
   egldValue: string;
 }
 
+/**
+ * One leg of a multiroute split — `hops` uses the same shape as the top-level
+ * `route`, plus the amounts/impact aggregated for that leg alone.
+ */
+export interface SplitRouteLeg {
+  hops: QuoteHop[];
+  amountIn: string;
+  amountOut: string;
+  priceImpact: string;
+}
+
+/** Single vs. split verdict returned alongside a `multiroute=true` quote. */
+export interface SplitComparison {
+  amountOutSingle: string;
+  amountOutSplit: string;
+  /** Positive = split is better. Null when amountOutSingle is 0. */
+  improvementBps: string | null;
+  better: "single" | "split" | "equal";
+}
+
 /** Full swap quote response */
 export interface QuoteResponse {
   tokenIn: string;
@@ -102,6 +122,15 @@ export interface QuoteResponse {
    * When set, amountOut is deterministic (no slippage should be applied to it).
    */
   source?: string;
+  /**
+   * Present only when the quote was requested with `multiroute=true` (exact-input
+   * only). Test feature — no on-chain atomicity, each `txs[]` entry is an
+   * independent `multiPairSwap`. See SplitRouteLeg / SplitComparison.
+   */
+  routes?: SplitRouteLeg[];
+  /** One TxMeta per `routes[]` entry, same order — signable as-is. */
+  txs?: QuoteTx[];
+  splitComparison?: SplitComparison;
 }
 
 /** Arbitrage opportunity response */

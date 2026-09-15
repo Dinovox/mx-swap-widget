@@ -94,6 +94,18 @@ export interface SwapConfig {
    * Defaults to 'https://explorer.multiversx.com' (mainnet).
    */
   explorerAddress?: string;
+  /**
+   * Opt in to the experimental "multiroute" quote split (`?multiroute=true` on
+   * `GET /quote`): when the backend finds that splitting a swap across several
+   * parallel routes beats the single best route, the widget offers it as an
+   * opt-in toggle instead of the normal single-transaction swap.
+   *
+   * Test feature, no on-chain atomicity — each split leg is a separate
+   * `multiPairSwap` transaction (signed together as one batch, but one leg can
+   * succeed while another fails). Defaults to `false`; keep it off in
+   * production until validated in real conditions.
+   */
+  enableMultiroute?: boolean;
 }
 
 /** Resolved config available inside components */
