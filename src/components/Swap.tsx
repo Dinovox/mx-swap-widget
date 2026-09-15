@@ -99,6 +99,7 @@ export const Swap = () => {
     explorerAddress,
     onSignTransactions,
     enableMultiroute,
+    withOneDex,
   } = useSwapConfig();
   const goTo = useGoTo();
   const p = getThemePalette(theme);
@@ -505,6 +506,10 @@ export const Swap = () => {
           ...(enableMultiroute && activeField === "in"
             ? { multiroute: "true" }
             : {}),
+          // TEMPORARY test flag — see SwapConfig.withOneDex. Omitted entirely
+          // (not even "false") when off, matching the API's opt-in-only
+          // contract (same convention as the former withJExchange flag).
+          ...(withOneDex ? { withonedex: "true" } : {}),
         },
       });
       setQuote(data);
@@ -532,6 +537,7 @@ export const Swap = () => {
     isArb,
     isWrapUnwrap,
     slippage,
+    withOneDex,
   ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -807,10 +813,10 @@ export const Swap = () => {
 
   const impactColor = priceImpactPct
     ? parseFloat(priceImpactPct) < 1
-      ? "text-green-600 dark:text-green-400"
+      ? "dvx:text-green-600 dvx:dark:text-green-400"
       : parseFloat(priceImpactPct) < 3
-        ? "text-amber-500 dark:text-amber-400"
-        : "text-red-600 dark:text-red-400"
+        ? "dvx:text-amber-500 dvx:dark:text-amber-400"
+        : "dvx:text-red-600 dvx:dark:text-red-400"
     : "";
 
   const canSwap = isWrapUnwrap
@@ -834,6 +840,47 @@ export const Swap = () => {
         !insufficientBalance;
 
   const isEgldOut = tokenOut?.identifier === "EGLD";
+
+  // DEX badge styling shared by the single-route breakdown and the multiroute
+  // split-leg list, so a given DEX reads the same color/name in both places.
+  // Canonical DEX color code: DinoVox=amber, JExchange=green, XExchange=blue,
+  // OneDex=purple. LiquidStaking isn't a DEX in that code — cyan keeps it
+  // visually distinct from all four (it never appears alongside them anyway,
+  // the stake path is its own exclusive single-hop route).
+  const getRouteDexStyle = (dexType?: QuoteHop["dexType"]) => {
+    switch (dexType) {
+      case "LiquidStaking":
+        return {
+          line: "dvx:bg-cyan-400 dvx:dark:bg-cyan-500",
+          label: "dvx:text-cyan-600 dvx:dark:text-cyan-400",
+          name: t("route_stake"),
+        };
+      case "XExchange":
+        return {
+          line: "dvx:bg-blue-400 dvx:dark:bg-blue-500",
+          label: "dvx:text-blue-600 dvx:dark:text-blue-400",
+          name: "XExchange",
+        };
+      case "JExchange":
+        return {
+          line: "dvx:bg-green-400 dvx:dark:bg-green-500",
+          label: "dvx:text-green-600 dvx:dark:text-green-400",
+          name: "JExchange",
+        };
+      case "OneDex":
+        return {
+          line: "dvx:bg-purple-400 dvx:dark:bg-purple-500",
+          label: "dvx:text-purple-600 dvx:dark:text-purple-400",
+          name: "OneDex",
+        };
+      default:
+        return {
+          line: "dvx:bg-amber-400 dvx:dark:bg-amber-500",
+          label: "dvx:text-amber-600 dvx:dark:text-amber-400",
+          name: "DinoVox",
+        };
+    }
+  };
 
   /* ---------- Execute wrap / unwrap ---------- */
   const handleWrapUnwrap = async () => {
@@ -1246,31 +1293,7 @@ export const Swap = () => {
                       ? parseFloat(hop.priceImpact) * 100
                       : 0;
                     const hopHighImpact = hopImpact >= 5;
-                    // Color per DEX
-                    const dexStyle =
-                      hop.dexType === "LiquidStaking"
-                        ? {
-                            line: "bg-purple-400 dark:bg-purple-500",
-                            label: "text-purple-600 dark:text-purple-400",
-                            name: t("route_stake"),
-                          }
-                        : hop.dexType === "XExchange"
-                          ? {
-                              line: "bg-blue-400 dark:bg-blue-500",
-                              label: "text-blue-600 dark:text-blue-400",
-                              name: "XExchange",
-                            }
-                          : hop.dexType === "JExchange"
-                            ? {
-                                line: "bg-green-400 dark:bg-green-500",
-                                label: "text-green-600 dark:text-green-400",
-                                name: "JExchange",
-                              }
-                            : {
-                                line: "bg-amber-400 dark:bg-amber-500",
-                                label: "text-amber-600 dark:text-amber-400",
-                                name: "DinoVox",
-                              };
+                    const dexStyle = getRouteDexStyle(hop.dexType);
                     return (
                       <React.Fragment key={i}>
                         {/* Connector */}
@@ -1442,17 +1465,26 @@ export const Swap = () => {
                                 <span className="dvx:text-xs dvx:font-semibold dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-800 dvx:dark:text-gray-200">
                                   {tokenIn?.ticker ?? leg.hops[0]?.tokenIn}
                                 </span>
-                                {leg.hops.map((hop, i) => (
-                                  <React.Fragment key={i}>
-                                    <span className="dvx:mx-1 dvx:text-[10px] dvx:text-gray-400">
-                                      ▶
-                                    </span>
-                                    <span className="dvx:text-xs dvx:font-semibold dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-800 dvx:dark:text-gray-200">
-                                      {tokens.find((t) => t.identifier === hop.tokenOut)
-                                        ?.ticker ?? hop.tokenOut}
-                                    </span>
-                                  </React.Fragment>
-                                ))}
+                                {leg.hops.map((hop, i) => {
+                                  const hopDexStyle = getRouteDexStyle(hop.dexType);
+                                  return (
+                                    <React.Fragment key={i}>
+                                      <a
+                                        href={`${explorerAddress}/accounts/${hop.pair}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title={hop.pair}
+                                        className={`dvx:mx-1 dvx:text-[9px] dvx:font-bold dvx:hover:underline ${hopDexStyle.label}`}
+                                      >
+                                        {hopDexStyle.name} ▶
+                                      </a>
+                                      <span className="dvx:text-xs dvx:font-semibold dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-800 dvx:dark:text-gray-200">
+                                        {tokens.find((t) => t.identifier === hop.tokenOut)
+                                          ?.ticker ?? hop.tokenOut}
+                                      </span>
+                                    </React.Fragment>
+                                  );
+                                })}
                               </div>
                             );
                           })}
@@ -1525,24 +1557,7 @@ export const Swap = () => {
                       const ticker =
                         tokens.find((t) => t.identifier === hop.tokenOut)
                           ?.ticker ?? hop.tokenOut.split("-")[0];
-                      const dexStyle =
-                        hop.dexType === "XExchange"
-                          ? {
-                              line: "bg-blue-400 dark:bg-blue-500",
-                              label: "text-blue-600 dark:text-blue-400",
-                              name: "XExchange",
-                            }
-                          : hop.dexType === "JExchange"
-                            ? {
-                                line: "bg-purple-400 dark:bg-purple-500",
-                                label: "text-purple-600 dark:text-purple-400",
-                                name: "JExchange",
-                              }
-                            : {
-                                line: "bg-green-400 dark:bg-green-500",
-                                label: "text-green-600 dark:text-green-400",
-                                name: "DinoVox",
-                              };
+                      const dexStyle = getRouteDexStyle(hop.dexType);
                       return (
                         <React.Fragment key={i}>
                           <div className="dvx:flex dvx:flex-col dvx:items-center dvx:mx-1">

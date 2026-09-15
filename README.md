@@ -81,6 +81,8 @@ export const SwapPage = () => (
 | `explorerAddress` | `string` | `https://explorer.multiversx.com` | MultiversX explorer base URL — used for on-chain links (pool contracts, transactions). |
 | `language` | `string` | `navigator.language` | Language code (`'en'`, `'fr'`) |
 | `theme` | `'light' \| 'dark' \| 'mid'` | *(inherit)* | Pin the widget theme independently of the host app. When omitted the widget follows the host app's `dark` class on `<html>`. |
+| `enableMultiroute` | `boolean` | `false` | **Test feature.** Opts in to the `?multiroute=true` quote split: when splitting a swap across several parallel routes beats the single best route, the widget offers it as an opt-in toggle. No on-chain atomicity — each split leg is a separate `multiPairSwap` transaction, signed together as one nonce-ordered batch, but one leg can succeed while another fails. Keep off in production until validated in real conditions. |
+| `withOneDex` | `boolean` | `false` | **Temporary test flag.** Enables OneDex as a routing source: passes `withonedex=true` to `/quote`. Requires the on-chain Aggregator contract to have OneDex support deployed, or a route through it will fail on submit. Will be removed once OneDex routing is default (same lifecycle as the former `withJExchange` flag). |
 
 ---
 

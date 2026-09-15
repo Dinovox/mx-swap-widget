@@ -106,6 +106,14 @@ export interface SwapConfig {
    * production until validated in real conditions.
    */
   enableMultiroute?: boolean;
+  /**
+   * TEMPORARY test flag — enables OneDex as a routing source. Passes
+   * `withonedex=true` to the DEX API's `/quote` call. Requires the on-chain
+   * Aggregator contract to have OneDex support deployed, or a route through
+   * it will fail on submit. Off by default; will be removed once OneDex
+   * routing is default (same lifecycle as the former `withJExchange` flag).
+   */
+  withOneDex?: boolean;
 }
 
 /** Resolved config available inside components */

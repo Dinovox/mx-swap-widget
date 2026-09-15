@@ -74,7 +74,7 @@ export interface QuoteHop {
   tokenOut: string;
   amountIn: string;
   amountOut: string;
-  dexType?: 'DinoVox' | 'XExchange' | 'JExchange' | 'LiquidStaking';
+  dexType?: 'DinoVox' | 'XExchange' | 'JExchange' | 'OneDex' | 'LiquidStaking';
   priceImpact?: string;
 }
 
