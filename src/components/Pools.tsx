@@ -102,7 +102,7 @@ export const Pools = () => {
         description={loading ? t('pools_loading_desc') : t('pools_count', { count: pools.length })}
       >
         <div className='dvx:flex dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:mt-4 dvx:w-fit'>
-          {(['DinoVox', 'XExchange', 'JExchange'] as DexFilter[]).map((dex) => (
+          {(['DinoVox', 'XExchange', 'JExchange', 'OneDex'] as DexFilter[]).map((dex) => (
             <button
               key={dex}
               onClick={() => setDexFilter(dex)}

@@ -99,7 +99,6 @@ export const Swap = () => {
     explorerAddress,
     onSignTransactions,
     enableMultiroute,
-    withOneDex,
   } = useSwapConfig();
   const goTo = useGoTo();
   const p = getThemePalette(theme);
@@ -506,10 +505,6 @@ export const Swap = () => {
           ...(enableMultiroute && activeField === "in"
             ? { multiroute: "true" }
             : {}),
-          // TEMPORARY test flag — see SwapConfig.withOneDex. Omitted entirely
-          // (not even "false") when off, matching the API's opt-in-only
-          // contract (same convention as the former withJExchange flag).
-          ...(withOneDex ? { withonedex: "true" } : {}),
         },
       });
       setQuote(data);
@@ -537,7 +532,6 @@ export const Swap = () => {
     isArb,
     isWrapUnwrap,
     slippage,
-    withOneDex,
   ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
