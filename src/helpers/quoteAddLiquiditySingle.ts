@@ -32,5 +32,10 @@ export async function quoteAddLiquiditySingle(params: {
     function: "quoteAddLiquiditySingle",
     arguments: [tokenIn, amountIn],
   });
-  return BigInt(lpToMint.toString());
+  // lpToMint is a BigNumber.js instance (BigUint decoding) — its default
+  // toString() switches to scientific notation past 1e20, which BigInt()
+  // can't parse ("Cannot convert Xe+21 to a BigInt"). toFixed(0) always
+  // renders the plain integer, same fix used everywhere else in this widget
+  // that turns a BigNumber into a bigint/on-chain amount.
+  return BigInt(lpToMint.toFixed(0));
 }

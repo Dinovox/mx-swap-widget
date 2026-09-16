@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import { useGoTo } from "../context/SwapViewContext";
@@ -12,6 +12,7 @@ import { useGetUserESDT } from "../hooks/useGetUserEsdt";
 import { TokenSelect } from "../ui/TokenSelect";
 import { useSwapConfig } from "../context/SwapConfigContext";
 import strToHex from "../helpers/strToHex";
+import { brandedTokensVoxEgldFirst, VOXEGLD_IDENTIFIER } from "../helpers/brandedTokens";
 import type { DexToken, PoolInfo } from "../types";
 
 export const CreatePool = () => {
@@ -28,7 +29,11 @@ export const CreatePool = () => {
   useLoadTranslations("swap");
   const [searchParams, setSearchParams] = useWidgetSearchParams();
 
-  const [hubTokens, setHubTokens] = useState<DexToken[]>([]);
+  // Pair creation now accepts any (branded) token as tokenA, not just the hub
+  // set — see brandedTokensVoxEgldFirst for why unbranded tokens are excluded.
+  // VOXEGLD is the one exception offered regardless of wallet balance (below,
+  // in tokenAOptions); every other candidate still needs to be held to show up.
+  const [allTokens, setAllTokens] = useState<DexToken[]>([]);
   const [tokensLoading, setTokensLoading] = useState(true);
   const [lpTokenSet, setLpTokenSet] = useState<Set<string>>(new Set());
   const [tokenX, setTokenX] = useState<DexToken | null>(null);
@@ -87,22 +92,32 @@ export const CreatePool = () => {
     );
   }, [allWalletTokensRaw, lpTokenSet]);
 
+  // tokenA's actual candidate list: VOXEGLD regardless of balance, every
+  // other branded token only if the connected wallet actually holds it.
+  const tokenAOptions = useMemo(() => {
+    const heldIds = new Set(walletTokens.map((t) => t.identifier));
+    return allTokens.filter(
+      (t) => t.identifier === VOXEGLD_IDENTIFIER || heldIds.has(t.identifier),
+    );
+  }, [allTokens, walletTokens]);
+
   useEffect(() => {
     if (!apiUrl) return;
     setTokensLoading(true);
     Promise.all([
-      axios.get(`${apiUrl}/tokens/hub`).catch(() => ({ data: [] })),
+      axios.get(`${apiUrl}/tokens`).catch(() => ({ data: { tokens: [] } })),
       axios.get(`${apiUrl}/pools`).catch(() => ({ data: { pools: [] } })),
     ])
-      .then(([hubRes, poolsRes]) => {
-        setHubTokens(
-          (hubRes.data?.hubTokens || []).map((h: any) => ({
-            identifier: h.identifier,
-            ticker: h.ticker || h.identifier.split("-")[0],
-            decimals: h.decimals ?? 18,
-            logoUrl: h.logoUrl ?? null,
-          })),
+      .then(([tokensRes, poolsRes]) => {
+        const allTokens: DexToken[] = (tokensRes.data?.tokens || []).map(
+          (t: any) => ({
+            identifier: t.identifier,
+            ticker: t.ticker || t.identifier.split("-")[0],
+            decimals: t.decimals ?? 18,
+            logoUrl: t.logoUrl ?? null,
+          }),
         );
+        setAllTokens(brandedTokensVoxEgldFirst(allTokens));
         setLpTokenSet(
           new Set(
             (poolsRes.data.pools || [])
@@ -120,14 +135,14 @@ export const CreatePool = () => {
     const qX = searchParams.get("tokenX");
     const qY = searchParams.get("tokenY");
     if (qX && !tokenX) {
-      const f = hubTokens.find((t) => t.identifier === qX);
+      const f = tokenAOptions.find((t) => t.identifier === qX);
       if (f) setTokenX(f);
     }
     if (qY && !tokenY) {
       const f = walletTokens.find((t) => t.identifier === qY);
       if (f) setTokenY(f);
     }
-  }, [tokensLoading, hubTokens, walletTokens]); // eslint-disable-line
+  }, [tokensLoading, tokenAOptions, walletTokens]); // eslint-disable-line
 
   useEffect(() => {
     if (!tokenX || !tokenY) return;
@@ -305,7 +320,7 @@ export const CreatePool = () => {
             <TokenSelect
               value={tokenX}
               onChange={disabled ? () => {} : selectTokenX}
-              tokens={hubTokens}
+              tokens={tokenAOptions}
               exclude={tokenY?.identifier}
               loading={tokensLoading}
             />

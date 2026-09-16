@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import { useGoTo } from "../context/SwapViewContext";
@@ -14,6 +14,7 @@ import { TokenSelect, TokenLogo } from "../ui/TokenSelect";
 import bigToHex from "../helpers/bigToHex";
 import strToHex from "../helpers/strToHex";
 import { quoteAddLiquiditySingle } from "../helpers/quoteAddLiquiditySingle";
+import { brandedTokensVoxEgldFirst } from "../helpers/brandedTokens";
 import { useSwapConfig } from "../context/SwapConfigContext";
 import BigNumber from "bignumber.js";
 import type { DexToken, PoolInfo, LiquidityPool } from "../types";
@@ -102,6 +103,9 @@ export const AddLiquidity = () => {
   const [searchParams, setSearchParams] = useWidgetSearchParams();
 
   const [tokens, setTokens] = useState<DexToken[]>([]);
+  // `hubTokens` stays the narrower "is this actually a hub token" signal used
+  // below for deep-link ordering; tokenA's own picker (tokenAOptions, defined
+  // once walletTokens is available further down) is a different, wider list.
   const [hubTokens, setHubTokens] = useState<DexToken[]>([]);
   const [tokensLoading, setTokensLoading] = useState(true);
   const [tokenA, setTokenA] = useState<DexToken | null>(null);
@@ -203,6 +207,15 @@ export const AddLiquidity = () => {
       });
     setWalletTokens(mapped);
   }, [allWalletTokensRaw, lpTokenSet, tokens]);
+
+  // tokenA's actual candidate list: VOXEGLD regardless of balance, every
+  // other branded token only if the connected wallet actually holds it.
+  const tokenAOptions = useMemo(() => {
+    const heldIds = new Set(walletTokens.map((t) => t.identifier));
+    return brandedTokensVoxEgldFirst(tokens).filter(
+      (t) => t.identifier === VOXEGLD_IDENTIFIER || heldIds.has(t.identifier),
+    );
+  }, [tokens, walletTokens]);
 
   const balancesA = useGetUserESDT(tokenA?.identifier ?? undefined, {
     enabled: !!tokenA && !!address,
@@ -939,7 +952,7 @@ export const AddLiquidity = () => {
               <TokenSelect
                 value={tokenA}
                 onChange={selectTokenA}
-                tokens={hubTokens}
+                tokens={tokenAOptions}
                 exclude={tokenB?.identifier}
                 loading={tokensLoading}
               />
