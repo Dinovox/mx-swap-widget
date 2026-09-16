@@ -106,6 +106,12 @@ export interface SwapConfig {
    * production until validated in real conditions.
    */
   enableMultiroute?: boolean;
+  /**
+   * Shows a small "Own a project? Add this module to your dApp →" link under
+   * the Swap card, pointing to the npm package. Off by default — opt in if
+   * you're fine with the widget promoting itself inside your app.
+   */
+  showNpmCta?: boolean;
 }
 
 /** Resolved config available inside components */

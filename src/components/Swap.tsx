@@ -99,6 +99,7 @@ export const Swap = () => {
     explorerAddress,
     onSignTransactions,
     enableMultiroute,
+    showNpmCta,
   } = useSwapConfig();
   const goTo = useGoTo();
   const p = getThemePalette(theme);
@@ -1676,6 +1677,18 @@ export const Swap = () => {
           </button>
         </div>
       </Card>
+      {showNpmCta && (
+        <p className="dvx:text-center dvx:text-[11px] dvx:text-gray-400">
+          <a
+            href="https://www.npmjs.com/package/@dinovox/mx-swap-widget"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="dvx:hover:text-amber-500 dvx:hover:underline dvx:transition-colors"
+          >
+            {t("npm_cta")}
+          </a>
+        </p>
+      )}
     </div>
   );
 };

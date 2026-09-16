@@ -17,6 +17,7 @@
   "slippage": "Slippage",
   "min_received": "Minimum received",
   "high_impact_warning": "This route has a high price impact — you are paying more than the market price for this token. Try reducing the swap amount for a better rate.",
+  "npm_cta": "Own a project? Add this module to your dApp →",
   "multiroute_toggle": "Split across {{n}} routes",
   "multiroute_more_received": "more (min. received)",
   "multiroute_legs_label": "Split legs",

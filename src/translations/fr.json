@@ -17,6 +17,7 @@
   "slippage": "Slippage",
   "min_received": "Minimum reçu",
   "high_impact_warning": "Cette route a un fort impact de prix — vous payez ce token plus cher que son prix de marché. Essayez de réduire le montant échangé pour un meilleur taux.",
+  "npm_cta": "Propriétaire d'un projet ? Ajoutez ce module à votre dapp →",
   "multiroute_toggle": "Scinder sur {{n}} routes",
   "multiroute_more_received": "de plus (min. reçu)",
   "multiroute_legs_label": "Routes du split",

@@ -2,7 +2,7 @@
 
 Plug-and-play swap & liquidity widget for [MultiversX](https://multiversx.com) dApps, built by [DinoVox](https://dinovox.com).
 
-- Token swap with multi-hop routing across DinoVox, XExchange, and JExchange pools
+- Token swap with multi-hop routing across DinoVox, XExchange, OneDex and JExchange pools
 - Arbitrage detection (same-token circular swap)
 - EGLD ↔ WEGLD wrap / unwrap
 - Liquidity management: add (two tokens, or a single token auto-split via the pair v2 `addLiquiditySingle` endpoint), remove, create pools, browse pools with live reserves, APR estimate and recent swap activity
@@ -25,7 +25,7 @@ npm install github:Dinovox/mx-swap-widget
 Import the stylesheet once in your app entry:
 
 ```ts
-import '@dinovox/mx-swap-widget/styles.css';
+import "@dinovox/mx-swap-widget/styles.css";
 ```
 
 ---
@@ -33,12 +33,10 @@ import '@dinovox/mx-swap-widget/styles.css';
 ## Quick start
 
 ```tsx
-import { SwapWidget } from '@dinovox/mx-swap-widget';
-import '@dinovox/mx-swap-widget/styles.css';
+import { SwapWidget } from "@dinovox/mx-swap-widget";
+import "@dinovox/mx-swap-widget/styles.css";
 
-export const SwapPage = () => (
-  <SwapWidget />
-);
+export const SwapPage = () => <SwapWidget />;
 ```
 
 No configuration required. The widget connects to the DinoVox DEX API and handles all views (Swap, Liquidity, Pools…) internally.
@@ -50,13 +48,15 @@ No configuration required. The widget connects to the DinoVox DEX API and handle
 Wrap with `SwapConfigProvider` to override any default:
 
 ```tsx
-import { SwapWidget, SwapConfigProvider } from '@dinovox/mx-swap-widget';
+import { SwapWidget, SwapConfigProvider } from "@dinovox/mx-swap-widget";
 
 export const SwapPage = () => (
-  <SwapConfigProvider config={{
-    language: 'fr',
-    onConnect: () => navigate('/unlock'),
-  }}>
+  <SwapConfigProvider
+    config={{
+      language: "fr",
+      onConnect: () => navigate("/unlock"),
+    }}
+  >
     <SwapWidget />
   </SwapConfigProvider>
 );
@@ -64,24 +64,25 @@ export const SwapPage = () => (
 
 ### `SwapConfig` reference
 
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `apiUrl` | `string` | DinoVox mainnet API | Base URL of the DEX API |
-| `routerAddress` | `string` | DinoVox router | Router smart contract address |
-| `aggregatorAddress` | `string` | DinoVox aggregator | Aggregator smart contract address |
-| `voxEgldAddress` | `string` | DinoVox VOX-EGLD | VOX-EGLD (liquid staking) smart contract address |
-| `factoryAddress` | `string` | DinoVox factory | Factory smart contract address |
-| `wrapContract` | `string` | DinoVox wrap contract | EGLD ↔ WEGLD wrap contract address |
-| `wegldIdentifier` | `string` | `WEGLD-bd4d79` | WEGLD token identifier |
-| `onConnect` | `() => void` | — | Called when the user clicks "Connect wallet" while unauthenticated. Pass your app's unlock handler. When omitted the button is disabled. |
-| `onSignTransactions` | `(txs, info) => Promise<unknown>` | *(internal signing)* | Called when the widget needs to sign & broadcast a transaction. Pass your app's own `signAndSendTransactions` (from sdk-dapp) so the widget never touches the signing provider directly — avoids module-scope issues in production Vite bundles. Falls back to the widget's internal signing flow when omitted. |
-| `address` | `string` | *(auto-detected)* | Wallet address. Pass from the host app's own account hook (e.g. `useGetAccount()`) to guarantee wallet detection in production. Falls back to the widget's own detection when omitted. |
-| `networkApiAddress` | `string` | `https://api.multiversx.com` | MultiversX API base URL. Pass from the host app's own `useGetNetworkConfig()` for the same reason as `address`. |
-| `chainId` | `string` | `'1'` | MultiversX chain ID. Use `'D'` for devnet, `'T'` for testnet. |
-| `explorerAddress` | `string` | `https://explorer.multiversx.com` | MultiversX explorer base URL — used for on-chain links (pool contracts, transactions). |
-| `language` | `string` | `navigator.language` | Language code (`'en'`, `'fr'`) |
-| `theme` | `'light' \| 'dark' \| 'mid'` | *(inherit)* | Pin the widget theme independently of the host app. When omitted the widget follows the host app's `dark` class on `<html>`. |
-| `enableMultiroute` | `boolean` | `false` | **Test feature.** Opts in to the `?multiroute=true` quote split: when splitting a swap across several parallel routes beats the single best route, the widget offers it as an opt-in toggle. No on-chain atomicity — each split leg is a separate `multiPairSwap` transaction, signed together as one nonce-ordered batch, but one leg can succeed while another fails. Keep off in production until validated in real conditions. |
+| Prop                 | Type                              | Default                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------- | --------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apiUrl`             | `string`                          | DinoVox mainnet API               | Base URL of the DEX API                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `routerAddress`      | `string`                          | DinoVox router                    | Router smart contract address                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `aggregatorAddress`  | `string`                          | DinoVox aggregator                | Aggregator smart contract address                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `voxEgldAddress`     | `string`                          | DinoVox VOX-EGLD                  | VOX-EGLD (liquid staking) smart contract address                                                                                                                                                                                                                                                                                                                                                                                   |
+| `factoryAddress`     | `string`                          | DinoVox factory                   | Factory smart contract address                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `wrapContract`       | `string`                          | DinoVox wrap contract             | EGLD ↔ WEGLD wrap contract address                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `wegldIdentifier`    | `string`                          | `WEGLD-bd4d79`                    | WEGLD token identifier                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `onConnect`          | `() => void`                      | —                                 | Called when the user clicks "Connect wallet" while unauthenticated. Pass your app's unlock handler. When omitted the button is disabled.                                                                                                                                                                                                                                                                                           |
+| `onSignTransactions` | `(txs, info) => Promise<unknown>` | _(internal signing)_              | Called when the widget needs to sign & broadcast a transaction. Pass your app's own `signAndSendTransactions` (from sdk-dapp) so the widget never touches the signing provider directly — avoids module-scope issues in production Vite bundles. Falls back to the widget's internal signing flow when omitted.                                                                                                                    |
+| `address`            | `string`                          | _(auto-detected)_                 | Wallet address. Pass from the host app's own account hook (e.g. `useGetAccount()`) to guarantee wallet detection in production. Falls back to the widget's own detection when omitted.                                                                                                                                                                                                                                             |
+| `networkApiAddress`  | `string`                          | `https://api.multiversx.com`      | MultiversX API base URL. Pass from the host app's own `useGetNetworkConfig()` for the same reason as `address`.                                                                                                                                                                                                                                                                                                                    |
+| `chainId`            | `string`                          | `'1'`                             | MultiversX chain ID. Use `'D'` for devnet, `'T'` for testnet.                                                                                                                                                                                                                                                                                                                                                                      |
+| `explorerAddress`    | `string`                          | `https://explorer.multiversx.com` | MultiversX explorer base URL — used for on-chain links (pool contracts, transactions).                                                                                                                                                                                                                                                                                                                                             |
+| `language`           | `string`                          | `navigator.language`              | Language code (`'en'`, `'fr'`)                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `theme`              | `'light' \| 'dark' \| 'mid'`      | _(inherit)_                       | Pin the widget theme independently of the host app. When omitted the widget follows the host app's `dark` class on `<html>`.                                                                                                                                                                                                                                                                                                       |
+| `enableMultiroute`   | `boolean`                         | `false`                           | **Test feature.** Opts in to the `?multiroute=true` quote split: when splitting a swap across several parallel routes beats the single best route, the widget offers it as an opt-in toggle. No on-chain atomicity — each split leg is a separate `multiPairSwap` transaction, signed together as one nonce-ordered batch, but one leg can succeed while another fails. Keep off in production until validated in real conditions. |
+| `showNpmCta`         | `boolean`                         | `false`                           | Shows a small "Own a project? Add this module to your dApp →" link under the Swap card, pointing to the [npm package](https://www.npmjs.com/package/@dinovox/mx-swap-widget). Off by default.                                                                                                                                                                                                                                       |
 
 ---
 
@@ -89,14 +90,14 @@ export const SwapPage = () => (
 
 The widget manages its own view switching via URL hash fragments — no host router required, no page reloads.
 
-| View | Hash |
-|---|---|
-| Swap | `#swap` *(or no hash)* |
-| Liquidity | `#liquidity` |
-| Add Liquidity | `#add-liquidity` |
-| Remove Liquidity | `#remove-liquidity` |
-| Create Pool | `#create-pool` |
-| Pools | `#pools` |
+| View             | Hash                   |
+| ---------------- | ---------------------- |
+| Swap             | `#swap` _(or no hash)_ |
+| Liquidity        | `#liquidity`           |
+| Add Liquidity    | `#add-liquidity`       |
+| Remove Liquidity | `#remove-liquidity`    |
+| Create Pool      | `#create-pool`         |
+| Pools            | `#pools`               |
 
 The browser's back/forward buttons work out of the box.
 
@@ -119,11 +120,11 @@ On Add Liquidity, add `mode=single` to land directly on the single-token deposit
 Use the exported `useSwapView` hook to read the current view or navigate from outside the widget:
 
 ```tsx
-import { useSwapView } from '@dinovox/mx-swap-widget';
+import { useSwapView } from "@dinovox/mx-swap-widget";
 
 const { view, goTo } = useSwapView();
 
-goTo('add-liquidity', { tokenA: 'EGLD', tokenB: 'WEGLD-bd4d79' });
+goTo("add-liquidity", { tokenA: "EGLD", tokenB: "WEGLD-bd4d79" });
 ```
 
 ---
@@ -137,13 +138,11 @@ Beyond `SwapConfigProvider`, `SwapWidget` accepts a set of props that override t
 Pre-select tokens in the Swap view. These are used as fallback when no `from` / `to` URL param is present.
 
 ```tsx
-<SwapWidget
-  defaultFrom="EGLD"
-  defaultTo="USDC-c76f1f"
-/>
+<SwapWidget defaultFrom="EGLD" defaultTo="USDC-c76f1f" />
 ```
 
 URL params always take precedence over these defaults:
+
 ```
 /your-page?from=WEGLD-bd4d79   ← this wins over defaultFrom
 ```
@@ -153,25 +152,21 @@ URL params always take precedence over these defaults:
 Control which tokens appear in the selector.
 
 ```tsx
-<SwapWidget
-  whitelist={['EGLD', 'WEGLD-bd4d79', 'USDC-c76f1f']}
-/>
+<SwapWidget whitelist={["EGLD", "WEGLD-bd4d79", "USDC-c76f1f"]} />
 ```
 
 ```tsx
-<SwapWidget
-  blacklist={['SPAM-123456', 'SCAM-abcdef']}
-/>
+<SwapWidget blacklist={["SPAM-123456", "SCAM-abcdef"]} />
 ```
 
 Both can be combined. Whitelist is applied first, blacklist is applied after.
 
-| Prop | Type | Behaviour when omitted |
-|---|---|---|
-| `defaultFrom` | `string` | No token pre-selected |
-| `defaultTo` | `string` | No token pre-selected |
-| `whitelist` | `string[]` | All tokens shown |
-| `blacklist` | `string[]` | No token hidden |
+| Prop          | Type       | Behaviour when omitted |
+| ------------- | ---------- | ---------------------- |
+| `defaultFrom` | `string`   | No token pre-selected  |
+| `defaultTo`   | `string`   | No token pre-selected  |
+| `whitelist`   | `string[]` | All tokens shown       |
+| `blacklist`   | `string[]` | No token hidden        |
 
 ---
 
@@ -199,7 +194,7 @@ import {
   RemoveLiquidity,
   CreatePool,
   Pools,
-} from '@dinovox/mx-swap-widget';
+} from "@dinovox/mx-swap-widget";
 ```
 
 When using standalone components, wrap them with `SwapConfigProvider`. The `SwapWidget` wrapper handles i18n internally; standalone components require a `react-i18next` instance via `initReactI18next` in the host app.
@@ -225,18 +220,18 @@ When using standalone components, wrap them with `SwapConfigProvider`. The `Swap
 
 ## Exported API
 
-| Export | Description |
-|---|---|
-| `SwapWidget` | All-in-one widget with internal routing |
-| `SwapConfigProvider` | Configuration context provider |
-| `useSwapConfig` | Hook to read the resolved config |
-| `useSwapView` | Hook to read the current view and navigate (`goTo`) |
-| `FormatAmount` | Token amount formatter component |
-| `signAndSendTransactions` | Helper to sign & send MultiversX transactions |
-| `bigToHex` | BigInt → hex string helper |
-| `useGetUserESDT` | Hook to fetch user ESDT token balances |
-| `Card` | Card UI primitive |
-| `TokenSelect` | Token selector dropdown UI primitive |
+| Export                    | Description                                         |
+| ------------------------- | --------------------------------------------------- |
+| `SwapWidget`              | All-in-one widget with internal routing             |
+| `SwapConfigProvider`      | Configuration context provider                      |
+| `useSwapConfig`           | Hook to read the resolved config                    |
+| `useSwapView`             | Hook to read the current view and navigate (`goTo`) |
+| `FormatAmount`            | Token amount formatter component                    |
+| `signAndSendTransactions` | Helper to sign & send MultiversX transactions       |
+| `bigToHex`                | BigInt → hex string helper                          |
+| `useGetUserESDT`          | Hook to fetch user ESDT token balances              |
+| `Card`                    | Card UI primitive                                   |
+| `TokenSelect`             | Token selector dropdown UI primitive                |
 
 ---
 
