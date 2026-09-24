@@ -12,7 +12,10 @@ import { useGetUserESDT } from "../hooks/useGetUserEsdt";
 import { TokenSelect } from "../ui/TokenSelect";
 import { useSwapConfig } from "../context/SwapConfigContext";
 import strToHex from "../helpers/strToHex";
-import { brandedTokensVoxEgldFirst, VOXEGLD_IDENTIFIER } from "../helpers/brandedTokens";
+import {
+  brandedTokensVoxEgldFirst,
+  VOXEGLD_IDENTIFIER,
+} from "../helpers/brandedTokens";
 import type { DexToken, PoolInfo } from "../types";
 
 export const CreatePool = () => {
@@ -235,7 +238,7 @@ export const CreatePool = () => {
         data: new TextEncoder().encode(txDataParts.join("@")),
         receiver: new Address(factoryAddress),
         sender: new Address(address),
-        gasLimit: 300_000_000n,
+        gasLimit: 30_000_000n,
         gasPrice: BigInt(GAS_PRICE),
         chainID: chainId!,
         version: 1,
