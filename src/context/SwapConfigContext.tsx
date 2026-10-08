@@ -13,6 +13,13 @@ export interface SwapConfig {
   factoryAddress: string;
   /** Wrap/unwrap contract address (EGLD ↔ WEGLD) */
   wrapContract: string;
+  /**
+   * DCA escrow smart contract address (dca-escrow) — the sole entry point
+   * for createOrder/cancelOrder. Optional: not deployed on every network yet
+   * (devnet-only at the time of writing), so there is no default. The DCA
+   * tab shows a "not available" state when this is unset.
+   */
+  dcaEscrowAddress?: string;
   /** WEGLD token identifier  e.g. 'WEGLD-bd4d79' */
   wegldIdentifier: string;
   /**

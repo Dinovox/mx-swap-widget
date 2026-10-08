@@ -6,10 +6,11 @@ export type SwapView =
   | 'add-liquidity'
   | 'remove-liquidity'
   | 'create-pool'
-  | 'pools';
+  | 'pools'
+  | 'dca';
 
 const VALID_VIEWS = new Set<string>([
-  'swap', 'liquidity', 'add-liquidity', 'remove-liquidity', 'create-pool', 'pools',
+  'swap', 'liquidity', 'add-liquidity', 'remove-liquidity', 'create-pool', 'pools', 'dca',
 ]);
 
 // Custom event dispatched by goTo so all useSwapView instances stay in sync

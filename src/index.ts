@@ -9,6 +9,7 @@ export { AddLiquidity } from "./components/AddLiquidity";
 export { RemoveLiquidity } from "./components/RemoveLiquidity";
 export { CreatePool } from "./components/CreatePool";
 export { Pools } from "./components/Pools";
+export { Dca } from "./components/Dca";
 
 // Context / Config
 export { SwapConfigProvider, useSwapConfig } from "./context/SwapConfigContext";
@@ -26,6 +27,8 @@ export type {
   QuoteTx,
   QuoteResponse,
   ArbResponse,
+  DcaOrder,
+  DcaExecution,
 } from "./types";
 
 // Helpers

@@ -1,5 +1,8 @@
 import React from "react";
+import { Info } from "lucide-react";
 import { Card } from "../ui/Card";
+import { SectionTabs, LiquiditySubTabs } from "../ui/NavTabs";
+import { DcaBadge } from "../ui/DcaBadge";
 
 const formatUsd = (value: number): string => {
   if (value < 0.01) return "<$0.01";
@@ -120,7 +123,14 @@ export const Liquidity = () => {
         } as UserPosition;
       }),
     )
-      .then(setUserPositions)
+      // Largest position (USD value) first; unpriced positions go last.
+      .then((positions) => {
+        const valueUsd = (pos: UserPosition) =>
+          pos.pool.lpTokenPriceUsd
+            ? new BigNumber(pos.balance).shiftedBy(-18).toNumber() * parseFloat(pos.pool.lpTokenPriceUsd)
+            : -1;
+        setUserPositions([...positions].sort((a, b) => valueUsd(b) - valueUsd(a)));
+      })
       .catch(console.error);
   }, [walletTokens, pools, networkApiAddress, tokenMeta, apiUrl]);
 
@@ -129,30 +139,9 @@ export const Liquidity = () => {
       <Card
         className="dvx:border-2 dvx:border-cyan-500/20"
         title={
-          <div className="dvx:flex dvx:flex-col dvx:sm:flex-row dvx:items-start dvx:sm:items-center dvx:justify-between dvx:w-full dvx:gap-4">
-            <div className="dvx:flex dvx:items-center dvx:gap-3">
-              <span className="dvx:text-xl">💧</span>
-              <span className="dvx:text-lg dvx:font-black dvx:tracking-tight">
-                {t("liquidity_title")}
-              </span>
-            </div>
-            <div className="dvx:flex dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:shadow-inner dvx:w-full dvx:sm:w-auto">
-              <button
-                onClick={() => goTo("swap")}
-                className="dvx:flex-1 dvx:sm:flex-initial dvx:px-3 dvx:sm:px-4 dvx:py-2 dvx:text-sm dvx:font-bold dvx:rounded-lg dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-900 dvx:dark:hover:text-white dvx:transition-all dvx:hover:bg-white/50 dvx:dark:hover:bg-white/5"
-              >
-                Swap
-              </button>
-              <button className="dvx:flex-1 dvx:sm:flex-initial dvx:px-3 dvx:sm:px-4 dvx:py-2 dvx:text-sm dvx:font-black dvx:rounded-lg dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:text-amber-500 dvx:shadow-md dvx:transition-all">
-                {t("tab_liquidity")}
-              </button>
-              <button
-                onClick={() => goTo("pools")}
-                className="dvx:flex-1 dvx:sm:flex-initial dvx:px-3 dvx:sm:px-4 dvx:py-2 dvx:text-sm dvx:font-bold dvx:rounded-lg dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-900 dvx:dark:hover:text-white dvx:transition-all dvx:hover:bg-white/50 dvx:dark:hover:bg-white/5"
-              >
-                Pools
-              </button>
-            </div>
+          <div className="dvx:flex dvx:flex-col dvx:items-start dvx:w-full dvx:gap-4">
+            <SectionTabs active="liquidity" />
+            <LiquiditySubTabs active="liquidity" />
           </div>
         }
         description={t("liquidity_card_desc")}
@@ -224,88 +213,105 @@ export const Liquidity = () => {
                         ? new BigNumber(pos.balance).shiftedBy(-18).toNumber() *
                           parseFloat(pos.pool.lpTokenPriceUsd)
                         : null;
+                      const tickerA = tokenMeta[pos.pool.tokenA]?.ticker ?? pos.pool.tokenA.split("-")[0];
+                      const tickerB = tokenMeta[pos.pool.tokenB]?.ticker ?? pos.pool.tokenB.split("-")[0];
+                      const poolSharePct = totalSupplyBN.isZero()
+                        ? null
+                        : new BigNumber(pos.balance).dividedBy(totalSupplyBN).multipliedBy(100).toNumber();
+                      // Estimated LP fees over 30 days at the CURRENT pool share: the
+                      // pool's LP fees over its APR window, normalised to 30 days, times
+                      // the share. Indicative — a recent deposit didn't earn the past fees.
+                      const feesWindowUsd = pos.pool.apr?.feesUsdLp != null ? parseFloat(pos.pool.apr.feesUsdLp) : NaN;
+                      const windowDays = pos.pool.apr?.windowDays ?? 0;
+                      const estFees30dUsd =
+                        poolSharePct != null && Number.isFinite(feesWindowUsd) && windowDays > 0
+                          ? (feesWindowUsd / windowDays) * 30 * (poolSharePct / 100)
+                          : null;
+                      const shareBox = (ticker: string, amount: string, usd: number | null) => (
+                        <div className="dvx:rounded-xl dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:border dvx:border-gray-100 dvx:dark:border-[#333] dvx:px-3 dvx:py-2">
+                          <p className="dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400 dvx:mb-0.5">
+                            {t("liquidity_your_share")} {ticker}
+                          </p>
+                          <p className="dvx:font-bold dvx:text-gray-900 dvx:dark:text-white dvx:text-sm">
+                            {amount} <span className="dvx:text-gray-400 dvx:font-medium">{ticker}</span>
+                          </p>
+                          {usd != null && usd > 0 && (
+                            <p className="dvx:text-[10px] dvx:text-gray-400 dvx:mt-0.5">{formatUsd(usd)}</p>
+                          )}
+                        </div>
+                      );
                       return (
                         <div
                           key={pos.pool.address}
-                          className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:p-4"
+                          className="dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:p-4"
                         >
-                          <div className="dvx:flex dvx:flex-col dvx:xs:flex-row dvx:items-start dvx:xs:items-center dvx:justify-between dvx:gap-3 dvx:mb-3">
-                            <div className="dvx:min-w-0">
-                              <div className="dvx:flex dvx:items-center dvx:gap-2 dvx:mb-0.5">
-                                <span className="dvx:font-bold dvx:text-gray-900 dvx:dark:text-white dvx:uppercase dvx:truncate">
-                                  {lpTokenTicker}
-                                </span>
-                                <span className="dvx:text-xs dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-amber-100 dvx:text-amber-600 dvx:dark:bg-amber-900/30 dvx:dark:text-amber-400 dvx:font-semibold dvx:border dvx:border-amber-200 dvx:dark:border-amber-800 dvx:flex-shrink-0">
-                                  LP
-                                </span>
-                              </div>
-                              <p className="dvx:text-xs dvx:text-gray-500 dvx:font-medium dvx:truncate">
-                                {pos.pool.tokenA.split("-")[0]} /{" "}
-                                {pos.pool.tokenB.split("-")[0]}
-                              </p>
-                            </div>
-                            <div className="dvx:xs:text-right dvx:w-full dvx:xs:w-auto">
-                              <p className="dvx:font-bold dvx:text-gray-900 dvx:dark:text-white dvx:mb-0.5">
-                                {displayBalance} LP
-                              </p>
+                          {/* Same header layout as the Pools cards */}
+                          <div className="dvx:flex dvx:items-start dvx:justify-between dvx:gap-3 dvx:mb-3">
+                            <div className="dvx:flex dvx:items-center dvx:gap-2 dvx:flex-wrap dvx:min-w-0">
+                              <span className="dvx:font-black dvx:text-gray-900 dvx:dark:text-white dvx:text-base">
+                                {tickerA} / {tickerB}
+                              </span>
+                              {pos.pool.dcaReady && <DcaBadge tokenA={pos.pool.tokenA} tokenB={pos.pool.tokenB} />}
                               {posUsd !== null && posUsd > 0 && (
-                                <p className="dvx:text-xs dvx:text-amber-600 dvx:dark:text-amber-400 dvx:font-semibold dvx:mb-1">
+                                <span className="dvx:text-sm dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400">
                                   ≈ {formatUsd(posUsd)}
-                                </p>
+                                </span>
                               )}
-                              <div className="dvx:flex dvx:gap-3 dvx:xs:justify-end">
-                                <button
-                                  onClick={() =>
-                                    goTo("add-liquidity", {
-                                      tokenA: pos.pool.tokenA,
-                                      tokenB: pos.pool.tokenB,
-                                    })
-                                  }
-                                  className="dvx:text-xs dvx:font-bold dvx:text-green-500 dvx:bg-transparent dvx:hover:text-green-600 dvx:transition dvx:underline dvx:decoration-dashed"
+                              {poolSharePct != null && (
+                                <span className="dvx:text-[10px] dvx:font-semibold dvx:text-gray-400">
+                                  {t("liquidity_pool_share", {
+                                    pct: poolSharePct > 0 && poolSharePct < 0.01 ? "<0.01" : poolSharePct.toFixed(2),
+                                  })}
+                                </span>
+                              )}
+                              {pos.pool.apr?.aprPct != null && (
+                                <span className="dvx:text-[10px] dvx:font-bold dvx:text-green-600 dvx:dark:text-green-400">
+                                  {t("pools_apr", { pct: parseFloat(pos.pool.apr.aprPct).toFixed(2) })}
+                                </span>
+                              )}
+                              {estFees30dUsd != null && (
+                                <span
+                                  className="dvx:inline-flex dvx:items-center dvx:gap-1 dvx:text-[10px] dvx:font-semibold dvx:text-gray-400 dvx:cursor-help dvx:whitespace-nowrap"
+                                  title={t("liquidity_est_fees_tooltip", { days: Math.round(windowDays) })}
                                 >
-                                  {t("liquidity_add_btn")}
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    goTo("remove-liquidity", {
-                                      pool: pos.pool.address,
-                                    })
-                                  }
-                                  className="dvx:text-xs dvx:font-bold dvx:text-red-500 dvx:bg-transparent dvx:hover:text-red-600 dvx:transition dvx:underline dvx:decoration-dashed"
-                                >
-                                  {t("liquidity_remove_btn")}
-                                </button>
-                              </div>
+                                  {t("liquidity_est_fees", {
+                                    amount: estFees30dUsd === 0 ? "$0" : formatUsd(estFees30dUsd),
+                                  })}
+                                  <Info className="dvx:w-3 dvx:h-3 dvx:text-gray-400" />
+                                </span>
+                              )}
+                            </div>
+                            <div className="dvx:flex dvx:gap-3 dvx:shrink-0 dvx:mt-1">
+                              <button
+                                onClick={() =>
+                                  goTo("add-liquidity", {
+                                    tokenA: pos.pool.tokenA,
+                                    tokenB: pos.pool.tokenB,
+                                  })
+                                }
+                                className="dvx:whitespace-nowrap dvx:text-xs dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:transition"
+                              >
+                                + {t("liquidity_add_btn")}
+                              </button>
+                              <button
+                                onClick={() =>
+                                  goTo("remove-liquidity", {
+                                    pool: pos.pool.address,
+                                  })
+                                }
+                                className="dvx:whitespace-nowrap dvx:text-xs dvx:font-bold dvx:text-red-500 dvx:bg-transparent dvx:hover:text-red-600 dvx:transition"
+                              >
+                                − {t("liquidity_remove_btn")}
+                              </button>
                             </div>
                           </div>
-                          <div className="dvx:grid dvx:grid-cols-2 dvx:gap-2">
-                            <div className="dvx:rounded-xl dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:border dvx:border-gray-100 dvx:dark:border-[#333] dvx:px-3 dvx:py-2 dvx:text-xs">
-                              <p className="dvx:text-gray-400 dvx:mb-0.5">
-                                ≈ {pos.pool.tokenA.split("-")[0]}
-                              </p>
-                              <p className="dvx:font-bold dvx:text-gray-900 dvx:dark:text-white">
-                                {estimatedA}
-                              </p>
-                              {estimatedAUsd != null && estimatedAUsd > 0 && (
-                                <p className="dvx:text-gray-400 dvx:mt-0.5">
-                                  {formatUsd(estimatedAUsd)}
-                                </p>
-                              )}
-                            </div>
-                            <div className="dvx:rounded-xl dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:border dvx:border-gray-100 dvx:dark:border-[#333] dvx:px-3 dvx:py-2 dvx:text-xs">
-                              <p className="dvx:text-gray-400 dvx:mb-0.5">
-                                ≈ {pos.pool.tokenB.split("-")[0]}
-                              </p>
-                              <p className="dvx:font-bold dvx:text-gray-900 dvx:dark:text-white">
-                                {estimatedB}
-                              </p>
-                              {estimatedBUsd != null && estimatedBUsd > 0 && (
-                                <p className="dvx:text-gray-400 dvx:mt-0.5">
-                                  {formatUsd(estimatedBUsd)}
-                                </p>
-                              )}
-                            </div>
+                          <div className="dvx:grid dvx:grid-cols-2 dvx:gap-3">
+                            {shareBox(tickerA, estimatedA, estimatedAUsd)}
+                            {shareBox(tickerB, estimatedB, estimatedBUsd)}
                           </div>
+                          <p className="dvx:text-[10px] dvx:text-gray-400 dvx:mt-2 dvx:font-mono dvx:truncate">
+                            {displayBalance} {lpTokenTicker}
+                          </p>
                         </div>
                       );
                     })}

@@ -10,6 +10,7 @@ import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
 import { useGetUserESDT } from "../hooks/useGetUserEsdt";
 import { Card } from "../ui/Card";
+import { SectionTabs } from "../ui/NavTabs";
 import { TokenSelect, type TokenBalanceInfo } from "../ui/TokenSelect";
 import bigToHex from "../helpers/bigToHex";
 import strToHex from "../helpers/strToHex";
@@ -508,6 +509,13 @@ export const Swap = () => {
             : {}),
         },
       });
+      // Amount too small to route: the backend answers 200 with amountOut "0",
+      // an empty route and no tx — treat it as an error so Swap stays disabled.
+      if (!data.tx || !(new BigNumber(data.amountOut).gt(0))) {
+        setQuote(null);
+        setQuoteError(t("error_amount_too_low"));
+        return;
+      }
       setQuote(data);
     } catch (err: any) {
       const code = err?.response?.data?.code;
@@ -956,29 +964,8 @@ export const Swap = () => {
       <Card
         className="dvx:border-2 dvx:border-cyan-500/20"
         title={
-          <div className="dvx:flex dvx:flex-col dvx:xs:flex-row dvx:items-start dvx:xs:items-center dvx:justify-between dvx:w-full dvx:gap-4">
-            <div className="dvx:flex dvx:items-center dvx:gap-3">
-              <span className="dvx:text-xl">🔄</span>
-              <span className="dvx:text-lg dvx:font-black dvx:tracking-tight">Swap</span>
-            </div>
-            {/* Tabs: Swap / Liquidité */}
-            <div
-              style={p.tabBar}
-              className="dvx:flex dvx:gap-1.5 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:shadow-inner dvx:w-full dvx:xs:w-auto"
-            >
-              <button
-                style={p.activeTab}
-                className="dvx:flex-1 dvx:xs:flex-initial dvx:px-4 dvx:sm:px-6 dvx:py-2 dvx:text-sm dvx:font-black dvx:rounded-lg dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:text-amber-500 dvx:shadow-md dvx:transition-all"
-              >
-                {t("tab_swap")}
-              </button>
-              <button
-                onClick={() => goTo("liquidity")}
-                className="dvx:flex-1 dvx:xs:flex-initial dvx:px-4 dvx:sm:px-6 dvx:py-2 dvx:text-sm dvx:font-bold dvx:rounded-lg dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-900 dvx:dark:hover:text-white dvx:transition-all dvx:hover:bg-white/50 dvx:dark:hover:bg-white/5"
-              >
-                {t("tab_liquidity")}
-              </button>
-            </div>
+          <div className="dvx:flex dvx:flex-col dvx:items-start dvx:w-full dvx:gap-4">
+            <SectionTabs active="swap" />
           </div>
         }
         description={t("card_description")}

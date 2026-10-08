@@ -4,9 +4,13 @@ import { useTranslation } from 'react-i18next';
 import useLoadTranslations from '../hooks/useLoadTranslations';
 import axios from 'axios';
 import BigNumber from 'bignumber.js';
-import { Info } from 'lucide-react';
+import { ChevronDown, Info } from 'lucide-react';
 import { Card } from '../ui/Card';
+import { SectionTabs, LiquiditySubTabs } from '../ui/NavTabs';
+import { TvlChart, TvlChange } from '../ui/TvlChart';
+import { DcaBadge } from '../ui/DcaBadge';
 import { useSwapConfig } from '../context/SwapConfigContext';
+import { useWidgetSearchParams } from '../hooks/useWidgetSearchParams';
 import type { DexFilter, LiquidityPool, TokenMeta } from '../types';
 
 const VOXEGLD_IDENTIFIER = 'VOXEGLD-5872e5';
@@ -46,6 +50,8 @@ export const Pools = () => {
   const [tokenMap, setTokenMap] = React.useState<Record<string, TokenMeta>>({});
   const [loading, setLoading] = React.useState(true);
   const [dexFilter, setDexFilter] = React.useState<DexFilter>('DinoVox');
+  // Pool whose TVL chart is expanded (DinoVox only — history isn't tracked for external DEXes).
+  const [chartPool, setChartPool] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!apiUrl) return;
@@ -70,36 +76,26 @@ export const Pools = () => {
   const getTicker = (id: string) => tokenMap[id]?.ticker ?? id.split('-')[0];
   const getDecimals = (id: string) => tokenMap[id]?.decimals ?? 18;
 
+  // ?filter=<ticker|identifier> — on the DinoVox tab, only show pairs containing that token.
+  const [searchParams] = useWidgetSearchParams();
+  const tokenFilter = searchParams.get('filter')?.trim().toUpperCase() || null;
+  const matchesToken = (id: string) =>
+    id.toUpperCase() === tokenFilter || id.split('-')[0].toUpperCase() === tokenFilter || getTicker(id).toUpperCase() === tokenFilter;
+  const visiblePools = dexFilter === 'DinoVox' && tokenFilter
+    ? pools.filter((p) => matchesToken(p.tokenA) || matchesToken(p.tokenB))
+    : pools;
+
   return (
     <div className='dvx:flex dvx:flex-col dvx:w-full dvx:gap-6'>
       <Card
         className='dvx:border-2 dvx:border-cyan-500/20'
         title={
-          <div className='dvx:flex dvx:flex-col dvx:sm:flex-row dvx:items-start dvx:sm:items-center dvx:justify-between dvx:w-full dvx:gap-4'>
-            <div className='dvx:flex dvx:items-center dvx:gap-3'>
-              <span className='dvx:text-xl'>🌊</span>
-              <span className='dvx:text-lg dvx:font-black dvx:tracking-tight'>{t('pools_title')}</span>
-            </div>
-            <div className='dvx:flex dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:shadow-inner dvx:w-full dvx:sm:w-auto dvx:overflow-x-auto'>
-              <button
-                onClick={() => goTo('swap')}
-                className='dvx:flex-1 dvx:sm:flex-initial dvx:px-3 dvx:sm:px-4 dvx:py-2 dvx:text-sm dvx:font-bold dvx:rounded-lg dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-900 dvx:dark:hover:text-white dvx:transition-all dvx:hover:bg-white/50 dvx:dark:hover:bg-white/5 dvx:whitespace-nowrap'
-              >
-                {t('tab_swap')}
-              </button>
-              <button
-                onClick={() => goTo('liquidity')}
-                className='dvx:flex-1 dvx:sm:flex-initial dvx:px-3 dvx:sm:px-4 dvx:py-2 dvx:text-sm dvx:font-bold dvx:rounded-lg dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-900 dvx:dark:hover:text-white dvx:transition-all dvx:hover:bg-white/50 dvx:dark:hover:bg-white/5 dvx:whitespace-nowrap'
-              >
-                {t('tab_liquidity')}
-              </button>
-              <button className='dvx:flex-1 dvx:sm:flex-initial dvx:px-3 dvx:sm:px-4 dvx:py-2 dvx:text-sm dvx:font-black dvx:rounded-lg dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:text-amber-500 dvx:shadow-md dvx:transition-all dvx:whitespace-nowrap'>
-                {t('pools_title')}
-              </button>
-            </div>
+          <div className='dvx:flex dvx:flex-col dvx:items-start dvx:w-full dvx:gap-4'>
+            <SectionTabs active="liquidity" />
+            <LiquiditySubTabs active="pools" />
           </div>
         }
-        description={loading ? t('pools_loading_desc') : t('pools_count', { count: pools.length })}
+        description={loading ? t('pools_loading_desc') : t('pools_count', { count: visiblePools.length })}
       >
         <div className='dvx:flex dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:mt-4 dvx:w-fit'>
           {(['DinoVox', 'XExchange', 'JExchange', 'OneDex'] as DexFilter[]).map((dex) => (
@@ -139,10 +135,10 @@ export const Pools = () => {
             <div className='dvx:flex dvx:justify-center dvx:py-10'>
               <div className='dvx:w-6 dvx:h-6 dvx:border-2 dvx:border-amber-500 dvx:border-t-transparent dvx:rounded-full dvx:animate-spin' />
             </div>
-          ) : pools.length === 0 ? (
+          ) : visiblePools.length === 0 ? (
             <p className='dvx:text-center dvx:text-sm dvx:text-gray-500 dvx:dark:text-gray-400 dvx:py-8'>{t('pools_empty')}</p>
           ) : (
-            pools.map((pool) => {
+            visiblePools.map((pool) => {
               const tickerA = getTicker(pool.tokenA);
               const tickerB = getTicker(pool.tokenB);
               const decA = getDecimals(pool.tokenA);
@@ -158,13 +154,16 @@ export const Pools = () => {
                 : (resAUsd != null && resBUsd != null) ? resAUsd + resBUsd : null;
               return (
                 <div key={pool.address} className='dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:p-4'>
-                  <div className='dvx:flex dvx:items-center dvx:justify-between dvx:mb-3'>
+                  <div className='dvx:flex dvx:items-start dvx:justify-between dvx:gap-3 dvx:mb-3'>
                     <div className='dvx:flex dvx:items-center dvx:gap-2 dvx:flex-wrap'>
                       <span className='dvx:font-black dvx:text-gray-900 dvx:dark:text-white dvx:text-base'>{tickerA} / {tickerB}</span>
                       <span className='dvx:text-[10px] dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-green-100 dvx:text-green-600 dvx:dark:bg-green-900/30 dvx:dark:text-green-400 dvx:font-semibold dvx:border dvx:border-green-200 dvx:dark:border-green-800 dvx:uppercase'>{t('pools_active')}</span>
+                      {pool.dcaReady && <DcaBadge tokenA={pool.tokenA} tokenB={pool.tokenB} />}
                       {tvl != null && tvl > 0 && (
                         <span className='dvx:text-[10px] dvx:font-semibold dvx:text-gray-400'>
                           TVL {formatUsd(tvl)}
+                          {/* 24h only here — the per-period detail lives in the TVL chart below. */}
+                          {dexFilter === 'DinoVox' && <TvlChange pct={pool.tvlChange24hPct} suffix='24h' />}
                         </span>
                       )}
                       {pool.apr?.aprPct != null && (
@@ -185,11 +184,25 @@ export const Pools = () => {
                           </span>
                         </span>
                       )}
+                      {pool.apr?.feesUsdLp != null && Number.isFinite(parseFloat(pool.apr.feesUsdLp)) && (
+                        <span
+                          className='dvx:inline-flex dvx:items-center dvx:gap-1 dvx:text-[10px] dvx:font-semibold dvx:text-gray-400 dvx:cursor-help dvx:whitespace-nowrap'
+                          title={t('pools_fees_lp_tooltip', { days: Math.round(pool.apr.windowDays) })}
+                        >
+                          {t('pools_fees_lp', { amount: parseFloat(pool.apr.feesUsdLp) === 0 ? '$0' : formatUsd(parseFloat(pool.apr.feesUsdLp)) })}
+                          <Info className='dvx:w-3 dvx:h-3 dvx:text-gray-400' />
+                        </span>
+                      )}
+                      {pool.volume24h != null && (
+                        <span className='dvx:text-[10px] dvx:font-semibold dvx:text-gray-400'>
+                          {t('pools_swaps_24h', { count: pool.volume24h.swapCount })}
+                        </span>
+                      )}
                     </div>
                     {dexFilter === 'DinoVox' && (
                       <button
                         onClick={() => goTo('add-liquidity', { tokenA: pool.tokenA, tokenB: pool.tokenB })}
-                        className='dvx:text-xs dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:transition'
+                        className='dvx:shrink-0 dvx:mt-1 dvx:whitespace-nowrap dvx:text-xs dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:transition'
                       >
                         {t('pools_add')}
                       </button>
@@ -216,6 +229,19 @@ export const Pools = () => {
                   >
                     {pool.address}
                   </a>
+                  {dexFilter === 'DinoVox' && (
+                    <>
+                      <button
+                        type='button'
+                        onClick={() => setChartPool(chartPool === pool.address ? null : pool.address)}
+                        className='dvx:w-full dvx:flex dvx:items-center dvx:justify-between dvx:mt-3 dvx:pt-2 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#333] dvx:text-xs dvx:font-semibold dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-600 dvx:dark:hover:text-gray-200 dvx:transition-colors'
+                      >
+                        <span>{t('pools_tvl_chart_toggle')}</span>
+                        <ChevronDown className={`dvx:h-3.5 dvx:w-3.5 dvx:transition-transform ${chartPool === pool.address ? 'dvx:rotate-180' : ''}`} />
+                      </button>
+                      {chartPool === pool.address && <TvlChart apiUrl={apiUrl} address={pool.address} tickerA={tickerA} tickerB={tickerB} />}
+                    </>
+                  )}
                 </div>
               );
             })

@@ -20,6 +20,8 @@ export type SwapToken = DexToken;
 export interface PoolApr {
   aprPct: string;
   windowDays: number;
+  /** Fees earned by LPs (USD) over the same `windowDays` window as aprPct. */
+  feesUsdLp?: string | null;
 }
 
 export interface PoolInfo {
@@ -33,6 +35,8 @@ export interface PoolInfo {
   isActive: boolean;
   lpTokenPriceUsd?: string | null;
   apr?: PoolApr | null;
+  /** Swaps over the last 24h (/pools list, independent of price). */
+  volume24h?: { swapCount: number };
 }
 
 /** Pool with liquidity data — fields required for add/remove liquidity operations */
@@ -43,6 +47,14 @@ export interface LiquidityPool extends Required<Pick<PoolInfo, 'lpToken' | 'rese
   isActive: boolean;
   lpTokenPriceUsd?: string | null;
   apr?: PoolApr | null;
+  /** Swaps over the last 24h (/pools list, independent of price). */
+  volume24h?: { swapCount: number };
+  tvlUsd?: string | null;
+  /** TVL change vs. the snapshot 24h / 7d ago (DinoVox pools). null = no snapshot in that window yet. */
+  tvlChange24hPct?: string | null;
+  tvlChange7dPct?: string | null;
+  /** Pair is whitelisted on the dca-router — a DCA order can be created on it. */
+  dcaReady?: boolean;
 }
 
 /** User's LP position for a specific pool */
@@ -131,6 +143,40 @@ export interface QuoteResponse {
   /** One TxMeta per `routes[]` entry, same order — signable as-is. */
   txs?: QuoteTx[];
   splitComparison?: SplitComparison;
+}
+
+/** A DCA order as returned by GET /dca/orders (dca-escrow's on-chain Order mirrored in the backend DB). */
+export interface DcaOrder {
+  orderId: string; // u64 on-chain, string-encoded for JSON precision
+  owner: string;
+  tokenIn: string;
+  tokenOut: string;
+  tokenInTicker: string;
+  tokenOutTicker: string;
+  tokenInDecimals: number;
+  tokenOutDecimals: number;
+  tokenInLogoUrl?: string | null;
+  tokenOutLogoUrl?: string | null;
+  amountPerExecution: string;
+  intervalSeconds: number;
+  remainingExecutions: number;
+  minAmountOut: string;
+  maxAmountOut: string;
+  /** EGLD (attoEGLD) locked per execution, frozen at creation — "0" if waived (dca-escrow V5). */
+  gasFeePerExecution: string;
+  nextExecutionAt: string; // ISO date
+  lastExecutedAt: string | null;
+  status: "active" | "completed" | "cancelled";
+}
+
+/** One successful execution of a DCA order, as returned by GET /dca/orders/:orderId/executions. */
+export interface DcaExecution {
+  txHash: string;
+  amountIn: string;
+  amountOut: string;
+  /** EGLD paid to the executor for this specific execution — "0" if waived. */
+  gasFeePaid: string;
+  timestamp: string; // ISO date
 }
 
 /** Arbitrage opportunity response */
