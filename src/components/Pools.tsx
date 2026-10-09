@@ -159,11 +159,10 @@ export const Pools = () => {
                       <span className='dvx:font-black dvx:text-gray-900 dvx:dark:text-white dvx:text-base'>{tickerA} / {tickerB}</span>
                       <span className='dvx:text-[10px] dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-green-100 dvx:text-green-600 dvx:dark:bg-green-900/30 dvx:dark:text-green-400 dvx:font-semibold dvx:border dvx:border-green-200 dvx:dark:border-green-800 dvx:uppercase'>{t('pools_active')}</span>
                       {pool.dcaReady && <DcaBadge tokenA={pool.tokenA} tokenB={pool.tokenB} />}
-                      {tvl != null && tvl > 0 && (
+                      {/* DinoVox: TVL + 24h change live on the "TVL history" toggle row below. */}
+                      {dexFilter !== 'DinoVox' && tvl != null && tvl > 0 && (
                         <span className='dvx:text-[10px] dvx:font-semibold dvx:text-gray-400'>
                           TVL {formatUsd(tvl)}
-                          {/* 24h only here — the per-period detail lives in the TVL chart below. */}
-                          {dexFilter === 'DinoVox' && <TvlChange pct={pool.tvlChange24hPct} suffix='24h' />}
                         </span>
                       )}
                       {pool.apr?.aprPct != null && (
@@ -237,7 +236,15 @@ export const Pools = () => {
                         className='dvx:w-full dvx:flex dvx:items-center dvx:justify-between dvx:mt-3 dvx:pt-2 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#333] dvx:text-xs dvx:font-semibold dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-600 dvx:dark:hover:text-gray-200 dvx:transition-colors'
                       >
                         <span>{t('pools_tvl_chart_toggle')}</span>
-                        <ChevronDown className={`dvx:h-3.5 dvx:w-3.5 dvx:transition-transform ${chartPool === pool.address ? 'dvx:rotate-180' : ''}`} />
+                        <span className='dvx:flex dvx:items-center dvx:gap-2'>
+                          {tvl != null && tvl > 0 && (
+                            <span className='dvx:text-[10px] dvx:font-semibold dvx:text-gray-400 dvx:whitespace-nowrap'>
+                              TVL {formatUsd(tvl)}
+                              <TvlChange pct={pool.tvlChange24hPct} suffix='24h' />
+                            </span>
+                          )}
+                          <ChevronDown className={`dvx:h-3.5 dvx:w-3.5 dvx:transition-transform ${chartPool === pool.address ? 'dvx:rotate-180' : ''}`} />
+                        </span>
                       </button>
                       {chartPool === pool.address && <TvlChart apiUrl={apiUrl} address={pool.address} tickerA={tickerA} tickerB={tickerB} />}
                     </>
