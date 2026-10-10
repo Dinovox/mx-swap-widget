@@ -3,6 +3,7 @@ import axios from "axios";
 import { useTranslation } from "react-i18next";
 import { useGoTo } from "../context/SwapViewContext";
 import { useWidgetSearchParams } from "../hooks/useWidgetSearchParams";
+import { fetchAllPools } from "../helpers/fetchAllPools";
 import { ArrowLeft, ArrowRight, Plus, Shuffle, Info, ChevronDown } from "lucide-react";
 import useLoadTranslations from "../hooks/useLoadTranslations";
 import { Address, Transaction } from "@multiversx/sdk-core";
@@ -250,7 +251,9 @@ export const AddLiquidity = () => {
         const [tokensRes, hubTokensRes, poolsRes] = await Promise.all([
           axios.get(`${apiUrl}/tokens`),
           axios.get(`${apiUrl}/tokens/hub`).catch(() => ({ data: [] })),
-          axios.get(`${apiUrl}/pools`).catch(() => ({ data: { pools: [] } })),
+          fetchAllPools(apiUrl)
+            .then((pools) => ({ data: { pools } }))
+            .catch(() => ({ data: { pools: [] } })),
         ]);
         const allLpTokens: string[] = (poolsRes.data.pools || [])
           .map((p: any) => p.lpToken)

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useGoTo } from "../context/SwapViewContext";
 import { useWidgetSearchParams } from "../hooks/useWidgetSearchParams";
+import { fetchAllPools } from "../helpers/fetchAllPools";
 import { ArrowLeft, ArrowDown } from "lucide-react";
 import { Address, Transaction } from "@multiversx/sdk-core";
 import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
@@ -76,10 +77,9 @@ export const RemoveLiquidity = () => {
   useEffect(() => {
     if (!apiUrl) return;
     setPoolsLoading(true);
-    axios
-      .get(`${apiUrl}/pools`)
-      .then((res) => {
-        const activePools = (res.data.pools || []).filter(
+    fetchAllPools(apiUrl)
+      .then((allPools) => {
+        const activePools = allPools.filter(
           (p: LiquidityPool) => p.isActive,
         );
         setPools(activePools);

@@ -50,6 +50,32 @@ export const Pools = () => {
   const [tokenMap, setTokenMap] = React.useState<Record<string, TokenMeta>>({});
   const [loading, setLoading] = React.useState(true);
   const [dexFilter, setDexFilter] = React.useState<DexFilter>('DinoVox');
+  // Sorted server-side (desc) so it stays correct across "Load more" pages.
+  const [sortBy, setSortBy] = React.useState<'tvlUsd' | 'aprPct'>('tvlUsd');
+  // APR is only computed for DinoVox pools (null on external DEXes), so the
+  // APR sort — and its toggle — only exist on that tab.
+  const effectiveSortBy = dexFilter === 'DinoVox' ? sortBy : 'tvlUsd';
+  // /pools is paginated (sorted by TVL or APR desc server-side). DinoVox: one page at
+  // the API max covers it (and keeps the ?filter= below exhaustive); external
+  // DEXes (1000+ pools) load 50 at a time behind "Load more".
+  const pageSize = dexFilter === 'DinoVox' ? 200 : 50;
+  const [total, setTotal] = React.useState<number | null>(null);
+  const [fetchedCount, setFetchedCount] = React.useState(0);
+  const [loadingMore, setLoadingMore] = React.useState(false);
+  const fetchPage = (offset: number) =>
+    axios.get(`${apiUrl}/pools`, { params: { dexType: dexFilter, sortBy: effectiveSortBy, limit: pageSize, offset } });
+  const loadMore = () => {
+    setLoadingMore(true);
+    fetchPage(fetchedCount)
+      .then((res) => {
+        const page: LiquidityPool[] = res.data.pools || [];
+        setPools((prev) => [...prev, ...page.filter((p) => p.isActive)]);
+        setFetchedCount((c) => c + page.length);
+        setTotal(res.data.pagination?.total ?? null);
+      })
+      .catch(console.error)
+      .finally(() => setLoadingMore(false));
+  };
   // Pool whose TVL chart is expanded (DinoVox only — history isn't tracked for external DEXes).
   const [chartPool, setChartPool] = React.useState<string | null>(null);
 
@@ -57,11 +83,13 @@ export const Pools = () => {
     if (!apiUrl) return;
     setLoading(true);
     Promise.all([
-      axios.get(`${apiUrl}/pools`, { params: { dexType: dexFilter } }),
+      fetchPage(0),
       axios.get(`${apiUrl}/tokens`),
     ]).then(([poolsRes, tokensRes]) => {
-      const activePools: LiquidityPool[] = (poolsRes.data.pools || []).filter((p: LiquidityPool) => p.isActive);
-      setPools(activePools);
+      const page: LiquidityPool[] = poolsRes.data.pools || [];
+      setPools(page.filter((p) => p.isActive));
+      setFetchedCount(page.length);
+      setTotal(poolsRes.data.pagination?.total ?? null);
       // Already scoped to this exact dexType filter server-side — no
       // client-side re-aggregation needed when switching tabs.
       setSummary(poolsRes.data.summary ?? null);
@@ -71,17 +99,20 @@ export const Pools = () => {
       }
       setTokenMap(map);
     }).catch(console.error).finally(() => setLoading(false));
-  }, [dexFilter, apiUrl]);
+  }, [dexFilter, effectiveSortBy, apiUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getTicker = (id: string) => tokenMap[id]?.ticker ?? id.split('-')[0];
   const getDecimals = (id: string) => tokenMap[id]?.decimals ?? 18;
 
-  // ?filter=<ticker|identifier> — on the DinoVox tab, only show pairs containing that token.
+  // Token search (ticker or identifier, partial match), prefilled from
+  // ?filter=<ticker|identifier>. Client-side over the loaded pools: exhaustive
+  // on DinoVox (single 200-pool page), only the pages loaded so far elsewhere.
   const [searchParams] = useWidgetSearchParams();
-  const tokenFilter = searchParams.get('filter')?.trim().toUpperCase() || null;
+  const [tokenSearch, setTokenSearch] = React.useState(() => searchParams.get('filter')?.trim() ?? '');
+  const tokenFilter = tokenSearch.trim().toUpperCase() || null;
   const matchesToken = (id: string) =>
-    id.toUpperCase() === tokenFilter || id.split('-')[0].toUpperCase() === tokenFilter || getTicker(id).toUpperCase() === tokenFilter;
-  const visiblePools = dexFilter === 'DinoVox' && tokenFilter
+    !!tokenFilter && (id.toUpperCase().includes(tokenFilter) || getTicker(id).toUpperCase().includes(tokenFilter));
+  const visiblePools = tokenFilter
     ? pools.filter((p) => matchesToken(p.tokenA) || matchesToken(p.tokenB))
     : pools;
 
@@ -95,7 +126,7 @@ export const Pools = () => {
             <LiquiditySubTabs active="pools" />
           </div>
         }
-        description={loading ? t('pools_loading_desc') : t('pools_count', { count: visiblePools.length })}
+        description={loading ? t('pools_loading_desc') : t('pools_count', { count: tokenFilter ? visiblePools.length : (total ?? visiblePools.length) })}
       >
         <div className='dvx:flex dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:mt-4 dvx:w-fit'>
           {(['DinoVox', 'XExchange', 'JExchange', 'OneDex'] as DexFilter[]).map((dex) => (
@@ -111,6 +142,35 @@ export const Pools = () => {
               {dex}
             </button>
           ))}
+        </div>
+        <div className='dvx:flex dvx:flex-wrap dvx:items-center dvx:gap-2 dvx:mt-3'>
+          <input
+            type='text'
+            value={tokenSearch}
+            onChange={(e) => setTokenSearch(e.target.value)}
+            placeholder={t('pools_search_placeholder')}
+            className='dvx:flex-1 dvx:min-w-[160px] dvx:rounded-xl dvx:border dvx:border-gray-200 dvx:dark:border-[#444] dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-1.5 dvx:text-xs dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 dvx:focus:ring-amber-500'
+          />
+          {dexFilter === 'DinoVox' && (
+          <div className='dvx:flex dvx:items-center dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl'>
+            <span className='dvx:px-2 dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400'>
+              {t('pools_sort_label')}
+            </span>
+            {(['tvlUsd', 'aprPct'] as const).map((key) => (
+              <button
+                key={key}
+                onClick={() => setSortBy(key)}
+                className={`dvx:px-3 dvx:py-1 dvx:text-xs dvx:font-bold dvx:rounded-lg dvx:transition-all ${
+                  sortBy === key
+                    ? 'dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:text-amber-500 dvx:shadow-md'
+                    : 'dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-700 dvx:dark:hover:text-white'
+                }`}
+              >
+                {key === 'tvlUsd' ? 'TVL' : 'APR'}
+              </button>
+            ))}
+          </div>
+          )}
         </div>
         {summary && (
           <div className='dvx:rounded-2xl dvx:border dvx:border-amber-200 dvx:dark:border-amber-800/50 dvx:bg-amber-50 dvx:dark:bg-amber-900/10 dvx:px-4 dvx:py-3 dvx:mt-4 dvx:flex dvx:flex-wrap dvx:items-center dvx:justify-between dvx:gap-2'>
@@ -252,6 +312,16 @@ export const Pools = () => {
                 </div>
               );
             })
+          )}
+          {!loading && total != null && fetchedCount < total && (
+            <button
+              type='button'
+              onClick={loadMore}
+              disabled={loadingMore}
+              className='dvx:w-full dvx:py-2.5 dvx:rounded-xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:text-sm dvx:font-semibold dvx:text-gray-500 dvx:dark:text-gray-300 dvx:bg-transparent dvx:hover:text-amber-500 dvx:hover:border-amber-400 dvx:transition-colors dvx:disabled:opacity-50'
+            >
+              {loadingMore ? t('pools_loading_more') : t('pools_load_more', { shown: fetchedCount, total })}
+            </button>
           )}
           <button
             onClick={() => goTo('create-pool')}

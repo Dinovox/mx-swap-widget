@@ -3,6 +3,7 @@ import axios from "axios";
 import { useTranslation } from "react-i18next";
 import { useGoTo } from "../context/SwapViewContext";
 import { useWidgetSearchParams } from "../hooks/useWidgetSearchParams";
+import { fetchAllPools } from "../helpers/fetchAllPools";
 import useLoadTranslations from "../hooks/useLoadTranslations";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 import { Address, Transaction } from "@multiversx/sdk-core";
@@ -109,7 +110,9 @@ export const CreatePool = () => {
     setTokensLoading(true);
     Promise.all([
       axios.get(`${apiUrl}/tokens`).catch(() => ({ data: { tokens: [] } })),
-      axios.get(`${apiUrl}/pools`).catch(() => ({ data: { pools: [] } })),
+      fetchAllPools(apiUrl)
+        .then((pools) => ({ data: { pools } }))
+        .catch(() => ({ data: { pools: [] } })),
     ])
       .then(([tokensRes, poolsRes]) => {
         const allTokens: DexToken[] = (tokensRes.data?.tokens || []).map(

@@ -3,6 +3,7 @@ import { Info } from "lucide-react";
 import { Card } from "../ui/Card";
 import { SectionTabs, LiquiditySubTabs } from "../ui/NavTabs";
 import { DcaBadge } from "../ui/DcaBadge";
+import { fetchAllPools } from "../helpers/fetchAllPools";
 
 const formatUsd = (value: number): string => {
   if (value < 0.01) return "<$0.01";
@@ -38,7 +39,7 @@ export const Liquidity = () => {
     if (!apiUrl) return;
     setPoolsLoading(true);
     Promise.all([
-      axios.get(`${apiUrl}/pools`),
+      fetchAllPools(apiUrl).then((pools) => ({ data: { pools } })),
       axios.get(`${apiUrl}/tokens`).catch(() => ({ data: { tokens: [] } })),
     ])
       .then(([poolsRes, tokensRes]) => {
