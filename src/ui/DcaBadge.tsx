@@ -24,7 +24,7 @@ export const DcaBadge = ({ tokenA, tokenB }: { tokenA: string; tokenB: string })
       type="button"
       onClick={() => goTo("dca", dcaDirection(tokenA, tokenB))}
       title={t("pools_dca_ready_tooltip")}
-      className="dvx:inline-flex dvx:items-center dvx:gap-1 dvx:text-[10px] dvx:font-semibold dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-500 dvx:dark:text-gray-300 dvx:border dvx:border-gray-200 dvx:dark:border-[#3a3a3a] dvx:hover:text-amber-500 dvx:hover:border-amber-400 dvx:transition-colors dvx:whitespace-nowrap"
+      className="dvx:inline-flex dvx:w-fit dvx:shrink-0 dvx:self-end dvx:items-center dvx:gap-1 dvx:text-[10px] dvx:font-semibold dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-500 dvx:dark:text-gray-300 dvx:border dvx:border-gray-200 dvx:dark:border-[#3a3a3a] dvx:hover:text-amber-500 dvx:hover:border-amber-400 dvx:transition-colors dvx:whitespace-nowrap"
     >
       <span aria-hidden>⏱️</span>
       {t("tab_dca")}

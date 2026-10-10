@@ -55,6 +55,8 @@ export interface LiquidityPool extends Required<Pick<PoolInfo, 'lpToken' | 'rese
   tvlChange7dPct?: string | null;
   /** Pair is whitelisted on the dca-router — a DCA order can be created on it. */
   dcaReady?: boolean;
+  /** Source DEX (returned by /pools). */
+  dexType?: DexFilter;
 }
 
 /** User's LP position for a specific pool */
