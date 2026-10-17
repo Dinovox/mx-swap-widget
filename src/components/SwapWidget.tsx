@@ -13,6 +13,8 @@ import { RemoveLiquidity } from "./RemoveLiquidity";
 import { CreatePool } from "./CreatePool";
 import { Pools } from "./Pools";
 import { Dca } from "./Dca";
+import { Farms } from "./Farms";
+import { FarmsRewards } from "./FarmsRewards";
 
 type SwapWidgetProps = Pick<SwapConfig, 'defaultFrom' | 'defaultTo' | 'whitelist' | 'blacklist' | 'address' | 'networkApiAddress' | 'chainId' | 'explorerAddress' | 'onSignTransactions'>;
 
@@ -75,6 +77,9 @@ export const SwapWidget: React.FC<SwapWidgetProps> = (props) => {
       case 'create-pool':      return <CreatePool />;
       case 'pools':            return <Pools />;
       case 'dca':              return <Dca />;
+      case 'farms':            return <Farms />;
+      // Not linked from the UI on purpose — reachable via #farms-rewards only.
+      case 'farms-rewards':    return <FarmsRewards />;
       default:                 return <Swap />;
     }
   };

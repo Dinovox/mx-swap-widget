@@ -10,6 +10,7 @@ export { RemoveLiquidity } from "./components/RemoveLiquidity";
 export { CreatePool } from "./components/CreatePool";
 export { Pools } from "./components/Pools";
 export { Dca } from "./components/Dca";
+export { Farms } from "./components/Farms";
 
 // Context / Config
 export { SwapConfigProvider, useSwapConfig } from "./context/SwapConfigContext";

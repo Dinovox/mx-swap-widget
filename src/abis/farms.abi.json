@@ -1,0 +1,960 @@
+{
+    "buildInfo": {
+        "contractCrate": {
+            "name": "farms",
+            "version": "0.0.2"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.63.3"
+        }
+    },
+    "name": "StakingContract",
+    "constructor": {
+        "inputs": [
+            {
+                "name": "remove_fees_token",
+                "type": "TokenIdentifier"
+            },
+            {
+                "name": "fee_wallet",
+                "type": "Address"
+            },
+            {
+                "name": "remove_fees_price",
+                "type": "BigUint"
+            },
+            {
+                "name": "fee_percent",
+                "type": "u64"
+            }
+        ],
+        "outputs": []
+    },
+    "upgradeConstructor": {
+        "inputs": [],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "name": "issueFarmToken",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "payableInTokens": [
+                "EGLD"
+            ],
+            "inputs": [
+                {
+                    "name": "token_display_name",
+                    "type": "bytes"
+                },
+                {
+                    "name": "token_ticker",
+                    "type": "bytes"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "restrictFarmTokenTransfer",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "getEffectiveMaxActiveRewardsPerPosition",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "u32"
+                }
+            ]
+        },
+        {
+            "name": "fund",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "stake",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "subscribeReward",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "unstake",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "claimRewards",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "claimAllRewards",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "unsubscribeReward",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "forceUnsubscribeReward",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "removePoolFees",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "unlockExtraFlux",
+            "mutability": "mutable",
+            "payableInTokens": [
+                "*"
+            ],
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setFees",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "fees",
+                    "type": "u64"
+                },
+                {
+                    "name": "opt_ms_to_max",
+                    "type": "optional<u64>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setConfig",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "remove_fees_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "fee_wallet",
+                    "type": "Address"
+                },
+                {
+                    "name": "remove_fees_price",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "fee_percent",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "addWhitelistedRewardToken",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "opt_min_fund_amount",
+                    "type": "optional<BigUint>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "removeWhitelistedRewardToken",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setMinFundAmount",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "min_amount",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setMinFundAmountNonWhitelisted",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "min_amount",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "pausePool",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "unpausePool",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setDefaultMsToMax",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "ms",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setMaxActiveRewardsPerPosition",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "max",
+                    "type": "u32"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setDefaultMaxActiveRewardsPerPosition",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "max",
+                    "type": "u32"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setMaxActiveRewardsPerPositionCeiling",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "max",
+                    "type": "u32"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setExtraFluxPrice",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "price",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "ejectTokens",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "batch",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "closePool",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "endRewardStream",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "getTokenPosition",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "List<BigUint>"
+                }
+            ]
+        },
+        {
+            "name": "getAllTokenPosition",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "List<TokenPositionView>"
+                }
+            ]
+        },
+        {
+            "name": "getAllStakingPosition",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "addr",
+                    "type": "Address"
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "List<StakingPositionView>"
+                }
+            ]
+        },
+        {
+            "name": "getAllUserRewards",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "addr",
+                    "type": "Address"
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "List<RewardsView>"
+                }
+            ]
+        },
+        {
+            "name": "getStakingPosition",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "addr",
+                    "type": "Address"
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "List<BigUint>"
+                }
+            ]
+        },
+        {
+            "name": "calculateRewardsForUser",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "addr",
+                    "type": "Address"
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "isPaused",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "pause",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "unpause",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "getRemoveFeesToken",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "TokenIdentifier"
+                }
+            ]
+        },
+        {
+            "name": "getFeeWallet",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "Address"
+                }
+            ]
+        },
+        {
+            "name": "getFeePercent",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "getRemoveFeesPrice",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "getDefaultMsToMax",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "getStakedTokens",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "variadic<TokenIdentifier>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "getRewardedTokens",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "variadic<TokenIdentifier>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "getStakedAddresses",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "variadic<Address>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "getUserStake",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "user",
+                    "type": "Address"
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "getTotalStaked",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "getUserActiveRewards",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "user",
+                    "type": "Address"
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "variadic<TokenIdentifier>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "getMaxActiveRewardsPerPosition",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "u32"
+                }
+            ]
+        },
+        {
+            "name": "getDefaultMaxActiveRewardsPerPosition",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u32"
+                }
+            ]
+        },
+        {
+            "name": "getMaxActiveRewardsPerPositionCeiling",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u32"
+                }
+            ]
+        },
+        {
+            "name": "getExtraFluxPrice",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "getFarmTokenId",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "TokenIdentifier"
+                }
+            ]
+        },
+        {
+            "name": "getStakedTokenNonce",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "isFarmTokenTransferRestricted",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "getWhitelistedRewardTokens",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "variadic<TokenIdentifier>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "getMinFundAmount",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "reward_token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "name": "getMinFundAmountNonWhitelisted",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        }
+    ],
+    "promisesCallbackNames": [
+        "farm_token_issue_callback",
+        "restrict_farm_token_transfer_callback"
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {
+        "RewardsView": {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "rewards",
+                    "type": "BigUint"
+                }
+            ]
+        },
+        "StakingPositionView": {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "last_action_timestamp_ms",
+                    "type": "u64"
+                }
+            ]
+        },
+        "TokenPosition": {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "fee_percentage",
+                    "type": "u64"
+                },
+                {
+                    "name": "balance",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "total_rewarded",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "last_fund_timestamp_ms",
+                    "type": "u64"
+                },
+                {
+                    "name": "paused",
+                    "type": "bool"
+                },
+                {
+                    "name": "ms_to_max",
+                    "type": "u64"
+                }
+            ]
+        },
+        "TokenPositionView": {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "token_position",
+                    "type": "TokenPosition"
+                },
+                {
+                    "name": "total_staked",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "staked_addresses",
+                    "type": "u32"
+                }
+            ]
+        }
+    }
+}

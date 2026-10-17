@@ -9,6 +9,9 @@ import { Card } from '../ui/Card';
 import { SectionTabs } from '../ui/NavTabs';
 import { TvlChart, TvlChange } from '../ui/TvlChart';
 import { DcaBadge } from '../ui/DcaBadge';
+import { FarmBadge } from '../ui/FarmBadge';
+import { fetchRewardedStakedTokens, fetchUserFarmedBalances } from '../helpers/farms';
+import { fetchFarmPositionsApi } from '../helpers/farmsApi';
 import { RecentSwaps } from '../ui/RecentSwaps';
 import { useSwapConfig } from '../context/SwapConfigContext';
 import { useWidgetSearchParams } from '../hooks/useWidgetSearchParams';
@@ -24,6 +27,11 @@ interface PoolsSummary {
   poolCountPriced: number;
   tvlUsd: string | null;
   volume24hSwapCount: number;
+}
+
+/** APR display: 2 decimals below 100%, grouped integer above (farm APRs can be huge on tiny TVL). */
+function fmtPct(v: number): string {
+  return v >= 100 ? Math.round(v).toLocaleString('en-US') : v.toFixed(2);
 }
 
 function formatUsd(value: number): string {
@@ -52,7 +60,7 @@ function formatAmount(bn: BigNumber): string {
  * share, estimated fees, per-token share and a Remove action.
  */
 export const Pools = () => {
-  const { apiUrl, explorerAddress, address, networkApiAddress } = useSwapConfig();
+  const { apiUrl, explorerAddress, address, networkApiAddress, farmsAddress, chainId } = useSwapConfig();
   const goTo = useGoTo();
   const { t } = useTranslation('swap');
   useLoadTranslations('swap');
@@ -63,7 +71,8 @@ export const Pools = () => {
   const [loading, setLoading] = React.useState(true);
   const [dexFilter, setDexFilter] = React.useState<DexFilter>('DinoVox');
   // Sorted server-side (desc) so it stays correct across "Load more" pages.
-  const [sortBy, setSortBy] = React.useState<'tvlUsd' | 'aprPct'>('tvlUsd');
+  // aprPct = LP-fee APR only; totalAprPct = fee APR + farm APR (server-side sort).
+  const [sortBy, setSortBy] = React.useState<'tvlUsd' | 'aprPct' | 'totalAprPct'>('tvlUsd');
   // APR is only computed for DinoVox pools (null on external DEXes), so the
   // APR sort — and its toggle — only exist on that tab.
   const effectiveSortBy = dexFilter === 'DinoVox' ? sortBy : 'tvlUsd';
@@ -128,13 +137,52 @@ export const Pools = () => {
     }
     fetchAllPools(apiUrl).then(setAllPools).catch(console.error);
   }, [apiUrl, address]);
-  const lpBalances = React.useMemo(() => {
+  /* ---- Farms: LP staked in farms (counts as the user's liquidity, 1:1 via
+     the position token) + which LP tokens have live farm rewards ---- */
+  const [farmed, setFarmed] = React.useState<Record<string, string>>({});
+  // Fallback only: LP tokens with live rewards read on-chain, used when the
+  // /pools response predates the `farm` field.
+  const [rewardedLpsOnChain, setRewardedLpsOnChain] = React.useState<Set<string>>(new Set());
+  const poolsHaveFarmField = pools.some((p) => p.farm !== undefined);
+  React.useEffect(() => {
+    if (poolsHaveFarmField || loading || !farmsAddress || !networkApiAddress || !chainId) return;
+    fetchRewardedStakedTokens(networkApiAddress, chainId, farmsAddress).then(setRewardedLpsOnChain).catch(() => {});
+  }, [poolsHaveFarmField, loading, farmsAddress, networkApiAddress, chainId]);
+  const hasLiveFarm = (pool: LiquidityPool) =>
+    pool.farm !== undefined
+      ? !!pool.farm?.rewards.some((r) => !r.paused && r.balance !== '0')
+      : rewardedLpsOnChain.has(pool.lpToken);
+  React.useEffect(() => {
+    if (!farmsAddress || !address) {
+      setFarmed({});
+      return;
+    }
+    // LP staked in farms = position-token balance (1:1), from /farms/positions;
+    // on-chain read of the position MetaESDTs only if that route fails.
+    fetchFarmPositionsApi(apiUrl, address)
+      .then((map) => setFarmed(Object.fromEntries(Object.entries(map).map(([lp, p]) => [lp, p.positionTokenBalance ?? '0']))))
+      .catch(() => {
+        if (!networkApiAddress || !chainId) return setFarmed({});
+        fetchUserFarmedBalances(networkApiAddress, chainId, farmsAddress, address).then(setFarmed).catch(() => setFarmed({}));
+      });
+  }, [apiUrl, farmsAddress, networkApiAddress, chainId, address]);
+
+  // Wallet LP only — what Remove liquidity can actually spend.
+  const walletLp = React.useMemo(() => {
     const map = new Map<string, string>();
     for (const w of (walletTokens ?? []) as Array<{ identifier?: string; balance?: string }>) {
       if (w?.identifier && w?.balance && new BigNumber(w.balance).gt(0)) map.set(w.identifier, w.balance);
     }
     return map;
   }, [walletTokens]);
+  // Total LP owned = wallet + staked in farms.
+  const lpBalances = React.useMemo(() => {
+    const map = new Map(walletLp);
+    for (const [lp, raw] of Object.entries(farmed)) {
+      if (new BigNumber(raw).gt(0)) map.set(lp, new BigNumber(map.get(lp) ?? '0').plus(raw).toFixed(0));
+    }
+    return map;
+  }, [walletLp, farmed]);
   const lpBalanceOf = (pool: LiquidityPool) => (pool.lpToken ? lpBalances.get(pool.lpToken) ?? null : null);
   // LP tokens are 18 decimals on every supported pair.
   const positionUsd = (pool: LiquidityPool, balance: string) =>
@@ -197,12 +245,13 @@ export const Pools = () => {
         }
         description={loading ? t('pools_loading_desc') : t('pools_count', { count: tokenFilter ? visiblePools.length : (total ?? visiblePools.length) })}
       >
-        <div className='dvx:flex dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:mt-4 dvx:w-fit'>
+        {/* Full width with equal columns on mobile (4 DEX names must fit), compact from sm up. */}
+        <div className='dvx:flex dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:mt-4 dvx:w-full dvx:sm:w-fit'>
           {(['DinoVox', 'XExchange', 'JExchange', 'OneDex'] as DexFilter[]).map((dex) => (
             <button
               key={dex}
               onClick={() => setDexFilter(dex)}
-              className={`dvx:px-4 dvx:py-1.5 dvx:text-xs dvx:font-bold dvx:rounded-lg dvx:transition-all ${
+              className={`dvx:flex-1 dvx:sm:flex-initial dvx:min-w-0 dvx:truncate dvx:px-1.5 dvx:sm:px-4 dvx:py-1.5 dvx:text-[11px] dvx:sm:text-xs dvx:font-bold dvx:rounded-lg dvx:transition-all ${
                 dexFilter === dex
                   ? 'dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:text-amber-500 dvx:shadow-md'
                   : 'dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-700 dvx:dark:hover:text-white'
@@ -225,7 +274,7 @@ export const Pools = () => {
             <span className='dvx:px-2 dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400'>
               {t('pools_sort_label')}
             </span>
-            {(['tvlUsd', 'aprPct'] as const).map((key) => (
+            {(['tvlUsd', 'aprPct', 'totalAprPct'] as const).map((key) => (
               <button
                 key={key}
                 onClick={() => setSortBy(key)}
@@ -235,7 +284,7 @@ export const Pools = () => {
                     : 'dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-700 dvx:dark:hover:text-white'
                 }`}
               >
-                {key === 'tvlUsd' ? 'TVL' : 'APR'}
+                {key === 'tvlUsd' ? 'TVL' : key === 'aprPct' ? 'APR' : t('pools_sort_total_apr')}
               </button>
             ))}
           </div>
@@ -306,7 +355,35 @@ export const Pools = () => {
                 : (resAUsd != null && resBUsd != null) ? resAUsd + resBUsd : null;
 
               // ---- Wallet position in this pool (if any) ----
+              // Farm APR on top of the LP-fee APR. A participant can only follow
+              // `slots` streams at once, so the farm APR is the best `slots`
+              // streams cumulated — server value (farm.farmAprPct); the same
+              // top-N sum is computed here only for an older API without it.
+              const liveFarmRewards = (pool.farm?.rewards ?? [])
+                .filter((r) => !r.paused && r.balance !== '0' && r.aprPct != null && Number.isFinite(parseFloat(r.aprPct)))
+                .sort((a, b) => parseFloat(b.aprPct!) - parseFloat(a.aprPct!));
+              const slots = pool.farm?.maxActiveRewardsPerPosition ?? liveFarmRewards.length;
+              const countedRewards = liveFarmRewards.slice(0, slots);
+              const farmAprPct =
+                pool.farm?.farmAprPct !== undefined
+                  ? pool.farm.farmAprPct != null ? parseFloat(pool.farm.farmAprPct) : null
+                  : countedRewards.length
+                    ? countedRewards.reduce((acc, r) => acc + parseFloat(r.aprPct!), 0)
+                    : null;
+              const farmAprTooltip = [
+                t('pools_farm_apr_tooltip', { n: slots }),
+                ...liveFarmRewards.map(
+                  (r, i) =>
+                    `• ${getTicker(r.token)} : ${fmtPct(parseFloat(r.aprPct!))}%${i >= slots ? ` (${t('pools_farm_apr_not_counted')})` : ''}`,
+                ),
+              ].join('\n');
               const lpBalance = lpBalanceOf(pool);
+              const walletLpRaw = pool.lpToken ? walletLp.get(pool.lpToken) ?? null : null;
+              const farmedRaw = pool.lpToken ? farmed[pool.lpToken] ?? null : null;
+              const farmedPct =
+                farmedRaw && lpBalance && new BigNumber(lpBalance).gt(0)
+                  ? new BigNumber(farmedRaw).dividedBy(lpBalance).multipliedBy(100).toNumber()
+                  : null;
               const supplyBN = new BigNumber(pool.lpSupply);
               const share = lpBalance && supplyBN.gt(0) ? new BigNumber(lpBalance).dividedBy(supplyBN) : null;
               const posUsd = lpBalance ? positionUsd(pool, lpBalance) : null;
@@ -370,10 +447,21 @@ export const Pools = () => {
                           {t('liquidity_pool_share', { pct: sharePct > 0 && sharePct < 0.01 ? '<0.01' : sharePct.toFixed(2) })}
                         </span>
                       )}
+                      {farmedPct != null && farmedPct > 0 && (
+                        <span className='dvx:text-[10px] dvx:font-semibold dvx:text-gray-400 dvx:whitespace-nowrap' title={t('liquidity_farmed_tooltip')}>
+                          🌾 {t('liquidity_farmed', { pct: farmedPct >= 99.995 ? '100' : farmedPct.toFixed(0) })}
+                        </span>
+                      )}
                       {/* DinoVox: TVL + 24h change live on the "TVL history" toggle row below. */}
                       {dexFilter !== 'DinoVox' && tvl != null && tvl > 0 && (
                         <span className='dvx:text-[10px] dvx:font-semibold dvx:text-gray-400'>
                           TVL {formatUsd(tvl)}
+                        </span>
+                      )}
+                      {farmAprPct != null && pool.apr?.aprPct == null && (
+                        // No LP-fee APR yet: show the farm APR alone.
+                        <span className='dvx:inline-flex dvx:items-center dvx:gap-1 dvx:text-[10px] dvx:font-bold dvx:text-green-600 dvx:dark:text-green-400 dvx:whitespace-nowrap dvx:cursor-help' title={farmAprTooltip}>
+                          APR 🌾 {fmtPct(farmAprPct)}%
                         </span>
                       )}
                       {pool.apr?.aprPct != null && (
@@ -392,6 +480,11 @@ export const Pools = () => {
                           >
                             <Info className='dvx:w-3 dvx:h-3 dvx:text-gray-400' />
                           </span>
+                          {farmAprPct != null && (
+                            <span className='dvx:cursor-help' title={farmAprTooltip}>
+                              + 🌾 {fmtPct(farmAprPct)}%
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
@@ -439,7 +532,7 @@ export const Pools = () => {
                           {t('pools_add')}
                         </button>
                       )}
-                      {lpBalance && (
+                      {walletLpRaw && (
                         <button
                           onClick={() => goTo('remove-liquidity', { pool: pool.address })}
                           className='dvx:whitespace-nowrap dvx:text-xs dvx:font-bold dvx:text-red-500 dvx:bg-transparent dvx:hover:text-red-600 dvx:transition'
@@ -448,7 +541,12 @@ export const Pools = () => {
                         </button>
                       )}
                     </div>
-                    {pool.dcaReady && <DcaBadge tokenA={pool.tokenA} tokenB={pool.tokenB} />}
+                    {(pool.dcaReady || hasLiveFarm(pool)) && (
+                      <div className='dvx:flex dvx:gap-1.5'>
+                        {hasLiveFarm(pool) && <FarmBadge pool={pool.address} />}
+                        {pool.dcaReady && <DcaBadge tokenA={pool.tokenA} tokenB={pool.tokenB} />}
+                      </div>
+                    )}
                     </div>
                   </div>
                   {swapsPool === pool.address && (

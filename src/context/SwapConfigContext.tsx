@@ -20,6 +20,12 @@ export interface SwapConfig {
    * tab shows a "not available" state when this is unset.
    */
   dcaEscrowAddress?: string;
+  /**
+   * Farms smart contract address (swapv2/farms, multi-reward LP staking).
+   * Optional: not deployed on every network yet, so there is no default —
+   * the Farms tab shows a "not available" state when this is unset.
+   */
+  farmsAddress?: string;
   /** WEGLD token identifier  e.g. 'WEGLD-bd4d79' */
   wegldIdentifier: string;
   /**

@@ -28,7 +28,10 @@ export const Card = ({ id, title, children, description, reference, className = 
     >
       <div className='dvx:flex dvx:items-start dvx:justify-between dvx:gap-3'>
         <h2 className='dvx:text-xl dvx:font-black dvx:tracking-tight dvx:text-gray-900 dvx:dark:text-white dvx:uppercase'
-          style={theme ? { color: p.card.color } : {}}>
+          // flex: 1 + minWidth 0 (inline, host-CSS proof): the title takes the
+          // header's full width and can shrink — titles that measure their own
+          // available width (SectionTabs) rely on it.
+          style={{ flex: "1 1 0%", minWidth: 0, ...(theme ? { color: p.card.color } : {}) }}>
           {title}
         </h2>
         {reference ? (

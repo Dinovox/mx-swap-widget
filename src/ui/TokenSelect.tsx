@@ -71,6 +71,15 @@ interface TokenSelectProps<T extends TokenSelectToken> {
    * "in wallet" / "other tokens" headers.
    */
   balances?: Record<string, TokenBalanceInfo>;
+  /**
+   * Explicit grouping (overrides the wallet/other grouping): sections rendered
+   * in order with their header; a token for which `disabledReason` returns a
+   * string is shown greyed out, not selectable, the reason as tooltip/subtitle.
+   */
+  sections?: Array<{ label: string; ids: string[] }>;
+  disabledReason?: (tok: T) => string | null;
+  /** Empty-state label of the trigger (defaults to "select a token"). */
+  placeholder?: string;
 }
 
 export function TokenLogo({ url, ticker }: { url?: string | null; ticker: string }) {
@@ -100,6 +109,9 @@ export function TokenSelect<T extends TokenSelectToken>({
   loading,
   className = '',
   balances,
+  sections,
+  disabledReason,
+  placeholder,
 }: TokenSelectProps<T>) {
   const { t } = useTranslation('swap');
   const { theme } = useSwapConfig();
@@ -149,7 +161,7 @@ export function TokenSelect<T extends TokenSelectToken>({
             <span className="dvx:flex-1 dvx:text-left">{value.ticker}</span>
           </>
         ) : (
-          <span className="dvx:flex-1 dvx:text-left dvx:text-gray-400">{t('token_select')}</span>
+          <span className="dvx:flex-1 dvx:text-left dvx:text-gray-400">{placeholder ?? t('token_select')}</span>
         )}
         <svg
           className={`dvx:w-4 dvx:h-4 dvx:text-gray-400 dvx:transition-transform dvx:shrink-0 ${open ? 'dvx:rotate-180' : ''}`}
@@ -183,6 +195,59 @@ export function TokenSelect<T extends TokenSelectToken>({
               <p className="dvx:px-3 dvx:py-3 dvx:text-sm dvx:text-gray-400 dvx:text-center">{t('token_no_results')}</p>
             ) : (
               (() => {
+                if (sections) {
+                  const byId = new Map(filtered.map((tok) => [tok.identifier, tok]));
+                  return sections.map((section, si) => {
+                    const items = section.ids.map((id) => byId.get(id)).filter((tok): tok is T => !!tok);
+                    if (items.length === 0) return null;
+                    return (
+                      <React.Fragment key={section.label}>
+                        <p
+                          className={`dvx:px-3 dvx:pt-2.5 dvx:pb-1 dvx:text-[10px] dvx:font-bold dvx:uppercase dvx:tracking-wider dvx:text-gray-400 ${
+                            si > 0 ? 'dvx:mt-1 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#333]' : ''
+                          }`}
+                        >
+                          {section.label}
+                        </p>
+                        {items.map((tok) => {
+                          const reason = disabledReason?.(tok) ?? null;
+                          const isSelected = value?.identifier === tok.identifier;
+                          const bal = balances?.[tok.identifier];
+                          return (
+                            <button
+                              key={tok.identifier}
+                              type="button"
+                              disabled={!!reason}
+                              title={reason ?? undefined}
+                              onClick={() => { if (!reason) { onChange(tok); setOpen(false); } }}
+                              className={`dvx:w-full dvx:min-h-[52px] dvx:flex dvx:items-center dvx:gap-2.5 dvx:px-3 dvx:py-2 dvx:bg-transparent ${
+                                reason
+                                  ? 'dvx:opacity-40 dvx:cursor-not-allowed'
+                                  : `dvx:hover:bg-amber-50 dvx:dark:hover:bg-[#333] ${isSelected ? 'dvx:bg-amber-50 dvx:dark:bg-[#333]' : ''}`
+                              }`}
+                            >
+                              <TokenLogo url={tok.logoUrl} ticker={tok.ticker} />
+                              <div className="dvx:flex-1 dvx:min-w-0 dvx:text-left">
+                                <p className={`dvx:text-sm dvx:font-bold dvx:truncate dvx:leading-tight ${isSelected ? 'dvx:text-amber-600 dvx:dark:text-amber-400' : 'dvx:text-gray-900 dvx:dark:text-white'}`}>
+                                  {tok.ticker}
+                                </p>
+                                <p className="dvx:text-[10px] dvx:text-gray-400 dvx:font-normal dvx:leading-tight dvx:truncate">
+                                  {reason ?? tok.identifier.split('-')[1] ?? ''}
+                                </p>
+                              </div>
+                              {bal && (
+                                <div className="dvx:text-right dvx:shrink-0 dvx:leading-tight">
+                                  <p className="dvx:text-xs dvx:font-semibold dvx:text-gray-700 dvx:dark:text-gray-200">{formatTokenAmount(bal.amount)}</p>
+                                  {bal.usd != null && <p className="dvx:text-[10px] dvx:text-gray-400 dvx:font-normal">{formatUsdValue(bal.usd)}</p>}
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  });
+                }
                 const hasHeldTokens = !!balances && filtered.some((tok) => balances[tok.identifier]);
                 let walletHeaderShown = false;
                 let otherHeaderShown = false;

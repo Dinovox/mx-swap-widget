@@ -57,6 +57,20 @@ export interface LiquidityPool extends Required<Pick<PoolInfo, 'lpToken' | 'rese
   dcaReady?: boolean;
   /** Source DEX (returned by /pools). */
   dexType?: DexFilter;
+  /** Farm on this pool's LP token (GET /pools), null = none; undefined = older API without the field. */
+  farm?: {
+    stakedToken: string;
+    totalStaked: string;
+    stakers: number;
+    positionNonce: number;
+    /** Streams one participant can follow on this farm. */
+    maxActiveRewardsPerPosition?: number;
+    /** Server cumulative farm APR: best N streams by APR, N = maxActiveRewardsPerPosition (null = none priced). */
+    farmAprPct?: string | null;
+    rewards: Array<{ token: string; balance: string; paused: boolean; msToMax: number; feeBps: number; aprPct: string | null }>;
+  } | null;
+  /** apr.aprPct + farm.farmAprPct (GET /pools; one missing counts as 0, null if both unresolved). */
+  totalAprPct?: string | null;
 }
 
 /** User's LP position for a specific pool */

@@ -244,8 +244,12 @@ export const Dca = () => {
     presetDone.current = true;
     const qIn = searchParams.get("tokenIn");
     const qOut = searchParams.get("tokenOut");
-    const foundIn = qIn ? tokens.find((tk) => tk.identifier === qIn) : undefined;
-    const foundOut = qOut ? tokens.find((tk) => tk.identifier === qOut) : undefined;
+    const foundIn = qIn
+      ? tokens.find((tk) => tk.identifier === qIn)
+      : undefined;
+    const foundOut = qOut
+      ? tokens.find((tk) => tk.identifier === qOut)
+      : undefined;
     if (foundIn) setTokenIn(foundIn);
     if (foundOut) setTokenOut(foundOut);
   }, [tokens]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -524,7 +528,11 @@ export const Dca = () => {
     setTokenIn(nextIn);
     setTokenOut(nextOut);
     setAmountPerExecution(
-      quoteOut && nextIn ? quoteOut.decimalPlaces(nextIn.decimals, BigNumber.ROUND_DOWN).toFixed() : "",
+      quoteOut && nextIn
+        ? quoteOut
+            .decimalPlaces(nextIn.decimals, BigNumber.ROUND_DOWN)
+            .toFixed()
+        : "",
     );
     setMinReceived("");
     setMaxReceived("");
@@ -1366,9 +1374,14 @@ function DcaOrderCard({
             <p className="dvx:text-gray-400 dvx:mt-0.5">
               {/* Plural key picked by hand (like formatDuration) — this i18next
                   version resolves `_one`/`_other`, not the `_plural` suffix. */}
-              {t(order.remainingExecutions === 1 ? "dca_remaining" : "dca_remaining_plural", {
-                count: order.remainingExecutions,
-              })}
+              {t(
+                order.remainingExecutions === 1
+                  ? "dca_remaining"
+                  : "dca_remaining_plural",
+                {
+                  count: order.remainingExecutions,
+                },
+              )}
             </p>
           </div>
           <div className="dvx:rounded-xl dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:border dvx:border-gray-100 dvx:dark:border-[#333] dvx:px-3 dvx:py-2">
