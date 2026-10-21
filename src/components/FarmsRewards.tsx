@@ -24,6 +24,7 @@ import {
 } from "../helpers/farms";
 import { fetchFarmsApi, fetchFarmsConfigApi } from "../helpers/farmsApi";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
+import { estimateGasLimit } from "../helpers/estimateGas";
 import bigToHex from "../helpers/bigToHex";
 import strToHex from "../helpers/strToHex";
 import type { LiquidityPool, TokenMeta } from "../types";
@@ -95,7 +96,7 @@ export const FarmsRewards = () => {
           defaultMaxActive: cfg.defaultMaxActiveRewardsPerPosition,
           maxActiveCeiling: cfg.maxActiveRewardsPerPositionCeiling,
           extraFluxPrice: cfg.extraFluxPrice,
-          removeFeesToken: cfg.removeFeesToken,
+          extraFluxToken: cfg.extraFluxToken ?? cfg.removeFeesToken,
           minFundAmountNonWhitelisted: cfg.minFundAmountNonWhitelisted,
         });
         setMinFundByToken(Object.fromEntries(cfg.whitelistedRewardTokens.map((w) => [w.token, w.minFundAmount])));
@@ -347,12 +348,12 @@ export const FarmsRewards = () => {
   const [txError, setTxError] = React.useState<string | null>(null);
   /* ---- Streams per participant (per-farm cap) + paid unlock ----
      A participant can follow at most N streams of a farm at once (default 2).
-     unlockExtraFlux(staked) — anyone, paid extraFluxPrice in removeFeesToken —
+     unlockExtraFlux(staked) — anyone, paid extraFluxPrice in extraFluxToken —
      raises THIS farm's cap by +1 for every staker, up to the global ceiling. */
   const currentCap = stakedToken ? farmMaxActive[stakedToken] ?? config?.defaultMaxActive ?? null : null;
   const ceiling = config?.maxActiveCeiling ?? null;
   const farmStreamCount = (streams ?? []).filter((s) => !s.paused).length;
-  const unlockToken = config?.removeFeesToken || null;
+  const unlockToken = config?.extraFluxToken || null;
   const unlockPriceRaw = config?.extraFluxPrice ?? null;
   const unlockAtCeiling = currentCap != null && ceiling != null && currentCap >= ceiling;
   const unlockInsufficient = !!unlockToken && !!unlockPriceRaw && new BigNumber(balanceOf(unlockToken)).lt(unlockPriceRaw);
@@ -373,7 +374,9 @@ export const FarmsRewards = () => {
             data: new TextEncoder().encode(data),
             receiver: new Address(farmsAddress),
             sender: new Address(address),
-            gasLimit: BigInt(UNLOCK_GAS_LIMIT),
+            gasLimit: BigInt(
+              await estimateGasLimit(networkApiAddress, { sender: address, receiver: farmsAddress, data, chainId }, UNLOCK_GAS_LIMIT),
+            ),
             gasPrice: BigInt(GAS_PRICE),
             chainID: chainId,
             version: 1,
@@ -408,7 +411,9 @@ export const FarmsRewards = () => {
             data: new TextEncoder().encode(data),
             receiver: new Address(farmsAddress),
             sender: new Address(address),
-            gasLimit: BigInt(FUND_GAS_LIMIT),
+            gasLimit: BigInt(
+              await estimateGasLimit(networkApiAddress, { sender: address, receiver: farmsAddress, data, chainId }, FUND_GAS_LIMIT),
+            ),
             gasPrice: BigInt(GAS_PRICE),
             chainID: chainId,
             version: 1,
@@ -475,12 +480,6 @@ export const FarmsRewards = () => {
               placeholder={t("farms_fund_pick_staked")}
               loading={dinovoxPools.length === 0}
             />
-            {stakedValid && streams && streams.length > 0 && (
-              <p className="dvx:mt-2 dvx:text-[10px] dvx:text-gray-400">
-                {t("farms_fund_current_rewards")}{" "}
-                {streams.map((s) => `${tickerOf(s.rewardedToken)} (${fmt(s.balance, s.rewardedToken)})`).join(" · ")}
-              </p>
-            )}
           </div>
 
           {/* Reward token + amount */}
@@ -685,7 +684,15 @@ export const FarmsRewards = () => {
                                 >
                                   <td className="dvx:py-1.5 dvx:pl-2">
                                     <span className="dvx:inline-flex dvx:items-center dvx:gap-1.5 dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white">
-                                      <TokenLogo url={tokenMap[r.token]?.logoUrl ?? reward?.logoUrl ?? null} ticker={tickerOf(r.token)} />
+                                      <TokenLogo
+                                        url={
+                                          tokenMap[r.token]?.logoUrl ??
+                                          (streams ?? []).find((x) => x.rewardedToken === r.token)?.logoUrl ??
+                                          (reward?.identifier === r.token ? reward.logoUrl : null) ??
+                                          null
+                                        }
+                                        ticker={tickerOf(r.token)}
+                                      />
                                       {tickerOf(r.token)}
                                       {r.sim && (
                                         <span className="dvx:text-[9px] dvx:font-bold dvx:uppercase dvx:text-amber-600 dvx:dark:text-amber-400">

@@ -13,6 +13,8 @@ import { FarmBadge } from '../ui/FarmBadge';
 import { fetchRewardedStakedTokens, fetchUserFarmedBalances } from '../helpers/farms';
 import { fetchFarmPositionsApi } from '../helpers/farmsApi';
 import { RecentSwaps } from '../ui/RecentSwaps';
+import { PriceChart } from '../ui/PriceChart';
+import { fetchChartable, chartEntryForPool, type ChartableEntry } from '../helpers/charts';
 import { useSwapConfig } from '../context/SwapConfigContext';
 import { useWidgetSearchParams } from '../hooks/useWidgetSearchParams';
 import { useGetUserESDT } from '../hooks/useGetUserEsdt';
@@ -99,6 +101,13 @@ export const Pools = () => {
   };
   // Pool whose TVL chart is expanded (DinoVox only — history isn't tracked for external DEXes).
   const [chartPool, setChartPool] = React.useState<string | null>(null);
+  // Pool whose price chart is expanded + the chartable pairs (one fetch, cached).
+  const [pricePool, setPricePool] = React.useState<string | null>(null);
+  const [chartable, setChartable] = React.useState<ChartableEntry[]>([]);
+  React.useEffect(() => {
+    if (!apiUrl) return;
+    fetchChartable(apiUrl).then(setChartable).catch(() => setChartable([]));
+  }, [apiUrl]);
   // Pool whose recent-swaps list is expanded.
   const [swapsPool, setSwapsPool] = React.useState<string | null>(null);
 
@@ -586,6 +595,32 @@ export const Pools = () => {
                         </span>
                       </button>
                       {chartPool === pool.address && <TvlChart apiUrl={apiUrl} address={pool.address} tickerA={tickerA} tickerB={tickerB} />}
+                      {(() => {
+                        // Price evolution — only for pairs eligible to a chart
+                        // (direct pool vs VOXEGLD / USDC, + VOXEGLD vs USDC / WEGLD).
+                        const priceEntry = chartEntryForPool(chartable, pool);
+                        if (!priceEntry) return null;
+                        return (
+                          <>
+                            <button
+                              type='button'
+                              onClick={() => setPricePool(pricePool === pool.address ? null : pool.address)}
+                              className='dvx:w-full dvx:flex dvx:items-center dvx:justify-between dvx:mt-3 dvx:pt-2 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#333] dvx:text-xs dvx:font-semibold dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-600 dvx:dark:hover:text-gray-200 dvx:transition-colors'
+                            >
+                              <span>{t('pools_price_chart_toggle')}</span>
+                              <span className='dvx:flex dvx:items-center dvx:gap-2'>
+                                <span className='dvx:text-[10px] dvx:font-semibold dvx:text-gray-400 dvx:whitespace-nowrap'>
+                                  {getTicker(priceEntry.token)} / {getTicker(priceEntry.quote)}
+                                </span>
+                                <ChevronDown className={`dvx:h-3.5 dvx:w-3.5 dvx:transition-transform ${pricePool === pool.address ? 'dvx:rotate-180' : ''}`} />
+                              </span>
+                            </button>
+                            {pricePool === pool.address && (
+                              <PriceChart apiUrl={apiUrl} entries={[priceEntry]} tickerOf={getTicker} embedded />
+                            )}
+                          </>
+                        );
+                      })()}
                     </>
                   )}
                 </div>

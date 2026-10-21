@@ -16,6 +16,7 @@ interface ApiReward {
   paused: boolean;
   feeBps: number;
   aprPct: string | null;
+  logoUrl?: string | null;
 }
 
 export interface ApiFarm {
@@ -39,10 +40,12 @@ export interface FarmsApiConfig {
   /** Streams per participant a new farm starts with (cap is per farm, see ApiFarm). */
   defaultMaxActiveRewardsPerPosition?: number;
   maxActiveRewardsPerPositionCeiling?: number;
-  /** unlockExtraFlux price (raw), paid in removeFeesToken. */
+  /** unlockExtraFlux price (raw), paid in extraFluxToken. */
   extraFluxPrice?: string;
+  /** Token unlockExtraFlux is paid in. */
+  extraFluxToken?: string;
+  /** Older backends exposed the same token under this name. */
   removeFeesToken?: string;
-  removeFeesPrice?: string;
   /** Floor (raw) to open a new non-whitelisted stream on an existing farm. */
   minFundAmountNonWhitelisted?: string;
   feePercent: number;
@@ -71,6 +74,7 @@ export function farmFromApi(f: ApiFarm): Farm {
         paused: r.paused,
         msToMax: r.msToMax,
         aprPct: r.aprPct != null ? parseFloat(r.aprPct) : null,
+        logoUrl: r.logoUrl ?? null,
       }),
     ),
   };

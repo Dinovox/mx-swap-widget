@@ -2,7 +2,8 @@ import React from "react";
 import axios from "axios";
 import BigNumber from "bignumber.js";
 import { useTranslation } from "react-i18next";
-import { Info, Lock } from "lucide-react";
+import { Check, ChevronDown as ChevronDownIcon, Info, Link2, Lock } from "lucide-react";
+import { TokenLogo } from "../ui/TokenSelect";
 import { Address, Transaction } from "@multiversx/sdk-core";
 import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { Card } from "../ui/Card";
@@ -23,6 +24,7 @@ import {
 import { fetchFarmsApi, fetchFarmsConfigApi, fetchFarmPositionsApi, pendingRewardRaw, type FarmsSortBy } from "../helpers/farmsApi";
 import { useWidgetSearchParams } from "../hooks/useWidgetSearchParams";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
+import { estimateGasLimit } from "../helpers/estimateGas";
 import bigToHex from "../helpers/bigToHex";
 import strToHex from "../helpers/strToHex";
 import type { LiquidityPool, TokenMeta } from "../types";
@@ -40,9 +42,16 @@ const UNSTAKE_GAS_BASE = 9_000_000; // + position MetaESDT burn + LP refund
 const GAS_PER_ACTIVE_STREAM = 2_500_000; // settle + reward transfer, per enrolled stream (not measured yet)
 const CLAIM_GAS_LIMIT = 8_000_000; // one stream settle + transfer (not measured yet)
 const SUBSCRIBE_GAS_LIMIT = 7_000_000; // measured 4.52M
-const CLAIM_ALL_GAS_BASE = 5_000_000;
+// claimAllRewards measured (devnet /transaction/cost): 2 streams 5.96M, 20 streams
+// 26.33M → ~3.7M + ~1.13M per followed stream. Fallback only (the real limit is
+// simulated per call, cf. estimateGasLimit): ~+25% over that line.
+const CLAIM_ALL_GAS_BASE = 4_500_000;
+const CLAIM_ALL_GAS_PER_STREAM = 1_500_000;
 const UNSUBSCRIBE_GAS_LIMIT = 8_000_000; // settles one stream then drops it (not measured yet)
 const withStreams = (base: number, activeStreams: number) => base + GAS_PER_ACTIVE_STREAM * activeStreams;
+
+// Reward rows shown before "show all" in a farm card.
+const STREAMS_PREVIEW = 5;
 
 function formatUsd(value: number): string {
   if (value === 0) return "$0";
@@ -79,8 +88,40 @@ export const Farms = () => {
   // Server-side sort (desc, nulls last) — TVL by default, like the backend.
   const [sortBy, setSortBy] = React.useState<FarmsSortBy>("tvlUsd");
   // ?pool=<address>: opened from a pool's "Farms" badge — show only that pool's farm.
-  const [searchParams] = useWidgetSearchParams();
+  const [searchParams, setSearchParams] = useWidgetSearchParams();
   const [poolFilter, setPoolFilter] = React.useState<string | null>(() => searchParams.get("pool"));
+  // Closing the pool chip also drops ?pool= from the URL (replace, no history
+  // entry) so a reload / shared link doesn't re-apply it.
+  const clearPoolFilter = () => {
+    setPoolFilter(null);
+    setSearchParams(
+      (prev) => {
+        prev.delete("pool");
+        return prev;
+      },
+      { replace: true },
+    );
+  };
+  // "My positions on top" (default on, remembered per browser — own key, the
+  // Liquidity tab has its own).
+  const [positionsFirst, setPositionsFirst] = React.useState(() => {
+    try {
+      return localStorage.getItem("dvx-farms-positions-first") !== "0";
+    } catch {
+      return true;
+    }
+  });
+  const togglePositionsFirst = (on: boolean) => {
+    setPositionsFirst(on);
+    try {
+      localStorage.setItem("dvx-farms-positions-first", on ? "1" : "0");
+    } catch {
+      /* storage unavailable — keep it in memory only */
+    }
+  };
+  // Token search (ticker or identifier, partial match), like the Liquidity tab;
+  // prefilled from ?filter=.
+  const [tokenSearch, setTokenSearch] = React.useState(() => searchParams.get("filter")?.trim() ?? "");
   const [error, setError] = React.useState<string | null>(null);
   const [reloadKey, setReloadKey] = React.useState(0);
   const [tokenMap, setTokenMap] = React.useState<Record<string, TokenMeta>>({});
@@ -265,16 +306,25 @@ export const Farms = () => {
     setBusy(key);
     try {
       const sender = new Address(address);
+      // Measured gas per tx (network simulation, +15%); the constants become the
+      // fallback. Tx #i of a batch is simulated with nonce + i against the current
+      // state — when it depends on an earlier tx (stake → subscribe) the
+      // simulation reverts and the constant is used.
+      const gasLimits = await Promise.all(
+        txs.map((tx, i) =>
+          estimateGasLimit(networkApiAddress, { sender: address, receiver: tx.receiver, data: tx.data, chainId }, tx.gas, i),
+        ),
+      );
       await signAndSendTransactions({
         onSignTransactions,
         transactions: txs.map(
-          (tx) =>
+          (tx, i) =>
             new Transaction({
               value: 0n,
               data: new TextEncoder().encode(tx.data),
               receiver: new Address(tx.receiver),
               sender,
-              gasLimit: BigInt(tx.gas),
+              gasLimit: BigInt(gasLimits[i]),
               gasPrice: BigInt(GAS_PRICE),
               chainID: chainId,
               version: 1,
@@ -405,7 +455,7 @@ export const Farms = () => {
     farmsAddress &&
     send(
       `claimAll:${farm.stakedToken}`,
-      [{ data: ["claimAllRewards", strToHex(farm.stakedToken)].join("@"), receiver: farmsAddress, gas: withStreams(CLAIM_ALL_GAS_BASE, positions[farm.stakedToken]?.activeRewards.length ?? 0) }],
+      [{ data: ["claimAllRewards", strToHex(farm.stakedToken)].join("@"), receiver: farmsAddress, gas: CLAIM_ALL_GAS_BASE + CLAIM_ALL_GAS_PER_STREAM * (positions[farm.stakedToken]?.activeRewards.length ?? 0) }],
       { processing: t("farms_claim_processing"), success: t("farms_claim_success"), error: t("farms_tx_error") },
     );
 
@@ -433,7 +483,30 @@ export const Farms = () => {
     );
 
   // On-chain fallback can't filter server-side: apply ?pool= here (no-op on backend results).
-  const visibleFarms = (farms ?? []).filter((f) => !poolFilter || f.pool === poolFilter || poolByLp[f.stakedToken]?.address === poolFilter);
+  // Search matches the pair's tokens (LP farms), the staked token itself and
+  // the reward tokens — "GRAOU" finds GRAOU pairs AND farms paying GRAOU.
+  const q = tokenSearch.trim().toUpperCase();
+  const matchesSearch = (f: Farm) => {
+    if (!q) return true;
+    const pool = poolByLp[f.stakedToken];
+    const ids = [f.stakedToken, ...(pool ? [pool.tokenA, pool.tokenB] : []), ...f.streams.map((s) => s.rewardedToken)];
+    return ids.some((id) => id.toUpperCase().includes(q) || tickerOf(id).toUpperCase().includes(q));
+  };
+  const filteredFarms = (farms ?? []).filter(
+    (f) => (!poolFilter || f.pool === poolFilter || poolByLp[f.stakedToken]?.address === poolFilter) && matchesSearch(f),
+  );
+  // "My positions on top": farms where the wallet has a stake first (by staked
+  // USD value), the rest keeps the server sort (TVL / APR / stakers).
+  const hasPosition = (f: Farm) => new BigNumber(positions[f.stakedToken]?.stake ?? "0").gt(0);
+  const anyPosition = filteredFarms.some(hasPosition);
+  const stakeUsd = (f: Farm) => {
+    const price = priceOf(f.stakedToken);
+    return price != null ? human(positions[f.stakedToken]?.stake ?? "0", f.stakedToken).toNumber() * price : 0;
+  };
+  const visibleFarms =
+    positionsFirst && anyPosition
+      ? [...filteredFarms.filter(hasPosition).sort((a, b) => stakeUsd(b) - stakeUsd(a)), ...filteredFarms.filter((f) => !hasPosition(f))]
+      : filteredFarms;
   const poolFilterLabel = (() => {
     const f = visibleFarms[0];
     return f ? farmLabel(f.stakedToken) : "";
@@ -453,10 +526,29 @@ export const Farms = () => {
       >
         {farmsAddress && (
           <div className="dvx:flex dvx:flex-wrap dvx:items-center dvx:gap-2 dvx:mt-4">
+            <input
+              type="text"
+              value={tokenSearch}
+              onChange={(e) => setTokenSearch(e.target.value)}
+              placeholder={t("farms_search_placeholder")}
+              className="dvx:flex-1 dvx:min-w-[160px] dvx:rounded-xl dvx:border dvx:border-gray-200 dvx:dark:border-[#444] dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-1.5 dvx:text-xs dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 dvx:focus:ring-amber-500"
+            />
+            {anyPosition && (
+              <label className="dvx:inline-flex dvx:items-center dvx:gap-1.5 dvx:text-[11px] dvx:font-semibold dvx:text-gray-400 dvx:cursor-pointer dvx:select-none dvx:whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={positionsFirst}
+                  onChange={(e) => togglePositionsFirst(e.target.checked)}
+                  className="dvx:cursor-pointer"
+                  style={{ accentColor: "#f59e0b" }}
+                />
+                {t("pools_positions_first")}
+              </label>
+            )}
             {poolFilter && (
               <button
                 type="button"
-                onClick={() => setPoolFilter(null)}
+                onClick={clearPoolFilter}
                 title={t("farms_filter_clear")}
                 className="dvx:inline-flex dvx:items-center dvx:gap-1.5 dvx:px-3 dvx:py-1 dvx:rounded-full dvx:border dvx:border-amber-400 dvx:text-xs dvx:font-semibold dvx:text-amber-600 dvx:dark:text-amber-400 dvx:bg-transparent"
               >
@@ -496,7 +588,7 @@ export const Farms = () => {
             </div>
           ) : visibleFarms.length === 0 ? (
             <p className="dvx:text-center dvx:text-sm dvx:text-gray-500 dvx:dark:text-gray-400 dvx:py-8">
-              {error ?? t("farms_empty")}
+              {error ?? ((farms ?? []).length > 0 ? t("farms_no_match") : t("farms_empty"))}
             </p>
           ) : (
             visibleFarms.map((farm) => (
@@ -504,6 +596,7 @@ export const Farms = () => {
                 key={farm.stakedToken}
                 farm={farm}
                 label={farmLabel(farm.stakedToken)}
+                pool={poolByLp[farm.stakedToken]}
                 position={positions[farm.stakedToken]}
                 positionTokenRaw={positionTokenRaw[farm.stakedToken] ?? "0"}
                 walletRaw={walletBalance(farm.stakedToken)}
@@ -557,6 +650,7 @@ type TFn = (key: string, options?: Record<string, unknown>) => string;
 function FarmCard({
   farm,
   label,
+  pool,
   position,
   positionTokenRaw,
   walletRaw,
@@ -581,6 +675,8 @@ function FarmCard({
 }: {
   farm: Farm;
   label: string;
+  // DinoVox pair behind an LP farm (undefined for a single-token farm).
+  pool?: LiquidityPool;
   position?: FarmUserPosition;
   positionTokenRaw: string;
   walletRaw: string;
@@ -603,8 +699,39 @@ function FarmCard({
   nowMs: number;
   t: TFn;
 }) {
+  const goTo = useGoTo();
   const [mode, setMode] = React.useState<"stake" | "unstake">("stake");
   const [amount, setAmount] = React.useState("");
+  const [showAllStreams, setShowAllStreams] = React.useState(false);
+
+  // Shareable link: this page with ?pool=<address> (LP farm) or ?filter=<staked>
+  // (any other staked token) + #farms — reopens the tab filtered on this farm.
+  const shareUrl = (() => {
+    if (typeof window === "undefined") return "";
+    const params = new URLSearchParams(pool ? { pool: pool.address } : { filter: farm.stakedToken });
+    return `${window.location.origin}${window.location.pathname}?${params.toString()}#farms`;
+  })();
+  const [copied, setCopied] = React.useState(false);
+  const copyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      // Clipboard API unavailable (insecure context / old browser): legacy copy.
+      const ta = document.createElement("textarea");
+      ta.value = shareUrl;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+      } finally {
+        document.body.removeChild(ta);
+      }
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   // Exact raw amount chosen via slider / % buttons (the input then only shows a
   // rounded value); cleared as soon as the user types.
   const [pickedRaw, setPickedRaw] = React.useState<bigint | null>(null);
@@ -634,6 +761,12 @@ function FarmCard({
     return position?.pending[rewardedToken];
   };
   const claimableCount = [...active].filter((id) => new BigNumber(pendingOf(id) ?? "0").gt(0)).length;
+  // Total claimable in USD across followed streams (priced ones only).
+  const claimableUsd = [...active].reduce((acc, id) => {
+    const price = priceOf(id);
+    const raw = pendingOf(id);
+    return price != null && raw ? acc + human(raw, id).toNumber() * price : acc;
+  }, 0);
   const liveStreams = farm.streams.filter((s) => !s.paused && new BigNumber(s.balance).gt(0));
   // Stream auto-subscribed on a NEW position: highest yearly USD emission
   // (= highest APR, same TVL denominator); unpriced streams rank last, then
@@ -677,6 +810,17 @@ function FarmCard({
     }
   })();
   const tooMuch = amountRaw != null && new BigNumber(amountRaw.toString()).gt(maxRaw);
+  // Pre-simulated APR for the amount being entered: rewards don't change, only
+  // the staked total does → every APR scales by total / (total ± amount)
+  // (raw LP units, no price needed). Stake dilutes, unstake concentrates.
+  const simRatio = (() => {
+    if (amountRaw == null || amountRaw <= 0n || tooMuch) return null;
+    const total = new BigNumber(farm.totalStaked);
+    const after = mode === "stake" ? total.plus(amountRaw.toString()) : total.minus(amountRaw.toString());
+    if (after.lte(0) || total.lte(0)) return null;
+    return total.dividedBy(after).toNumber();
+  })();
+  const fmtAprPct = (v: number) => `${v >= 100 ? Math.round(v).toLocaleString("en-US") : v.toFixed(2)}%`;
   const canSubmit =
     connected && amountRaw != null && !tooMuch && !busy && (mode === "unstake" ? hasStake : liveStreams.length > 0);
 
@@ -694,6 +838,7 @@ function FarmCard({
     >
       {/* Title */}
       <div className="dvx:flex dvx:items-start dvx:justify-between dvx:gap-3 dvx:mb-3">
+        <div className="dvx:flex dvx:flex-col dvx:gap-1 dvx:min-w-0">
         <div className="dvx:flex dvx:items-center dvx:gap-2 dvx:flex-wrap dvx:min-w-0">
           <span className="dvx:font-black dvx:text-gray-900 dvx:dark:text-white dvx:text-base">{label}</span>
           {hasStake && myStakeUsd != null && (
@@ -710,112 +855,244 @@ function FarmCard({
               className="dvx:text-[11px] dvx:font-bold dvx:text-green-600 dvx:dark:text-green-400 dvx:whitespace-nowrap dvx:cursor-help"
               title={t("farms_apr_total_tooltip", { n: maxActive ?? farm.streams.length })}
             >
-              APR 🌾 {farm.farmAprPct >= 100 ? Math.round(farm.farmAprPct).toLocaleString("en-US") : farm.farmAprPct.toFixed(2)}%
+              APR 🌾 {fmtAprPct(farm.farmAprPct)}
+              {simRatio != null && (
+                <span className="dvx:text-amber-600 dvx:dark:text-amber-400" title={t("farms_apr_sim_tooltip")}>
+                  {" "}→ {fmtAprPct(farm.farmAprPct * simRatio)}
+                </span>
+              )}
             </span>
           )}
         </div>
-        <span className="dvx:shrink-0 dvx:mt-1 dvx:text-[10px] dvx:font-semibold dvx:text-gray-400 dvx:whitespace-nowrap">
-          {tvlUsd != null ? `TVL ${formatUsd(tvlUsd)} · ` : ""}
-          {t("farms_stakers", { count: farm.stakers })}
-        </span>
+        {/* Share: link opening the Farms tab filtered on this farm */}
+        <button
+          type="button"
+          onClick={copyShareLink}
+          title={shareUrl}
+          className="dvx:inline-flex dvx:w-fit dvx:items-center dvx:gap-1 dvx:p-0 dvx:text-[10px] dvx:font-semibold dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-amber-500 dvx:transition-colors"
+        >
+          {copied ? <Check className="dvx:w-3 dvx:h-3" style={{ color: "#16a34a" }} /> : <Link2 className="dvx:w-3 dvx:h-3" />}
+          {copied ? t("farms_share_copied") : t("farms_share_copy")}
+        </button>
+        </div>
+        <div className="dvx:flex dvx:flex-col dvx:items-end dvx:gap-1.5 dvx:shrink-0 dvx:mt-1">
+          <span className="dvx:text-[10px] dvx:font-semibold dvx:text-gray-400 dvx:whitespace-nowrap">
+            {tvlUsd != null ? `TVL ${formatUsd(tvlUsd)} · ` : ""}
+            {t("farms_stakers", { count: farm.stakers })}
+          </span>
+          {/* "+ Add rewards" opens the funding form preset on THIS farm
+              (#farms-rewards?staked=<LP>); remove-liquidity only with LP sitting
+              in the wallet (staked LP must be unstaked here first). */}
+          {pool && (
+            <>
+              {/* Farm action: fund this farm's rewards */}
+              <button
+                onClick={() => goTo("farms-rewards", { staked: farm.stakedToken })}
+                title={t("farms_add_rewards_tooltip")}
+                className="dvx:whitespace-nowrap dvx:text-xs dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:transition"
+              >
+                + {t("farms_add_rewards")}
+              </button>
+              {/* Pool actions: get LP to stake / withdraw LP held in the wallet */}
+              <div className="dvx:flex dvx:items-center dvx:gap-2.5 dvx:text-[11px]">
+                <span className="dvx:text-gray-400 dvx:font-semibold">{t("tab_liquidity")} :</span>
+                <button
+                  onClick={() => goTo("add-liquidity", { tokenA: pool.tokenA, tokenB: pool.tokenB })}
+                  className="dvx:whitespace-nowrap dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:transition"
+                >
+                  + {t("liquidity_add_btn")}
+                </button>
+                {new BigNumber(walletRaw).gt(0) && (
+                  <button
+                    onClick={() => goTo("remove-liquidity", { pool: pool.address })}
+                    className="dvx:whitespace-nowrap dvx:font-bold dvx:text-red-500 dvx:bg-transparent dvx:hover:text-red-600 dvx:transition"
+                  >
+                    − {t("liquidity_remove_btn")}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Reward streams */}
-      <div className="dvx:space-y-1.5">
-        {farm.streams.map((s) => {
-          const rewardPrice = priceOf(s.rewardedToken);
-          const balanceH = human(s.balance, s.rewardedToken);
-          const yearlyH = new BigNumber(yearlyEmissionRaw(s)).shiftedBy(-decimalsOf(s.rewardedToken));
-          const aprPct =
-            s.aprPct !== undefined
-              ? s.aprPct // server-computed (GET /farms)
-              : rewardPrice != null && tvlUsd && tvlUsd > 0
-                ? (yearlyH.toNumber() * rewardPrice * 100) / tvlUsd
-                : null;
-          const pendingRaw = pendingOf(s.rewardedToken);
-          const pendingH = pendingRaw ? human(pendingRaw, s.rewardedToken) : null;
-          const enrolled = active.has(s.rewardedToken);
-          const sameToken = s.rewardedToken === staked;
-          return (
-            <div
-              key={s.rewardedToken}
-              className="dvx:flex dvx:flex-wrap dvx:items-center dvx:gap-x-3 dvx:gap-y-1 dvx:rounded-xl dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:border dvx:border-gray-100 dvx:dark:border-[#333] dvx:px-3 dvx:py-2 dvx:text-xs"
-            >
-              <span className="dvx:font-bold dvx:text-gray-900 dvx:dark:text-white">{tickerOf(s.rewardedToken)}</span>
-              {aprPct != null && (
-                <span
-                  className="dvx:inline-flex dvx:items-center dvx:gap-1 dvx:text-[10px] dvx:font-bold dvx:text-green-600 dvx:dark:text-green-400 dvx:cursor-help"
-                  title={t("farms_apr_tooltip", { days: Math.round(s.msToMax / 86_400_000) })}
-                >
-                  {t("pools_apr", { pct: aprPct.toFixed(2) })}
-                  <Info className="dvx:w-3 dvx:h-3 dvx:text-gray-400" />
-                </span>
-              )}
-              <span className="dvx:text-[10px] dvx:text-gray-400">
-                {t("farms_remaining", { amount: `${formatAmount(balanceH)} ${tickerOf(s.rewardedToken)}` })}
-                {rewardPrice != null && ` (${formatUsd(balanceH.toNumber() * rewardPrice)})`}
-              </span>
-              {s.paused && (
-                <span className="dvx:text-[10px] dvx:font-semibold dvx:text-orange-500">{t("farms_paused")}</span>
-              )}
-              {hasStake && (
-                <span className="dvx:ml-auto dvx:flex dvx:items-center dvx:gap-2">
-                  {enrolled ? (
-                    <>
-                      <span className="dvx:text-[10px] dvx:text-gray-400">
-                        {t("farms_pending")}{" "}
-                        <span className="dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400">
-                          {pendingH ? formatAmount(pendingH) : "0"} {tickerOf(s.rewardedToken)}
+      {/* Reward streams — aligned table: reward · APR · remaining · claimable · actions.
+          Grid template inline (host-CSS proof); amounts with their $ value underneath. */}
+      {(() => {
+        const cols = hasStake
+          ? "minmax(56px, 1fr) minmax(58px, auto) minmax(0, 1.3fr) minmax(0, 1.3fr) auto"
+          : "minmax(56px, 1fr) minmax(58px, auto) minmax(0, 1.6fr)";
+        const head = "dvx:text-[9px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400";
+        const aprOf = (s: (typeof farm.streams)[number]): number | null => {
+          if (s.aprPct !== undefined) return s.aprPct; // server-computed (GET /farms)
+          const price = priceOf(s.rewardedToken);
+          if (price == null || !tvlUsd || tvlUsd <= 0) return null;
+          return (new BigNumber(yearlyEmissionRaw(s)).shiftedBy(-decimalsOf(s.rewardedToken)).toNumber() * price * 100) / tvlUsd;
+        };
+        // Best APR first, followed or not — a high-APR stream the user isn't in
+        // must stay visible (in the first rows) to be joined; unknown APR last.
+        const sortedStreams = [...farm.streams].sort((a, b) => (aprOf(b) ?? -1) - (aprOf(a) ?? -1));
+        return (
+          <div className="dvx:rounded-xl dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:border dvx:border-gray-100 dvx:dark:border-[#333] dvx:px-3 dvx:py-2">
+            {/* No columnGap: cells carry their own horizontal padding so a row's
+                background reads as one continuous band. */}
+            <div style={{ display: "grid", gridTemplateColumns: cols, alignItems: "stretch" }}>
+              <span className={head} style={{ padding: "0 5px 4px 8px" }}>{t("farms_table_token")}</span>
+              <span className={head} style={{ padding: "0 5px 4px" }}>APR</span>
+              <span className={`${head} dvx:text-right`} style={{ padding: "0 5px 4px" }}>{t("farms_table_remaining")}</span>
+              {hasStake && <span className={`${head} dvx:text-right`} style={{ padding: "0 5px 4px" }}>{t("farms_pending")}</span>}
+              {hasStake && <span />}
+              {(showAllStreams ? sortedStreams : sortedStreams.slice(0, STREAMS_PREVIEW)).map((s) => {
+                const rewardPrice = priceOf(s.rewardedToken);
+                const balanceH = human(s.balance, s.rewardedToken);
+                const aprPct = aprOf(s);
+                const pendingRaw = pendingOf(s.rewardedToken);
+                const pendingH = pendingRaw ? human(pendingRaw, s.rewardedToken) : null;
+                const enrolled = active.has(s.rewardedToken);
+                const sameToken = s.rewardedToken === staked;
+                const cell = "dvx:py-1.5 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#333]";
+                // Followed stream: gold wash across the row + gold left edge + 🌾.
+                // Not followed (while staked): info cells dimmed, the Join action stays vivid.
+                const followed = hasStake && enrolled;
+                const dimmed = hasStake && !enrolled;
+                const rowStyle: React.CSSProperties = {
+                  padding: "0 5px",
+                  ...(followed ? { backgroundColor: "rgba(245, 158, 11, 0.09)" } : {}),
+                };
+                const infoStyle: React.CSSProperties = { ...rowStyle, ...(dimmed ? { opacity: 0.55 } : {}) };
+                return (
+                  <React.Fragment key={s.rewardedToken}>
+                    <span
+                      className={`${cell} dvx:min-w-0 dvx:flex dvx:flex-col dvx:justify-center`}
+                      style={{
+                        ...infoStyle,
+                        paddingLeft: 8,
+                        ...(followed ? { boxShadow: "inset 3px 0 0 rgba(245, 158, 11, 0.9)", borderTopLeftRadius: 6, borderBottomLeftRadius: 6 } : {}),
+                      }}
+                    >
+                      <span className="dvx:flex dvx:items-center dvx:gap-1.5 dvx:min-w-0">
+                        <TokenLogo url={s.logoUrl} ticker={tickerOf(s.rewardedToken)} />
+                        <span className="dvx:text-xs dvx:font-bold dvx:text-gray-900 dvx:dark:text-white dvx:truncate">
+                          {tickerOf(s.rewardedToken)}
                         </span>
+                        {followed && <span aria-hidden className="dvx:text-[11px]">🌾</span>}
                       </span>
-                      <button
-                        type="button"
-                        disabled={!!busy || !pendingH?.gt(0)}
-                        onClick={() => onClaim(farm, s.rewardedToken)}
-                        className="dvx:text-[11px] dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:disabled:opacity-40"
-                      >
-                        {t("farms_claim")}
-                      </button>
-                      {sameToken && (
-                        <button
-                          type="button"
-                          disabled={!!busy || !pendingH?.gt(0)}
-                          onClick={() => onCompound(farm)}
-                          className="dvx:text-[11px] dvx:font-bold dvx:text-green-600 dvx:bg-transparent dvx:hover:text-green-700 dvx:disabled:opacity-40"
-                        >
-                          {t("farms_compound")}
-                        </button>
+                      {s.paused && <span className="dvx:block dvx:text-[9px] dvx:font-semibold dvx:text-orange-500">{t("farms_paused")}</span>}
+                    </span>
+                    <span
+                      className={`${cell} dvx:flex dvx:flex-col dvx:justify-center dvx:cursor-help dvx:whitespace-nowrap`}
+                      style={infoStyle}
+                      title={t("farms_apr_tooltip", { days: Math.round(s.msToMax / 86_400_000) })}
+                    >
+                      <span className="dvx:inline-flex dvx:items-center dvx:gap-1 dvx:text-[11px] dvx:font-bold dvx:text-green-600 dvx:dark:text-green-400">
+                        {aprPct != null ? fmtAprPct(aprPct) : "—"}
+                        <Info className="dvx:w-3 dvx:h-3 dvx:text-gray-400" />
+                      </span>
+                      {aprPct != null && simRatio != null && (
+                        // APR this stream would show after the stake / unstake being entered.
+                        <span className="dvx:text-[10px] dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400">
+                          → {fmtAprPct(aprPct * simRatio)}
+                        </span>
                       )}
-                      <button
-                        type="button"
-                        disabled={!!busy}
-                        onClick={() => onUnsubscribe(farm, s.rewardedToken)}
-                        title={t("farms_unsubscribe_tooltip")}
-                        className="dvx:text-[11px] dvx:font-semibold dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-red-500 dvx:disabled:opacity-40"
+                    </span>
+                    <span className={`${cell} dvx:text-right dvx:min-w-0 dvx:flex dvx:flex-col dvx:justify-center`} style={infoStyle}>
+                      <span className="dvx:block dvx:text-[11px] dvx:font-semibold dvx:text-gray-700 dvx:dark:text-gray-200 dvx:truncate">
+                        {formatAmount(balanceH)}
+                      </span>
+                      {rewardPrice != null && (
+                        <span className="dvx:block dvx:text-[10px] dvx:text-gray-400">{formatUsd(balanceH.toNumber() * rewardPrice)}</span>
+                      )}
+                    </span>
+                    {hasStake && (
+                      <span className={`${cell} dvx:text-right dvx:min-w-0 dvx:flex dvx:flex-col dvx:justify-center`} style={infoStyle}>
+                        {enrolled ? (
+                          <>
+                            <span className="dvx:block dvx:text-[11px] dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400 dvx:truncate">
+                              {pendingH ? formatAmount(pendingH) : "0"}
+                            </span>
+                            {rewardPrice != null && pendingH && (
+                              <span className="dvx:block dvx:text-[10px] dvx:text-gray-400">{formatUsd(pendingH.toNumber() * rewardPrice)}</span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="dvx:text-[10px] dvx:text-gray-400">{t("farms_not_followed")}</span>
+                        )}
+                      </span>
+                    )}
+                    {hasStake && (
+                      <span
+                        className={`${cell} dvx:flex dvx:flex-col dvx:items-end dvx:justify-center dvx:gap-0.5`}
+                        style={{ ...rowStyle, paddingRight: 8, ...(followed ? { borderTopRightRadius: 6, borderBottomRightRadius: 6 } : {}) }}
                       >
-                        {t("farms_unsubscribe")}
-                      </button>
-                    </>
-                  ) : (
-                    !s.paused && (
-                      // Explicit opt-in (subscribeReward) — claimRewards no longer enrolls.
-                      <button
-                        type="button"
-                        disabled={!!busy || atCap}
-                        onClick={() => onSubscribe(farm, s.rewardedToken)}
-                        title={atCap ? t("farms_cap_reached", { max: maxActive }) : t("farms_join_tooltip")}
-                        className="dvx:text-[11px] dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:disabled:opacity-40"
-                      >
-                        {t("farms_join")}
-                      </button>
-                    )
-                  )}
-                </span>
-              )}
+                        {enrolled ? (
+                          <>
+                            <span className="dvx:flex dvx:gap-2">
+                              <button
+                                type="button"
+                                disabled={!!busy || !pendingH?.gt(0)}
+                                onClick={() => onClaim(farm, s.rewardedToken)}
+                                className="dvx:text-[11px] dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:disabled:opacity-40 dvx:whitespace-nowrap"
+                              >
+                                {t("farms_claim")}
+                              </button>
+                              {sameToken && (
+                                <button
+                                  type="button"
+                                  disabled={!!busy || !pendingH?.gt(0)}
+                                  onClick={() => onCompound(farm)}
+                                  className="dvx:text-[11px] dvx:font-bold dvx:text-green-600 dvx:bg-transparent dvx:hover:text-green-700 dvx:disabled:opacity-40 dvx:whitespace-nowrap"
+                                >
+                                  {t("farms_compound")}
+                                </button>
+                              )}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={!!busy}
+                              onClick={() => onUnsubscribe(farm, s.rewardedToken)}
+                              title={t("farms_unsubscribe_tooltip")}
+                              className="dvx:text-[10px] dvx:font-semibold dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-red-500 dvx:disabled:opacity-40"
+                            >
+                              {t("farms_unsubscribe")}
+                            </button>
+                          </>
+                        ) : (
+                          !s.paused && (
+                            // Explicit opt-in (subscribeReward) — claimRewards no longer enrolls.
+                            <button
+                              type="button"
+                              disabled={!!busy || atCap}
+                              onClick={() => onSubscribe(farm, s.rewardedToken)}
+                              title={atCap ? t("farms_cap_reached", { max: maxActive }) : t("farms_join_tooltip")}
+                              className="dvx:text-[11px] dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:disabled:opacity-40 dvx:whitespace-nowrap"
+                            >
+                              {t("farms_join")}
+                            </button>
+                          )
+                        )}
+                      </span>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
+            {sortedStreams.length > STREAMS_PREVIEW && (
+              // Long reward lists: first rows only (followed first, then best APR),
+              // the rest behind a toggle.
+              <button
+                type="button"
+                onClick={() => setShowAllStreams((v) => !v)}
+                className="dvx:w-full dvx:flex dvx:items-center dvx:justify-center dvx:gap-1 dvx:mt-1.5 dvx:pt-1.5 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#333] dvx:text-[11px] dvx:font-semibold dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-amber-500"
+              >
+                {showAllStreams
+                  ? t("farms_streams_collapse")
+                  : t("farms_streams_show_all", { count: sortedStreams.length, hidden: sortedStreams.length - STREAMS_PREVIEW })}
+                <ChevronDownIcon className={`dvx:w-3.5 dvx:h-3.5 dvx:transition-transform ${showAllStreams ? "dvx:rotate-180" : ""}`} />
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Streams the user is still enrolled in but that were ended */}
       {endedEnrolled.map((id) => (
@@ -838,7 +1115,7 @@ function FarmCard({
 
       {/* Stream slots: followed (🌾) · free · locked (🔒) up to the global ceiling */}
       {maxActive != null && (
-        <div className="dvx:mt-2 dvx:flex dvx:items-center dvx:gap-2 dvx:flex-wrap" title={t("farms_slots_tooltip")}>
+        <div className="dvx:mt-2 dvx:flex dvx:items-center dvx:gap-2 dvx:flex-wrap">
           <div className="dvx:flex dvx:gap-1">
             {Array.from({ length: Math.max(maxCeiling ?? maxActive, maxActive) }, (_, i) => {
               const followed = hasStake && i < active.size;
@@ -862,11 +1139,26 @@ function FarmCard({
               );
             })}
           </div>
-          <span className={`dvx:text-[11px] ${hasStake && atCap ? "dvx:text-orange-500 dvx:font-semibold" : "dvx:text-gray-400"}`}>
+          <span
+            className={`dvx:text-[11px] ${hasStake && atCap ? "dvx:text-orange-500 dvx:font-semibold" : "dvx:text-gray-400"}`}
+            title={t("farms_slots_tooltip")}
+          >
             {hasStake
               ? t("farms_slots_detail", { used: active.size, max: maxActive, free: Math.max(0, maxActive - active.size) })
               : t("farms_slots_open", { max: maxActive })}
           </span>
+          {/* Claim all — on the slots row, right-aligned */}
+          {hasStake && claimableCount >= 2 && (
+            <button
+              type="button"
+              disabled={!!busy}
+              onClick={() => onClaimAll(farm)}
+              className="dvx:ml-auto dvx:text-[11px] dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:disabled:opacity-40"
+            >
+              {t("farms_claim_all")}
+              {claimableUsd > 0 && <span className="dvx:font-semibold dvx:text-gray-400"> (≈ {formatUsd(claimableUsd)})</span>}
+            </button>
+          )}
         </div>
       )}
 
@@ -879,7 +1171,8 @@ function FarmCard({
               {formatAmount(myStakeH)} {tickerOf(staked)}
             </span>
           </span>
-          {claimableCount >= 2 && (
+          {maxActive == null && claimableCount >= 2 && (
+            // No slots row to host it (cap unknown): keep it here.
             <button
               type="button"
               disabled={!!busy}
@@ -887,6 +1180,7 @@ function FarmCard({
               className="dvx:ml-auto dvx:text-[11px] dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:disabled:opacity-40"
             >
               {t("farms_claim_all")}
+              {claimableUsd > 0 && <span className="dvx:font-semibold dvx:text-gray-400"> (≈ {formatUsd(claimableUsd)})</span>}
             </button>
           )}
         </div>
@@ -1000,6 +1294,11 @@ function FarmCard({
             {amountRaw != null && usdOf(amountRaw.toString()) != null && (
               <p className="dvx:mt-1 dvx:text-[11px] dvx:font-semibold dvx:text-gray-500 dvx:dark:text-gray-300">
                 ≈ {formatUsd(usdOf(amountRaw.toString())!)}
+              </p>
+            )}
+            {simRatio != null && (
+              <p className="dvx:mt-0.5 dvx:text-[10px] dvx:text-amber-600 dvx:dark:text-amber-400">
+                {t(mode === "stake" ? "farms_apr_sim_hint_stake" : "farms_apr_sim_hint_unstake")}
               </p>
             )}
             {mode === "stake" && liveStreams.length === 0 && (

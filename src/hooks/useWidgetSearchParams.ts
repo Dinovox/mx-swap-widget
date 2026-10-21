@@ -7,7 +7,8 @@ export function useWidgetSearchParams(): [URLSearchParams, SetParams] {
   const setParams: SetParams = (updater, options) => {
     const next = updater(new URLSearchParams(window.location.search));
     const hash = window.location.hash;
-    const url = window.location.pathname + '?' + next.toString() + hash;
+    const qs = next.toString();
+    const url = window.location.pathname + (qs ? '?' + qs : '') + hash;
     if (options?.replace) {
       window.history.replaceState({}, '', url);
     } else {

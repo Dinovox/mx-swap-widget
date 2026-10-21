@@ -18,6 +18,8 @@ import BigNumber from "bignumber.js";
 import { useSwapConfig } from "../context/SwapConfigContext";
 import eCompassLogo from "../assets/ecompass-logo.png";
 import { getThemePalette } from "../ui/themePalette";
+import { PriceChart } from "../ui/PriceChart";
+import { fetchChartable, fetchReferenceTokenCharts, type ChartableEntry } from "../helpers/charts";
 import type {
   SwapToken,
   QuoteHop,
@@ -132,6 +134,29 @@ export const Swap = () => {
   /* ---- Selection ---- */
   const [tokenIn, setTokenIn] = useState<SwapToken | null>(null);
   const [tokenOut, setTokenOut] = useState<SwapToken | null>(null);
+
+  /* ---- Price chart (direct DinoVox pools vs VOXEGLD / USDC only) ---- */
+  const [chartable, setChartable] = useState<ChartableEntry[]>([]);
+  useEffect(() => {
+    if (!apiUrl) return;
+    fetchChartable(apiUrl).then(setChartable).catch(() => setChartable([]));
+  }, [apiUrl]);
+  // Chart of the token being BOUGHT only (no fallback on the sold one):
+  // nothing shown if it has no direct VOXEGLD/USDC pool. EGLD ≡ WEGLD.
+  // VOXEGLD itself (the reference currency, never a `token` in /pools/chartable)
+  // is charted against USDC and/or WEGLD from its own direct pools.
+  const chartTokenId = tokenOut?.identifier === "EGLD" ? wegld_identifier : tokenOut?.identifier;
+  const isReferenceToken = !!chartTokenId && chartTokenId.split("-")[0] === "VOXEGLD";
+  const [referenceEntries, setReferenceEntries] = useState<ChartableEntry[]>([]);
+  useEffect(() => {
+    if (!apiUrl || !isReferenceToken || !chartTokenId) return setReferenceEntries([]);
+    fetchReferenceTokenCharts(apiUrl, chartTokenId).then(setReferenceEntries).catch(() => setReferenceEntries([]));
+  }, [apiUrl, isReferenceToken, chartTokenId]);
+  const chartEntries = useMemo(() => {
+    if (!chartTokenId) return [];
+    if (isReferenceToken) return referenceEntries;
+    return chartable.filter((e) => e.token === chartTokenId);
+  }, [chartable, chartTokenId, isReferenceToken, referenceEntries]);
   const urlInitDoneRef = useRef(false);
   const [amountIn, setAmountIn] = useState("");
   const [amountOut, setAmountOut] = useState("");
@@ -1196,6 +1221,15 @@ export const Swap = () => {
               </p>
             )}
           </div>
+
+          {/* ---- Price chart of the bought token (only if it has one) ---- */}
+          {chartEntries.length > 0 && (
+            <PriceChart
+              apiUrl={apiUrl}
+              entries={chartEntries}
+              tickerOf={(id) => tokens.find((tk) => tk.identifier === id)?.ticker ?? id.split("-")[0]}
+            />
+          )}
 
           {/* ---- Wrap/Unwrap info ---- */}
           {isWrapUnwrap && !!amountIn && Number(amountIn) > 0 && (

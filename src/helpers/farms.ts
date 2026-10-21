@@ -19,6 +19,8 @@ export interface FarmRewardStream {
   msToMax: number;
   /** Server-computed APR (GET /farms) — undefined when read on-chain (computed client-side then). */
   aprPct?: number | null;
+  /** Reward token logo (GET /farms), null/undefined → initials fallback. */
+  logoUrl?: string | null;
 }
 
 export interface Farm {
@@ -159,9 +161,10 @@ export interface FarmsFundingConfig {
   defaultMaxActive?: number;
   /** Hard ceiling of streams per participant (unlockExtraFlux can't go past it). */
   maxActiveCeiling?: number;
-  /** unlockExtraFlux price (raw, paid in removeFeesToken) — +1 stream for everyone on a farm. */
+  /** unlockExtraFlux price (raw, paid in extraFluxToken) — +1 stream for everyone on a farm. */
   extraFluxPrice?: string;
-  removeFeesToken?: string;
+  /** Token unlockExtraFlux is paid in (contract's extra_flux_token, ex remove_fees_token). */
+  extraFluxToken?: string;
   /** Floor (raw) to open a NEW non-whitelisted stream on an existing farm (divisibility). */
   minFundAmountNonWhitelisted?: string;
 }
@@ -173,14 +176,18 @@ export async function fetchFarmsFundingConfig(
 ): Promise<FarmsFundingConfig> {
   const c = controllerFor(networkApiAddress, chainId);
   const contract = new Address(farmsAddress);
-  const [[whitelisted], [feePercent], [defaultMsToMax], [defaultMax], [ceiling], [price], [removeFeesToken]] = await Promise.all([
+  const [[whitelisted], [feePercent], [defaultMsToMax], [defaultMax], [ceiling], [price], [extraFluxToken]] = await Promise.all([
     c.query({ contract, function: "getWhitelistedRewardTokens", arguments: [] }),
     c.query({ contract, function: "getFeePercent", arguments: [] }),
     c.query({ contract, function: "getDefaultMsToMax", arguments: [] }),
     c.query({ contract, function: "getDefaultMaxActiveRewardsPerPosition", arguments: [] }),
     c.query({ contract, function: "getMaxActiveRewardsPerPositionCeiling", arguments: [] }),
     c.query({ contract, function: "getExtraFluxPrice", arguments: [] }),
-    c.query({ contract, function: "getRemoveFeesToken", arguments: [] }),
+    // getExtraFluxToken (renamed 2026-10-19); getRemoveFeesToken on older contracts.
+    c
+      .query({ contract, function: "getExtraFluxToken", arguments: [] })
+      .catch(() => c.query({ contract, function: "getRemoveFeesToken", arguments: [] }))
+      .catch(() => [""]),
   ]);
   const minNonWl = await c
     .query({ contract, function: "getMinFundAmountNonWhitelisted", arguments: [] })
@@ -193,7 +200,7 @@ export async function fetchFarmsFundingConfig(
     defaultMaxActive: num(defaultMax),
     maxActiveCeiling: num(ceiling),
     extraFluxPrice: str(price),
-    removeFeesToken: String(removeFeesToken ?? ""),
+    extraFluxToken: String(extraFluxToken ?? ""),
     minFundAmountNonWhitelisted: minNonWl,
   };
 }

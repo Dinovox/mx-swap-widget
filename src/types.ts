@@ -67,7 +67,7 @@ export interface LiquidityPool extends Required<Pick<PoolInfo, 'lpToken' | 'rese
     maxActiveRewardsPerPosition?: number;
     /** Server cumulative farm APR: best N streams by APR, N = maxActiveRewardsPerPosition (null = none priced). */
     farmAprPct?: string | null;
-    rewards: Array<{ token: string; balance: string; paused: boolean; msToMax: number; feeBps: number; aprPct: string | null }>;
+    rewards: Array<{ token: string; balance: string; paused: boolean; msToMax: number; feeBps: number; aprPct: string | null; logoUrl?: string | null }>;
   } | null;
   /** apr.aprPct + farm.farmAprPct (GET /pools; one missing counts as 0, null if both unresolved). */
   totalAprPct?: string | null;

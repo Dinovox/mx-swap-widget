@@ -13,16 +13,16 @@
     "constructor": {
         "inputs": [
             {
-                "name": "remove_fees_token",
+                "name": "extra_flux_token",
                 "type": "TokenIdentifier"
+            },
+            {
+                "name": "extra_flux_price",
+                "type": "BigUint"
             },
             {
                 "name": "fee_wallet",
                 "type": "Address"
-            },
-            {
-                "name": "remove_fees_price",
-                "type": "BigUint"
             },
             {
                 "name": "fee_percent",
@@ -186,24 +186,6 @@
             "outputs": []
         },
         {
-            "name": "removePoolFees",
-            "mutability": "mutable",
-            "payableInTokens": [
-                "*"
-            ],
-            "inputs": [
-                {
-                    "name": "staked_token",
-                    "type": "TokenIdentifier"
-                },
-                {
-                    "name": "rewarded_token",
-                    "type": "TokenIdentifier"
-                }
-            ],
-            "outputs": []
-        },
-        {
             "name": "unlockExtraFlux",
             "mutability": "mutable",
             "payableInTokens": [
@@ -248,16 +230,12 @@
             "mutability": "mutable",
             "inputs": [
                 {
-                    "name": "remove_fees_token",
+                    "name": "extra_flux_token",
                     "type": "TokenIdentifier"
                 },
                 {
                     "name": "fee_wallet",
                     "type": "Address"
-                },
-                {
-                    "name": "remove_fees_price",
-                    "type": "BigUint"
                 },
                 {
                     "name": "fee_percent",
@@ -420,22 +398,6 @@
             "outputs": []
         },
         {
-            "name": "ejectTokens",
-            "onlyOwner": true,
-            "mutability": "mutable",
-            "inputs": [
-                {
-                    "name": "staked_token",
-                    "type": "TokenIdentifier"
-                },
-                {
-                    "name": "batch",
-                    "type": "u64"
-                }
-            ],
-            "outputs": []
-        },
-        {
             "name": "closePool",
             "onlyOwner": true,
             "mutability": "mutable",
@@ -468,25 +430,6 @@
             "outputs": []
         },
         {
-            "name": "getTokenPosition",
-            "mutability": "readonly",
-            "inputs": [
-                {
-                    "name": "staked_token",
-                    "type": "TokenIdentifier"
-                },
-                {
-                    "name": "rewarded_token",
-                    "type": "TokenIdentifier"
-                }
-            ],
-            "outputs": [
-                {
-                    "type": "List<BigUint>"
-                }
-            ]
-        },
-        {
             "name": "getAllTokenPosition",
             "mutability": "readonly",
             "inputs": [
@@ -496,6 +439,64 @@
                 }
             ],
             "outputs": [
+                {
+                    "type": "List<TokenPositionView>"
+                }
+            ]
+        },
+        {
+            "name": "getStakedTokensCount",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u32"
+                }
+            ]
+        },
+        {
+            "name": "getFarmsPage",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "from",
+                    "type": "u32"
+                },
+                {
+                    "name": "size",
+                    "type": "u32"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "u32"
+                },
+                {
+                    "type": "List<FarmSummaryView>"
+                }
+            ]
+        },
+        {
+            "name": "getTokenPositionsPage",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "from",
+                    "type": "u32"
+                },
+                {
+                    "name": "size",
+                    "type": "u32"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "u32"
+                },
                 {
                     "type": "List<TokenPositionView>"
                 }
@@ -536,29 +537,6 @@
             "outputs": [
                 {
                     "type": "List<RewardsView>"
-                }
-            ]
-        },
-        {
-            "name": "getStakingPosition",
-            "mutability": "readonly",
-            "inputs": [
-                {
-                    "name": "addr",
-                    "type": "Address"
-                },
-                {
-                    "name": "staked_token",
-                    "type": "TokenIdentifier"
-                },
-                {
-                    "name": "rewarded_token",
-                    "type": "TokenIdentifier"
-                }
-            ],
-            "outputs": [
-                {
-                    "type": "List<BigUint>"
                 }
             ]
         },
@@ -610,7 +588,7 @@
             "outputs": []
         },
         {
-            "name": "getRemoveFeesToken",
+            "name": "getExtraFluxToken",
             "mutability": "readonly",
             "inputs": [],
             "outputs": [
@@ -636,16 +614,6 @@
             "outputs": [
                 {
                     "type": "u64"
-                }
-            ]
-        },
-        {
-            "name": "getRemoveFeesPrice",
-            "mutability": "readonly",
-            "inputs": [],
-            "outputs": [
-                {
-                    "type": "BigUint"
                 }
             ]
         },
@@ -682,22 +650,6 @@
             "outputs": [
                 {
                     "type": "variadic<TokenIdentifier>",
-                    "multi_result": true
-                }
-            ]
-        },
-        {
-            "name": "getStakedAddresses",
-            "mutability": "readonly",
-            "inputs": [
-                {
-                    "name": "staked_token",
-                    "type": "TokenIdentifier"
-                }
-            ],
-            "outputs": [
-                {
-                    "type": "variadic<Address>",
                     "multi_result": true
                 }
             ]
@@ -877,9 +829,425 @@
         "farm_token_issue_callback",
         "restrict_farm_token_transfer_callback"
     ],
+    "events": [
+        {
+            "docs": [
+                "fund() — abondement d'un stream (création de la farm et/ou du stream",
+                "inclus, cf. is_new_farm / is_new_stream)."
+            ],
+            "identifier": "fund",
+            "inputs": [
+                {
+                    "name": "caller",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "amount_paid",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "fee_amount",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "new_balance",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "is_new_farm",
+                    "type": "bool",
+                    "indexed": true
+                },
+                {
+                    "name": "is_new_stream",
+                    "type": "bool",
+                    "indexed": true
+                },
+                {
+                    "name": "ms_to_max",
+                    "type": "u64",
+                    "indexed": true
+                },
+                {
+                    "name": "fee_percentage",
+                    "type": "u64",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp_ms",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "identifier": "stake",
+            "inputs": [
+                {
+                    "name": "caller",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "new_user_stake",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "new_total_staked",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "position_nonce",
+                    "type": "u64",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp_ms",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "unstake() — new_user_stake == 0 implique la purge de TOUTES les",
+                "souscriptions de l'utilisateur sur ce staked_token (un event",
+                "unsubscribe UNSUBSCRIBE_FULL_UNSTAKE est aussi émis par stream)."
+            ],
+            "identifier": "unstake",
+            "inputs": [
+                {
+                    "name": "caller",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "new_user_stake",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "new_total_staked",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp_ms",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Un reward réellement payé sur UN stream — émis depuis",
+                "settle_one_reward_stream, donc quel que soit le déclencheur",
+                "(claimRewards, claimAllRewards, stake, unstake, unsubscribeReward).",
+                "Jamais émis pour un montant nul."
+            ],
+            "identifier": "rewardPaid",
+            "inputs": [
+                {
+                    "name": "user",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "new_balance",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "new_total_rewarded",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp_ms",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "identifier": "subscribe",
+            "inputs": [
+                {
+                    "name": "user",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp_ms",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "reason : cf. UNSUBSCRIBE_* dans staking-contract.rs (volontaire,",
+                "forcé sans paiement, stream clôturé purgé, sortie complète)."
+            ],
+            "identifier": "unsubscribe",
+            "inputs": [
+                {
+                    "name": "user",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "reason",
+                    "type": "u8",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp_ms",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "identifier": "extraFluxUnlocked",
+            "inputs": [
+                {
+                    "name": "caller",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "new_max_active",
+                    "type": "u64",
+                    "indexed": true
+                },
+                {
+                    "name": "payment_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "payment_amount",
+                    "type": "BigUint",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Plafond de souscriptions d'une farm modifié par l'owner",
+                "(setMaxActiveRewardsPerPosition) — unlockExtraFlux a son propre event."
+            ],
+            "identifier": "maxActiveRewardsSet",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "new_max_active",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "setFees / pausePool / unpausePool — état complet du stream après",
+                "modification owner (fee, fenêtre, pause)."
+            ],
+            "identifier": "streamUpdated",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "fee_percentage",
+                    "type": "u64",
+                    "indexed": true
+                },
+                {
+                    "name": "ms_to_max",
+                    "type": "u64",
+                    "indexed": true
+                },
+                {
+                    "name": "paused",
+                    "type": "bool",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "closePool / endRewardStream — le stream n'existe plus.",
+                "farm_removed = le staked_token a aussi quitté getStakedTokens."
+            ],
+            "identifier": "streamClosed",
+            "inputs": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "rewarded_token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "refunded_to",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "refunded_amount",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "farm_removed",
+                    "type": "bool",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "add/removeWhitelistedRewardToken, setMinFundAmount."
+            ],
+            "identifier": "whitelistUpdated",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "whitelisted",
+                    "type": "bool",
+                    "indexed": true
+                },
+                {
+                    "name": "min_fund_amount",
+                    "type": "BigUint",
+                    "indexed": true
+                }
+            ]
+        }
+    ],
     "esdtAttributes": [],
     "hasCallback": false,
     "types": {
+        "FarmSummaryView": {
+            "type": "struct",
+            "fields": [
+                {
+                    "name": "staked_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "total_staked",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "position_nonce",
+                    "type": "u64"
+                },
+                {
+                    "name": "max_active_rewards_per_position",
+                    "type": "u64"
+                },
+                {
+                    "name": "rewards_count",
+                    "type": "u64"
+                }
+            ]
+        },
         "RewardsView": {
             "type": "struct",
             "fields": [
@@ -949,10 +1317,6 @@
                 {
                     "name": "total_staked",
                     "type": "BigUint"
-                },
-                {
-                    "name": "staked_addresses",
-                    "type": "u32"
                 }
             ]
         }
