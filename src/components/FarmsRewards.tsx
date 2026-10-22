@@ -197,10 +197,18 @@ export const FarmsRewards = () => {
   const farmExists = !!stakedToken && (farmStakedTokens.includes(stakedToken) || (streams ?? []).length > 0);
   // Wallet fungible ESDTs that aren't whitelisted (+ existing non-whitelisted
   // streams of this farm, even if not held), shown under the allowed ones.
+  // Wallet tokens must be branded (MultiversX assets with a logo): unbranded
+  // ones (LP tokens, spam, test tokens) aren't offered as new rewards.
   const otherIds = [
     ...new Set([
       ...walletItems
-        .filter((w) => w.identifier && /^[A-Z0-9]{3,10}-[a-f0-9]{6}$/.test(w.identifier) && new BigNumber(w.balance ?? "0").gt(0))
+        .filter(
+          (w) =>
+            w.identifier &&
+            /^[A-Z0-9]{3,10}-[a-f0-9]{6}$/.test(w.identifier) &&
+            new BigNumber(w.balance ?? "0").gt(0) &&
+            !!(w.assets?.svgUrl || w.assets?.pngUrl),
+        )
         .map((w) => w.identifier!),
       ...(streams ?? []).map((s) => s.rewardedToken),
     ]),
@@ -242,8 +250,6 @@ export const FarmsRewards = () => {
   // Fee actually charged by fund(): 0 for a whitelisted token, else the stream's own fee.
   // A new non-whitelisted stream is created with the current global fee.
   const feeBps = isWhitelisted ? 0 : (existing?.feePercentage ?? config?.feePercent ?? 0);
-  // Fee the stream will carry for future non-whitelisted top-ups (global fee at creation).
-  const streamFeeBps = existing ? existing.feePercentage : (config?.feePercent ?? 0);
   const windowMs = existing ? existing.msToMax : (config?.defaultMsToMax ?? 0);
 
   /* ---- Amount ---- */
@@ -541,8 +547,6 @@ export const FarmsRewards = () => {
                   ? t("farms_fund_fee_none")
                   : `${(feeBps / 100).toFixed(2)} %${feeRaw && feeRaw.gt(0) ? ` · ${fmt(feeRaw, reward.identifier)} ${reward.ticker}` : ""}`,
               )}
-              {/* Stream fee only matters for non-whitelisted deposits. */}
-              {!isWhitelisted && row(t("farms_fund_stream_fee"), `${(streamFeeBps / 100).toFixed(2)} %`)}
               {netRaw && row(t("farms_fund_net"), `${fmt(netRaw, reward.identifier)} ${reward.ticker}`)}
               {windowMs > 0 && row(t("farms_fund_window"), t("farms_fund_window_value", { days: Math.round(windowMs / 86_400_000) }))}
               {hasStakers && (existing || projectedApr != null) && (

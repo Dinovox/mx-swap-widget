@@ -61,6 +61,17 @@ function formatUsd(value: number): string {
   return `$${(value / 1_000_000).toFixed(2)}M`;
 }
 
+/**
+ * Remaining stream balance: TRUNCATED, never rounded up — 9.9999996 must read
+ * 9.999999, not 10 (the stream isn't full). Up to 6 decimals (6 significant
+ * digits below 1), trailing zeros dropped; the exact value is in the tooltip.
+ */
+function formatRemaining(bn: BigNumber): string {
+  if (bn.isZero()) return "0";
+  if (bn.gte(1)) return bn.decimalPlaces(6, BigNumber.ROUND_DOWN).toFormat();
+  return bn.precision(6, BigNumber.ROUND_DOWN).toFormat();
+}
+
 function formatAmount(bn: BigNumber): string {
   if (bn.isZero()) return "0";
   if (bn.gte(1_000_000)) return bn.toFormat(0);
@@ -996,8 +1007,8 @@ function FarmCard({
                       )}
                     </span>
                     <span className={`${cell} dvx:text-right dvx:min-w-0 dvx:flex dvx:flex-col dvx:justify-center`} style={infoStyle}>
-                      <span className="dvx:block dvx:text-[11px] dvx:font-semibold dvx:text-gray-700 dvx:dark:text-gray-200 dvx:truncate">
-                        {formatAmount(balanceH)}
+                      <span className="dvx:block dvx:text-[11px] dvx:font-semibold dvx:text-gray-700 dvx:dark:text-gray-200 dvx:truncate" title={balanceH.toFormat()}>
+                        {formatRemaining(balanceH)}
                       </span>
                       {rewardPrice != null && (
                         <span className="dvx:block dvx:text-[10px] dvx:text-gray-400">{formatUsd(balanceH.toNumber() * rewardPrice)}</span>
