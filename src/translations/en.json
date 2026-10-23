@@ -391,5 +391,22 @@
   "dca_below_minimum_blocked": "This order is below the minimum value and no self-funded gas option is available right now — increase the amount per execution.",
   "dca_btn_below_minimum": "Amount too low",
   "dca_no_route": "Quote unavailable: no DCA route exists between these two tokens — pick another pair.",
-  "dca_btn_no_route": "Quote unavailable"
+  "dca_btn_no_route": "Quote unavailable",
+  "ext_lp_title": "JEXchange is closing: recover your liquidity",
+  "ext_lp_desc": "You still hold JEXchange LP tokens. Withdraw them to get your tokens back, even if the pool is paused.",
+  "ext_lp_withdraw": "Withdraw",
+  "ext_lp_withdraw_all": "Withdraw all ({{count}})",
+  "ext_lp_paused": "paused",
+  "ext_lp_inactive": "inactive",
+  "ext_lp_processing": "Withdrawing JEXchange liquidity…",
+  "ext_lp_success": "JEXchange liquidity withdrawn!",
+  "ext_lp_error": "Withdrawal failed",
+  "jex_add_hint": "Amounts follow the pool's current ratio; any excess is refunded.",
+  "jex_add_lp_out": "≈ {{amount}} LP received",
+  "jex_add_insufficient": "Insufficient balance",
+  "jex_add_submit": "Add on JEXchange",
+  "jex_add_processing": "Adding liquidity on JEXchange…",
+  "jex_add_success": "Liquidity added on JEXchange!",
+  "jex_add_error": "Add liquidity failed",
+  "ext_lp_tab_hint": "{{count}} JEXchange LP position(s) to withdraw"
 }

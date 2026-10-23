@@ -15,15 +15,14 @@ export interface SwapConfig {
   wrapContract: string;
   /**
    * DCA escrow smart contract address (dca-escrow) — the sole entry point
-   * for createOrder/cancelOrder. Optional: not deployed on every network yet
-   * (devnet-only at the time of writing), so there is no default. The DCA
-   * tab shows a "not available" state when this is unset.
+   * for createOrder/cancelOrder. Defaults to the mainnet contract; pass ""
+   * to hide DCA (the tab then shows a "not available" state).
    */
   dcaEscrowAddress?: string;
   /**
    * Farms smart contract address (swapv2/farms, multi-reward LP staking).
-   * Optional: not deployed on every network yet, so there is no default —
-   * the Farms tab shows a "not available" state when this is unset.
+   * Defaults to the mainnet contract; pass "" to disable Farms (the tab then
+   * shows a "not available" state).
    */
   farmsAddress?: string;
   /** WEGLD token identifier  e.g. 'WEGLD-bd4d79' */
@@ -142,6 +141,10 @@ const DEFAULT_CONFIG: ResolvedSwapConfig = {
     "erd1qqqqqqqqqqqqqpgqq5852gnes6xxka35lw42prqwtv6a0znhfm8sn3h9n3",
   wrapContract:
     "erd1qqqqqqqqqqqqqpgqhe8t5jewej70zupmh44jurgn29psua5l2jps3ntjj3",
+  dcaEscrowAddress:
+    "erd1qqqqqqqqqqqqqpgqy4k64jchmpxrh74xxgds9wtzkz2d5r4ufm8smqsnjw",
+  farmsAddress:
+    "erd1qqqqqqqqqqqqqpgqqh0mhf3szafyu0j9h4gn0fc5nfa03es5fm8s9fp70y",
   wegldIdentifier: "WEGLD-bd4d79",
   networkApiAddress: "https://api.multiversx.com",
   chainId: "1",

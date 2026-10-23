@@ -156,6 +156,8 @@ export const FarmsRewards = () => {
           identifier: p.lpToken,
           ticker: `${tickerOf(p.tokenA)} / ${tickerOf(p.tokenB)}`,
           logoUrl: tokenMap[p.tokenA]?.logoUrl ?? null,
+          logoUrl2: tokenMap[p.tokenB]?.logoUrl ?? null,
+          ticker2: tickerOf(p.tokenB),
           priceUsd: null,
         }))
         .sort((a, b) => a.ticker.localeCompare(b.ticker)),

@@ -391,5 +391,22 @@
   "dca_below_minimum_blocked": "Cet ordre est sous le montant minimum et aucune option de gas auto-financé n'est disponible pour l'instant — augmentez le montant par exécution.",
   "dca_btn_below_minimum": "Montant trop faible",
   "dca_no_route": "Quote impossible : aucune route DCA n'existe entre ces deux tokens — choisissez une autre paire.",
-  "dca_btn_no_route": "Quote impossible"
+  "dca_btn_no_route": "Quote impossible",
+  "ext_lp_title": "JEXchange ferme : récupérez votre liquidité",
+  "ext_lp_desc": "Vous détenez encore des LP JEXchange. Retirez-les pour récupérer vos tokens, même si la pool est en pause.",
+  "ext_lp_withdraw": "Retirer",
+  "ext_lp_withdraw_all": "Tout retirer ({{count}})",
+  "ext_lp_paused": "en pause",
+  "ext_lp_inactive": "inactive",
+  "ext_lp_processing": "Retrait de la liquidité JEXchange…",
+  "ext_lp_success": "Liquidité JEXchange retirée !",
+  "ext_lp_error": "Le retrait a échoué",
+  "jex_add_hint": "Les montants suivent le ratio actuel de la pool ; l'éventuel surplus vous est rendu.",
+  "jex_add_lp_out": "≈ {{amount}} LP reçus",
+  "jex_add_insufficient": "Solde insuffisant",
+  "jex_add_submit": "Ajouter sur JEXchange",
+  "jex_add_processing": "Ajout de liquidité sur JEXchange…",
+  "jex_add_success": "Liquidité ajoutée sur JEXchange !",
+  "jex_add_error": "L'ajout a échoué",
+  "ext_lp_tab_hint": "{{count}} position(s) LP JEXchange à retirer"
 }

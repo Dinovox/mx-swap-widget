@@ -23,6 +23,12 @@ export interface TokenSelectToken {
   ticker: string;
   logoUrl?: string | null;
   priceUsd?: string | null;
+  /**
+   * Pair entries (e.g. an LP token): second token's logo/ticker. When
+   * `ticker2` is set the option shows both logos side by side, overlapping.
+   */
+  logoUrl2?: string | null;
+  ticker2?: string;
 }
 
 /** Wallet holding info for a token, keyed by identifier and passed to TokenSelect for display/sorting. */
@@ -101,6 +107,19 @@ export function TokenLogo({ url, ticker }: { url?: string | null; ticker: string
   );
 }
 
+/** Single logo, or two overlapping logos for a pair entry (ticker2 set). */
+function OptionLogo({ tok }: { tok: TokenSelectToken }) {
+  if (!tok.ticker2) return <TokenLogo url={tok.logoUrl} ticker={tok.ticker} />;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
+      <TokenLogo url={tok.logoUrl} ticker={tok.ticker} />
+      <span style={{ marginLeft: -8, borderRadius: 9999, boxShadow: "0 0 0 2px rgba(0,0,0,0.35)", display: "inline-flex" }}>
+        <TokenLogo url={tok.logoUrl2} ticker={tok.ticker2} />
+      </span>
+    </span>
+  );
+}
+
 export function TokenSelect<T extends TokenSelectToken>({
   value,
   onChange,
@@ -157,7 +176,7 @@ export function TokenSelect<T extends TokenSelectToken>({
           <span className="dvx:flex-1 dvx:text-left dvx:text-gray-400">{t('token_loading')}</span>
         ) : value ? (
           <>
-            <TokenLogo url={value.logoUrl} ticker={value.ticker} />
+            <OptionLogo tok={value} />
             <span className="dvx:flex-1 dvx:text-left">{value.ticker}</span>
           </>
         ) : (
@@ -226,7 +245,7 @@ export function TokenSelect<T extends TokenSelectToken>({
                                   : `dvx:hover:bg-amber-50 dvx:dark:hover:bg-[#333] ${isSelected ? 'dvx:bg-amber-50 dvx:dark:bg-[#333]' : ''}`
                               }`}
                             >
-                              <TokenLogo url={tok.logoUrl} ticker={tok.ticker} />
+                              <OptionLogo tok={tok} />
                               <div className="dvx:flex-1 dvx:min-w-0 dvx:text-left">
                                 <p className={`dvx:text-sm dvx:font-bold dvx:truncate dvx:leading-tight ${isSelected ? 'dvx:text-amber-600 dvx:dark:text-amber-400' : 'dvx:text-gray-900 dvx:dark:text-white'}`}>
                                   {tok.ticker}
@@ -289,7 +308,7 @@ export function TokenSelect<T extends TokenSelectToken>({
                             : ''
                         }`}
                       >
-                        <TokenLogo url={tok.logoUrl} ticker={tok.ticker} />
+                        <OptionLogo tok={tok} />
                         <div className="dvx:flex-1 dvx:min-w-0 dvx:text-left">
                           <p className={`dvx:text-sm dvx:font-bold dvx:truncate dvx:leading-tight ${isSelected ? 'dvx:text-amber-600 dvx:dark:text-amber-400' : 'dvx:text-gray-900 dvx:dark:text-white'}`}>
                             {tok.ticker}
