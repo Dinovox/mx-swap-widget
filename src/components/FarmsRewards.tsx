@@ -352,6 +352,9 @@ export const FarmsRewards = () => {
                   : null;
 
   /* ---- Submit ---- */
+  // Final acknowledgement: rewards go to the farm's liquidity providers and a
+  // deposit can't be taken back — required before every fund().
+  const [ack, setAck] = React.useState(false);
   const [sending, setSending] = React.useState(false);
   const [txError, setTxError] = React.useState<string | null>(null);
   /* ---- Streams per participant (per-farm cap) + paid unlock ----
@@ -406,7 +409,7 @@ export const FarmsRewards = () => {
   };
 
   const submit = async () => {
-    if (blocker || !address || !chainId || !farmsAddress || !reward || !amountRaw || !stakedToken) return;
+    if (blocker || !ack || !address || !chainId || !farmsAddress || !reward || !amountRaw || !stakedToken) return;
     setTxError(null);
     setSending(true);
     try {
@@ -434,6 +437,7 @@ export const FarmsRewards = () => {
         },
       });
       setAmount("");
+      setAck(false);
       // Right after our own fund(): read the stream on-chain once — the backend
       // snapshot is cached (~30s) and would still show the pre-deposit balance.
       fetchFarmStreams(networkApiAddress!, chainId, farmsAddress, stakedToken).then(setStreams).catch(() => {});
@@ -592,8 +596,9 @@ export const FarmsRewards = () => {
                   </span>
                 </div>
 
-                {/* One tile per slot: unlocked (🌾) then locked (🔒); the first locked one unlocks on click. */}
-                <div className="dvx:flex dvx:gap-2">
+                {/* One tile per slot: unlocked (🌾) then locked (🔒); the first locked one unlocks on click.
+                    Wraps on narrow screens (inline: immune to a stale host stylesheet). */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxWidth: "100%", minWidth: 0 }}>
                   {Array.from({ length: slots }, (_, i) => {
                     const unlocked = i < currentCap;
                     const isNext = i === currentCap && canUnlock;
@@ -660,7 +665,14 @@ export const FarmsRewards = () => {
                       <p className="dvx:text-[10px] dvx:text-gray-400 dvx:mb-1">
                         {t(liveCount === 1 ? "farms_cap_streams_label_one" : "farms_cap_streams_label", { count: liveCount })}
                       </p>
-                      <table className="dvx:w-full dvx:text-xs">
+                      {/* Fixed layout + wrapping cells: never wider than the card on mobile
+                          (long tickers, badges, 7-digit amounts). Inline: stale-CSS proof. */}
+                      <table className="dvx:w-full dvx:text-xs" style={{ width: "100%", tableLayout: "fixed" }}>
+                        <colgroup>
+                          <col style={{ width: "42%" }} />
+                          <col style={{ width: "33%" }} />
+                          <col style={{ width: "25%" }} />
+                        </colgroup>
                         <thead>
                           <tr className="dvx:text-[10px] dvx:uppercase dvx:tracking-wider dvx:text-gray-400">
                             <th className="dvx:text-left dvx:font-semibold dvx:py-1 dvx:pl-2">{t("farms_table_token")}</th>
@@ -689,7 +701,10 @@ export const FarmsRewards = () => {
                                   }
                                 >
                                   <td className="dvx:py-1.5 dvx:pl-2">
-                                    <span className="dvx:inline-flex dvx:items-center dvx:gap-1.5 dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white">
+                                    <span
+                                      className="dvx:items-center dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white"
+                                      style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 6, rowGap: 2, minWidth: 0, overflowWrap: "anywhere" }}
+                                    >
                                       <TokenLogo
                                         url={
                                           tokenMap[r.token]?.logoUrl ??
@@ -710,7 +725,7 @@ export const FarmsRewards = () => {
                                       )}
                                     </span>
                                   </td>
-                                  <td className="dvx:py-1.5 dvx:text-right dvx:text-gray-700 dvx:dark:text-gray-200">
+                                  <td className="dvx:py-1.5 dvx:pl-1 dvx:text-right dvx:text-gray-700 dvx:dark:text-gray-200" style={{ overflowWrap: "anywhere" }}>
                                     {r.sim ? (
                                       <span className="dvx:text-amber-600 dvx:dark:text-amber-400">+{fmt(add!, r.token)}</span>
                                     ) : (
@@ -730,7 +745,7 @@ export const FarmsRewards = () => {
                                       </span>
                                     )}
                                   </td>
-                                  <td className="dvx:py-1.5 dvx:text-right dvx:font-bold dvx:text-green-600 dvx:dark:text-green-400 dvx:whitespace-nowrap">
+                                  <td className="dvx:py-1.5 dvx:pl-1 dvx:text-right dvx:font-bold dvx:text-green-600 dvx:dark:text-green-400" style={{ overflowWrap: "anywhere" }}>
                                     {r.sim
                                       ? projectedApr != null ? `+${fmtApr(projectedApr)}` : "—"
                                       : <>
@@ -826,13 +841,28 @@ export const FarmsRewards = () => {
             </div>
           )}
 
+          {address && (
+            <label
+              className="dvx:flex dvx:items-start dvx:gap-2 dvx:cursor-pointer dvx:text-xs dvx:text-gray-600 dvx:dark:text-gray-300"
+              style={{ lineHeight: 1.45 }}
+            >
+              <input
+                type="checkbox"
+                checked={ack}
+                onChange={(e) => setAck(e.target.checked)}
+                style={{ marginTop: 2, width: 16, height: 16, flexShrink: 0, accentColor: "#f59e0b", cursor: "pointer" }}
+              />
+              <span>{t("farms_fund_ack")}</span>
+            </label>
+          )}
+
           <button
             onClick={!address ? onConnect : submit}
-            disabled={!address ? !onConnect : !!blocker || sending}
+            disabled={!address ? !onConnect : !!blocker || !ack || sending}
             style={{ minHeight: "36px" }}
             className={`dinoButton orange dvx:w-full dvx:text-base ${address ? "dvx:disabled:opacity-40 dvx:disabled:cursor-not-allowed" : ""}`}
           >
-            {!address ? t("btn_connect") : sending ? t("dca_btn_signing") : (blocker ?? t("farms_fund_submit"))}
+            {!address ? t("btn_connect") : sending ? t("dca_btn_signing") : (blocker ?? (ack ? t("farms_fund_submit") : t("farms_fund_ack_required")))}
           </button>
         </div>
       </Card>

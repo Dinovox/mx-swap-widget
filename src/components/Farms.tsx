@@ -66,6 +66,8 @@ function formatUsd(value: number): string {
  * 9.999999, not 10 (the stream isn't full). Up to 6 decimals (6 significant
  * digits below 1), trailing zeros dropped; the exact value is in the tooltip.
  */
+const NARROW_TABLE_PX = 440;
+
 function formatRemaining(bn: BigNumber): string {
   if (bn.isZero()) return "0";
   if (bn.gte(1)) return bn.decimalPlaces(6, BigNumber.ROUND_DOWN).toFormat();
@@ -714,6 +716,17 @@ function FarmCard({
   const [mode, setMode] = React.useState<"stake" | "unstake">("stake");
   const [amount, setAmount] = React.useState("");
   const [showAllStreams, setShowAllStreams] = React.useState(false);
+  // Streams table width: below NARROW_TABLE_PX the claimable + actions cells of
+  // a followed farm move to a second line under each stream (5 columns don't fit).
+  const streamsRef = React.useRef<HTMLDivElement>(null);
+  const [narrowTable, setNarrowTable] = React.useState(false);
+  React.useEffect(() => {
+    const el = streamsRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([entry]) => setNarrowTable(entry.contentRect.width < NARROW_TABLE_PX));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Shareable link: this page with ?pool=<address> (LP farm) or ?filter=<staked>
   // (any other staked token) + #farms — reopens the tab filtered on this farm.
@@ -930,10 +943,16 @@ function FarmCard({
       {/* Reward streams — aligned table: reward · APR · remaining · claimable · actions.
           Grid template inline (host-CSS proof); amounts with their $ value underneath. */}
       {(() => {
-        const cols = hasStake
-          ? "minmax(56px, 1fr) minmax(58px, auto) minmax(0, 1.3fr) minmax(0, 1.3fr) auto"
-          : "minmax(56px, 1fr) minmax(58px, auto) minmax(0, 1.6fr)";
-        const head = "dvx:text-[9px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400";
+        // Every track is minmax(0, …): the grid can never be wider than the card.
+        // Narrow + staked: 3 columns, claimable/actions on a second line per stream.
+        const wide = hasStake && !narrowTable;
+        // One flex row per line (header, each stream) with fixed % columns — no
+        // CSS grid auto-placement, so a cell can never drift under another header.
+        const F = wide ? ["0 0 26%", "0 0 17%", "0 0 21%", "0 0 21%", "0 0 15%"] : ["0 0 40%", "0 0 24%", "0 0 36%"];
+        const rowFlex: React.CSSProperties = { display: "flex", alignItems: "stretch", width: "100%" };
+        const head = "dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400";
+        // Inline font sizes: arbitrary-value utilities may be missing from a stale host stylesheet.
+        const headStyle: React.CSSProperties = { fontSize: 9, lineHeight: "12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
         const aprOf = (s: (typeof farm.streams)[number]): number | null => {
           if (s.aprPct !== undefined) return s.aprPct; // server-computed (GET /farms)
           const price = priceOf(s.rewardedToken);
@@ -944,15 +963,17 @@ function FarmCard({
         // must stay visible (in the first rows) to be joined; unknown APR last.
         const sortedStreams = [...farm.streams].sort((a, b) => (aprOf(b) ?? -1) - (aprOf(a) ?? -1));
         return (
-          <div className="dvx:rounded-xl dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:border dvx:border-gray-100 dvx:dark:border-[#333] dvx:px-3 dvx:py-2">
+          <div ref={streamsRef} className="dvx:rounded-xl dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:border dvx:border-gray-100 dvx:dark:border-[#333] dvx:px-3 dvx:py-2">
             {/* No columnGap: cells carry their own horizontal padding so a row's
                 background reads as one continuous band. */}
-            <div style={{ display: "grid", gridTemplateColumns: cols, alignItems: "stretch" }}>
-              <span className={head} style={{ padding: "0 5px 4px 8px" }}>{t("farms_table_token")}</span>
-              <span className={head} style={{ padding: "0 5px 4px" }}>APR</span>
-              <span className={`${head} dvx:text-right`} style={{ padding: "0 5px 4px" }}>{t("farms_table_remaining")}</span>
-              {hasStake && <span className={`${head} dvx:text-right`} style={{ padding: "0 5px 4px" }}>{t("farms_pending")}</span>}
-              {hasStake && <span />}
+            <div>
+              <div style={rowFlex}>
+                <span className={head} style={{ ...headStyle, flex: F[0], minWidth: 0, padding: "0 5px 4px 8px" }}>{t("farms_table_token")}</span>
+                <span className={head} style={{ ...headStyle, flex: F[1], minWidth: 0, padding: "0 5px 4px" }}>APR</span>
+                <span className={head} style={{ ...headStyle, flex: F[2], minWidth: 0, padding: "0 5px 4px", textAlign: "right" }}>{t("farms_table_remaining")}</span>
+                {wide && <span className={head} style={{ ...headStyle, flex: F[3], minWidth: 0, padding: "0 5px 4px", textAlign: "right" }}>{t("farms_pending")}</span>}
+                {wide && <span style={{ flex: F[4] }} />}
+              </div>
               {(showAllStreams ? sortedStreams : sortedStreams.slice(0, STREAMS_PREVIEW)).map((s) => {
                 const rewardPrice = priceOf(s.rewardedToken);
                 const balanceH = human(s.balance, s.rewardedToken);
@@ -972,18 +993,21 @@ function FarmCard({
                 };
                 const infoStyle: React.CSSProperties = { ...rowStyle, ...(dimmed ? { opacity: 0.55 } : {}) };
                 return (
-                  <React.Fragment key={s.rewardedToken}>
+                  <div key={s.rewardedToken}>
+                  <div style={rowFlex}>
                     <span
                       className={`${cell} dvx:min-w-0 dvx:flex dvx:flex-col dvx:justify-center`}
                       style={{
                         ...infoStyle,
+                        flex: F[0],
+                        minWidth: 0,
                         paddingLeft: 8,
                         ...(followed ? { boxShadow: "inset 3px 0 0 rgba(245, 158, 11, 0.9)", borderTopLeftRadius: 6, borderBottomLeftRadius: 6 } : {}),
                       }}
                     >
                       <span className="dvx:flex dvx:items-center dvx:gap-1.5 dvx:min-w-0">
                         <TokenLogo url={s.logoUrl} ticker={tickerOf(s.rewardedToken)} />
-                        <span className="dvx:text-xs dvx:font-bold dvx:text-gray-900 dvx:dark:text-white dvx:truncate">
+                        <span className="dvx:font-bold dvx:text-gray-900 dvx:dark:text-white dvx:truncate" style={{ fontSize: 12, minWidth: 0 }}>
                           {tickerOf(s.rewardedToken)}
                         </span>
                         {followed && <span aria-hidden className="dvx:text-[11px]">🌾</span>}
@@ -991,31 +1015,35 @@ function FarmCard({
                       {s.paused && <span className="dvx:block dvx:text-[9px] dvx:font-semibold dvx:text-orange-500">{t("farms_paused")}</span>}
                     </span>
                     <span
-                      className={`${cell} dvx:flex dvx:flex-col dvx:justify-center dvx:cursor-help dvx:whitespace-nowrap`}
-                      style={infoStyle}
+                      className={`${cell} dvx:min-w-0 dvx:flex dvx:flex-col dvx:justify-center dvx:cursor-help`}
+                      style={{ ...infoStyle, flex: F[1], minWidth: 0, whiteSpace: "nowrap" }}
                       title={t("farms_apr_tooltip", { days: Math.round(s.msToMax / 86_400_000) })}
                     >
-                      <span className="dvx:inline-flex dvx:items-center dvx:gap-1 dvx:text-[11px] dvx:font-bold dvx:text-green-600 dvx:dark:text-green-400">
+                      <span className="dvx:inline-flex dvx:items-center dvx:gap-1 dvx:font-bold dvx:text-green-600 dvx:dark:text-green-400" style={{ fontSize: 11 }}>
                         {aprPct != null ? fmtAprPct(aprPct) : "—"}
                         <Info className="dvx:w-3 dvx:h-3 dvx:text-gray-400" />
                       </span>
                       {aprPct != null && simRatio != null && (
                         // APR this stream would show after the stake / unstake being entered.
-                        <span className="dvx:text-[10px] dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400">
+                        <span className="dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400" style={{ fontSize: 10 }}>
                           → {fmtAprPct(aprPct * simRatio)}
                         </span>
                       )}
                     </span>
-                    <span className={`${cell} dvx:text-right dvx:min-w-0 dvx:flex dvx:flex-col dvx:justify-center`} style={infoStyle}>
-                      <span className="dvx:block dvx:text-[11px] dvx:font-semibold dvx:text-gray-700 dvx:dark:text-gray-200 dvx:truncate" title={balanceH.toFormat()}>
+                    <span className={`${cell} dvx:text-right dvx:min-w-0 dvx:flex dvx:flex-col dvx:justify-center`} style={{ ...infoStyle, flex: F[2], minWidth: 0, textAlign: "right" }}>
+                      <span
+                        className="dvx:block dvx:font-semibold dvx:text-gray-700 dvx:dark:text-gray-200"
+                        style={{ fontSize: 11, overflowWrap: "anywhere" }}
+                        title={balanceH.toFormat()}
+                      >
                         {formatRemaining(balanceH)}
                       </span>
                       {rewardPrice != null && (
-                        <span className="dvx:block dvx:text-[10px] dvx:text-gray-400">{formatUsd(balanceH.toNumber() * rewardPrice)}</span>
+                        <span className="dvx:block dvx:text-gray-400" style={{ fontSize: 10 }}>{formatUsd(balanceH.toNumber() * rewardPrice)}</span>
                       )}
                     </span>
-                    {hasStake && (
-                      <span className={`${cell} dvx:text-right dvx:min-w-0 dvx:flex dvx:flex-col dvx:justify-center`} style={infoStyle}>
+                    {wide && (
+                      <span className={`${cell} dvx:text-right dvx:min-w-0 dvx:flex dvx:flex-col dvx:justify-center`} style={{ ...infoStyle, flex: F[3], minWidth: 0, textAlign: "right" }}>
                         {enrolled ? (
                           <>
                             <span className="dvx:block dvx:text-[11px] dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400 dvx:truncate">
@@ -1030,10 +1058,10 @@ function FarmCard({
                         )}
                       </span>
                     )}
-                    {hasStake && (
+                    {wide && (
                       <span
                         className={`${cell} dvx:flex dvx:flex-col dvx:items-end dvx:justify-center dvx:gap-0.5`}
-                        style={{ ...rowStyle, paddingRight: 8, ...(followed ? { borderTopRightRadius: 6, borderBottomRightRadius: 6 } : {}) }}
+                        style={{ ...rowStyle, flex: F[4], minWidth: 0, paddingRight: 8, ...(followed ? { borderTopRightRadius: 6, borderBottomRightRadius: 6 } : {}) }}
                       >
                         {enrolled ? (
                           <>
@@ -1083,7 +1111,87 @@ function FarmCard({
                         )}
                       </span>
                     )}
-                  </React.Fragment>
+                  </div>
+                    {hasStake && !wide && (
+                      // Narrow: claimable (left) + actions (right) on a second line of the same stream.
+                      <span
+                        style={{
+                          ...rowStyle,
+                                                    display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 8,
+                          paddingLeft: 8,
+                          paddingRight: 8,
+                          paddingBottom: 6,
+                          ...(followed ? { boxShadow: "inset 3px 0 0 rgba(245, 158, 11, 0.9)" } : {}),
+                        }}
+                      >
+                        <span style={{ minWidth: 0, fontSize: 11, ...(dimmed ? { opacity: 0.55 } : {}) }}>
+                          {enrolled ? (
+                            <>
+                              <span className="dvx:text-gray-400" style={{ fontSize: 10 }}>{t("farms_pending")} : </span>
+                              <span className="dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400">{pendingH ? formatAmount(pendingH) : "0"}</span>
+                              {rewardPrice != null && pendingH && (
+                                <span className="dvx:text-gray-400" style={{ fontSize: 10 }}> · {formatUsd(pendingH.toNumber() * rewardPrice)}</span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="dvx:text-gray-400" style={{ fontSize: 10 }}>{t("farms_not_followed")}</span>
+                          )}
+                        </span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                          {enrolled ? (
+                            <>
+                              <button
+                                type="button"
+                                disabled={!!busy || !pendingH?.gt(0)}
+                                onClick={() => onClaim(farm, s.rewardedToken)}
+                                className="dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:disabled:opacity-40"
+                                style={{ fontSize: 11, whiteSpace: "nowrap" }}
+                              >
+                                {t("farms_claim")}
+                              </button>
+                              {sameToken && (
+                                <button
+                                  type="button"
+                                  disabled={!!busy || !pendingH?.gt(0)}
+                                  onClick={() => onCompound(farm)}
+                                  className="dvx:font-bold dvx:text-green-600 dvx:bg-transparent dvx:hover:text-green-700 dvx:disabled:opacity-40"
+                                  style={{ fontSize: 11, whiteSpace: "nowrap" }}
+                                >
+                                  {t("farms_compound")}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                disabled={!!busy}
+                                onClick={() => onUnsubscribe(farm, s.rewardedToken)}
+                                title={t("farms_unsubscribe_tooltip")}
+                                className="dvx:font-semibold dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-red-500 dvx:disabled:opacity-40"
+                                style={{ fontSize: 10, whiteSpace: "nowrap" }}
+                              >
+                                {t("farms_unsubscribe")}
+                              </button>
+                            </>
+                          ) : (
+                            !s.paused && (
+                              <button
+                                type="button"
+                                disabled={!!busy || atCap}
+                                onClick={() => onSubscribe(farm, s.rewardedToken)}
+                                title={atCap ? t("farms_cap_reached", { max: maxActive }) : t("farms_join_tooltip")}
+                                className="dvx:font-bold dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:disabled:opacity-40"
+                                style={{ fontSize: 11, whiteSpace: "nowrap" }}
+                              >
+                                {t("farms_join")}
+                              </button>
+                            )
+                          )}
+                        </span>
+                      </span>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -1127,7 +1235,9 @@ function FarmCard({
       {/* Stream slots: followed (🌾) · free · locked (🔒) up to the global ceiling */}
       {maxActive != null && (
         <div className="dvx:mt-2 dvx:flex dvx:items-center dvx:gap-2 dvx:flex-wrap">
-          <div className="dvx:flex dvx:gap-1">
+          {/* Tiles wrap onto several lines on narrow screens (ceiling can be 20) —
+              inline styles so a stale host stylesheet can't make them overflow. */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, maxWidth: "100%", minWidth: 0 }}>
             {Array.from({ length: Math.max(maxCeiling ?? maxActive, maxActive) }, (_, i) => {
               const followed = hasStake && i < active.size;
               const open = i < maxActive;
@@ -1273,22 +1383,25 @@ function FarmCard({
                 </div>
               </div>
             )}
-            <div className="dvx:flex dvx:gap-2">
-              <input
-                type="number"
-                min="0"
-                placeholder="0.0"
-                value={amount}
-                onChange={(e) => {
-                  setPickedRaw(null);
-                  setAmount(e.target.value);
-                }}
-                className={`dvx:flex-1 dvx:min-w-0 dvx:rounded-xl dvx:border dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-2 dvx:text-sm dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 ${
-                  tooMuch
-                    ? "dvx:border-red-400 dvx:focus:ring-red-400"
-                    : "dvx:border-gray-200 dvx:dark:border-[#444] dvx:focus:ring-amber-500"
-                }`}
-              />
+            {/* Slider only — LP balances are mostly decimal dust, a typed amount
+                doesn't fit. Summary of the pick: % of the max + USD value. */}
+            <div className="dvx:flex dvx:items-center dvx:gap-2">
+              <div className="dvx:flex-1 dvx:min-w-0 dvx:text-sm dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white">
+                {amountRaw != null && maxBN.gt(0) ? (
+                  <>
+                    {(() => {
+                      const pct = new BigNumber(amountRaw.toString()).dividedBy(maxBN).multipliedBy(100);
+                      return pct.gte(100) ? "100" : pct.lt(1) ? "<1" : pct.toFixed(0);
+                    })()}
+                    %
+                    {usdOf(amountRaw.toString()) != null && (
+                      <span className="dvx:ml-2 dvx:text-gray-500 dvx:dark:text-gray-300">≈ {formatUsd(usdOf(amountRaw.toString())!)}</span>
+                    )}
+                  </>
+                ) : (
+                  <span className="dvx:text-gray-400">{t("farms_slider_hint")}</span>
+                )}
+              </div>
               <button
                 type="button"
                 disabled={!canSubmit}
@@ -1302,11 +1415,6 @@ function FarmCard({
                     : t(mode === "stake" ? "farms_stake" : "farms_unstake")}
               </button>
             </div>
-            {amountRaw != null && usdOf(amountRaw.toString()) != null && (
-              <p className="dvx:mt-1 dvx:text-[11px] dvx:font-semibold dvx:text-gray-500 dvx:dark:text-gray-300">
-                ≈ {formatUsd(usdOf(amountRaw.toString())!)}
-              </p>
-            )}
             {simRatio != null && (
               <p className="dvx:mt-0.5 dvx:text-[10px] dvx:text-amber-600 dvx:dark:text-amber-400">
                 {t(mode === "stake" ? "farms_apr_sim_hint_stake" : "farms_apr_sim_hint_unstake")}

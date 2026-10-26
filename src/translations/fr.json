@@ -408,5 +408,8 @@
   "jex_add_processing": "Ajout de liquidité sur JEXchange…",
   "jex_add_success": "Liquidité ajoutée sur JEXchange !",
   "jex_add_error": "L'ajout a échoué",
-  "ext_lp_tab_hint": "{{count}} position(s) LP JEXchange à retirer"
+  "ext_lp_tab_hint": "{{count}} position(s) LP JEXchange à retirer",
+  "farms_fund_ack": "Je comprends que ces récompenses seront distribuées aux apporteurs de liquidité qui stakent dans cette farm, et que ce dépôt est définitif : il ne pourra pas être récupéré.",
+  "farms_fund_ack_required": "Cochez la confirmation ci-dessus",
+  "farms_slider_hint": "Choisissez un pourcentage avec le curseur"
 }

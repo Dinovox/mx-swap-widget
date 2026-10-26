@@ -408,5 +408,8 @@
   "jex_add_processing": "Adding liquidity on JEXchange…",
   "jex_add_success": "Liquidity added on JEXchange!",
   "jex_add_error": "Add liquidity failed",
-  "ext_lp_tab_hint": "{{count}} JEXchange LP position(s) to withdraw"
+  "ext_lp_tab_hint": "{{count}} JEXchange LP position(s) to withdraw",
+  "farms_fund_ack": "I understand that these rewards will be distributed to the liquidity providers staking in this farm, and that this deposit is final: it cannot be taken back.",
+  "farms_fund_ack_required": "Tick the confirmation above",
+  "farms_slider_hint": "Pick a percentage with the slider"
 }
