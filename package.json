@@ -1,6 +1,6 @@
 {
   "name": "@dinovox/mx-swap-widget",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "DinoVox swap & liquidity widget for MultiversX dApps",
   "keywords": [
     "multiversx",
@@ -48,8 +48,7 @@
     "lucide-react": ">=0.400",
     "react": ">=18",
     "react-dom": ">=18",
-    "react-i18next": ">=15",
-    "react-router-dom": ">=6"
+    "react-i18next": ">=15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",

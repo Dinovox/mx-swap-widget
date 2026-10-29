@@ -11,6 +11,7 @@ export { CreatePool } from "./components/CreatePool";
 export { Pools } from "./components/Pools";
 export { Dca } from "./components/Dca";
 export { Farms } from "./components/Farms";
+export { LimitOrders } from "./components/LimitOrders";
 
 // Context / Config
 export { SwapConfigProvider, useSwapConfig } from "./context/SwapConfigContext";

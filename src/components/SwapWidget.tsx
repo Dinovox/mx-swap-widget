@@ -15,6 +15,8 @@ import { Pools } from "./Pools";
 import { Dca } from "./Dca";
 import { Farms } from "./Farms";
 import { FarmsRewards } from "./FarmsRewards";
+import { LimitOrders, LimitComingSoon } from "./LimitOrders";
+import { featureFlagsFor } from "../featureFlags";
 
 type SwapWidgetProps = Pick<SwapConfig, 'defaultFrom' | 'defaultTo' | 'whitelist' | 'blacklist' | 'address' | 'networkApiAddress' | 'chainId' | 'explorerAddress' | 'onSignTransactions'>;
 
@@ -69,6 +71,9 @@ export const SwapWidget: React.FC<SwapWidgetProps> = (props) => {
     : hostDark ? 'dark'
     : '';
 
+  // chainId may come as a SwapWidget prop (merged into the provider below),
+  // so resolve the flags from the merged value, not the outer config alone.
+  const flags = featureFlagsFor(props.chainId ?? outerConfig.chainId);
   const renderView = () => {
     switch (view) {
       case 'liquidity':        return <Liquidity />;
@@ -77,6 +82,8 @@ export const SwapWidget: React.FC<SwapWidgetProps> = (props) => {
       case 'create-pool':      return <CreatePool />;
       case 'pools':            return <Pools />;
       case 'dca':              return <Dca />;
+      // Order book disabled: the tab stays visible with a "coming soon" card.
+      case 'limit':            return flags.orderBook ? <LimitOrders /> : <LimitComingSoon />;
       case 'farms':            return <Farms />;
       // Not linked from the UI on purpose — reachable via #farms-rewards only.
       case 'farms-rewards':    return <FarmsRewards />;

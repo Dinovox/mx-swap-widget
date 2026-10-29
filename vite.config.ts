@@ -61,7 +61,6 @@ export default defineConfig({
         "react",
         "react-dom",
         "react/jsx-runtime",
-        "react-router-dom",
         "react-i18next",
         "axios",
         "bignumber.js",
@@ -76,7 +75,6 @@ export default defineConfig({
         globals: {
           react: "React",
           "react-dom": "ReactDOM",
-          "react-router-dom": "ReactRouterDom",
           axios: "axios",
           "bignumber.js": "BigNumber",
         },

@@ -136,6 +136,15 @@ export interface SplitComparison {
 
 /** Full swap quote response */
 export interface QuoteResponse {
+  /**
+   * Order-book-only pair (no AMM liquidity), direct hop: largest gross amountIn
+   * the book can fill entirely in ONE swap (swap() reads at most
+   * maxOrdersPerSwap orders and is all-or-nothing without an AMM to take the
+   * rest). Also returned in the 400 AMOUNT_TOO_LOW body.
+   */
+  maxAmountIn?: string;
+  /** Order-book-only pools (no AMM liquidity) limiting the route — invite to add liquidity there. */
+  illiquidPools?: Array<{ pair: string; tokenA: string; tokenB: string }>;
   tokenIn: string;
   tokenOut: string;
   amountIn: string;

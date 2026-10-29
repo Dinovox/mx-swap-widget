@@ -17,6 +17,7 @@ import strToHex from "../helpers/strToHex";
 import BigNumber from "bignumber.js";
 import { useSwapConfig } from "../context/SwapConfigContext";
 import eCompassLogo from "../assets/ecompass-logo.png";
+import dinovoxLogo from "../assets/dinovox-logo.png";
 import { getThemePalette } from "../ui/themePalette";
 import { PriceChart } from "../ui/PriceChart";
 import { fetchChartable, fetchReferenceTokenCharts, type ChartableEntry } from "../helpers/charts";
@@ -165,7 +166,28 @@ export const Swap = () => {
   /* ---- Quote ---- */
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+  // Stores a translation KEY (or a raw backend message), translated at render
+  // time — a string translated at fetch time stays in the old language when
+  // the host switches language afterwards.
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  // Order-book-only pair: largest amountIn one swap can fill (backend maxAmountIn), raw.
+  const [bookMaxIn, setBookMaxIn] = useState<string | null>(null);
+  // Pools without AMM liquidity on the route (backend illiquidPools) → "add liquidity" suggestion.
+  const [illiquidPools, setIlliquidPools] = useState<Array<{ pair: string; tokenA: string; tokenB: string }>>([]);
+  const bookMaxLabel = () =>
+    bookMaxIn && tokenIn
+      ? `${new BigNumber(bookMaxIn).shiftedBy(-tokenIn.decimals).decimalPlaces(6, BigNumber.ROUND_DOWN).toFormat()} ${tokenIn.ticker}`
+      : "";
+  // t() of an unknown key returns the key itself → raw backend messages pass through.
+  const pairNames = illiquidPools.map((p) => `${p.tokenA.split("-")[0]}/${p.tokenB.split("-")[0]}`).join(", ");
+  const quoteErrorText =
+    quoteError === "error_book_max"
+      ? t("error_book_max", { amount: bookMaxLabel() })
+      : quoteError === "error_illiquid"
+        ? t("error_illiquid", { pairs: pairNames })
+        : quoteError
+          ? t(quoteError)
+          : null;
   // Backend found direct EGLD → liquid-staking more profitable than swapping.
   // One-way only (EGLD → voxEGLD): amountOut is deterministic, no wrap step involved.
   const isStakeRoute =
@@ -517,6 +539,8 @@ export const Swap = () => {
 
     setQuoteLoading(true);
     setQuoteError(null);
+    setBookMaxIn(null);
+    setIlliquidPools([]);
 
     try {
       const { data } = await axios.get<QuoteResponse>(`${apiUrl}/quote`, {
@@ -532,32 +556,56 @@ export const Swap = () => {
           ...(enableMultiroute && activeField === "in"
             ? { multiroute: "true" }
             : {}),
+          // Connected wallet: the backend measures tx.gasLimit with the
+          // gateway simulator for THIS sender (+15%) instead of its static
+          // formula — falls back to the formula when the simulation fails.
+          ...(address ? { sender: address } : {}),
         },
       });
       // Amount too small to route: the backend answers 200 with amountOut "0",
       // an empty route and no tx — treat it as an error so Swap stays disabled.
       if (!data.tx || !(new BigNumber(data.amountOut).gt(0))) {
         setQuote(null);
-        setQuoteError(t("error_amount_too_low"));
+        setIlliquidPools(data.illiquidPools ?? []);
+        if (data.maxAmountIn && new BigNumber(data.maxAmountIn).gt(0)) {
+          setBookMaxIn(data.maxAmountIn);
+          setQuoteError("error_book_max");
+        } else {
+          setQuoteError(data.illiquidPools?.length ? "error_illiquid" : "error_amount_too_low");
+        }
         return;
       }
       setQuote(data);
     } catch (err: any) {
       const code = err?.response?.data?.code;
+      // Order-book-only pair: too MANY orders to consume in one swap, not too
+      // little — the backend sends the largest amount that fits (maxAmountIn).
+      const maxIn: string | undefined = err?.response?.data?.maxAmountIn;
+      const illiquid = (err?.response?.data?.illiquidPools ?? []) as Array<{ pair: string; tokenA: string; tokenB: string }>;
+      setIlliquidPools(illiquid);
+      if (code === "AMOUNT_TOO_LOW" && maxIn && new BigNumber(maxIn).gt(0)) {
+        setBookMaxIn(maxIn);
+        setQuoteError("error_book_max");
+        setQuote(null);
+        return;
+      }
       setQuoteError(
-        code === "AMOUNT_TOO_LOW"
-          ? t("error_amount_too_low")
+        code === "AMOUNT_TOO_LOW" && illiquid.length > 0
+          ? "error_illiquid"
+          : code === "AMOUNT_TOO_LOW"
+          ? "error_amount_too_low"
           : code === "NO_ROUTE"
-            ? t("error_no_route")
+            ? "error_no_route"
             : code === "INSUFFICIENT_LIQUIDITY"
-              ? t("error_insufficient_liquidity")
-              : (err?.response?.data?.message ?? t("error_quote")),
+              ? "error_insufficient_liquidity"
+              : (err?.response?.data?.message ?? "error_quote"),
       );
       setQuote(null);
     } finally {
       setQuoteLoading(false);
     }
   }, [
+    address,
     tokenIn,
     tokenOut,
     amountIn,
@@ -993,7 +1041,22 @@ export const Swap = () => {
             <SectionTabs active="swap" />
           </div>
         }
-        description={t("card_description")}
+        description={
+          <>
+            {t("card_description")}{" "}
+            <a
+              href="https://github.com/Dinovox/mx-swap-widget"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="mx-swap-widget by DinoVox"
+              className="dvx:whitespace-nowrap dvx:font-semibold dvx:hover:text-amber-500 dvx:hover:underline dvx:transition-colors"
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, verticalAlign: "middle" }}
+            >
+              Swap widget by DinoVox
+              <img src={dinovoxLogo} alt="" width={16} height={16} style={{ width: 16, height: 16, display: "inline-block" }} />
+            </a>
+          </>
+        }
       >
         <div className="dvx:space-y-2 dvx:mt-4">
           {/* ---- Token In ---- */}
@@ -1641,7 +1704,44 @@ export const Swap = () => {
             (isArb && arbError) ||
             txError) && (
             <div className="dvx:rounded-xl dvx:bg-red-50 dvx:dark:bg-red-900/20 dvx:border dvx:border-red-200 dvx:dark:border-red-800/50 dvx:px-4 dvx:py-3 dvx:text-sm dvx:text-red-600 dvx:dark:text-red-400">
-              {isArb ? arbError : (quoteError ?? txError)}
+              {isArb ? arbError : quoteError ? quoteErrorText : txError}
+              {!isArb && quoteError && bookMaxIn && tokenIn && (
+                // One-click: swap the largest amount the order book can fill in one go.
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveField("in");
+                    setAmountOut("");
+                    // toFixed() without arg: exact, no trailing zeros (and no rounding).
+                    setAmountIn(new BigNumber(bookMaxIn).shiftedBy(-tokenIn.decimals).toFixed());
+                  }}
+                  className="dvx:block dvx:mt-2 dvx:px-3 dvx:py-1 dvx:rounded-lg dvx:font-bold dvx:bg-amber-500 dvx:text-black"
+                  style={{ fontSize: 12 }}
+                >
+                  {t("error_book_max_use", { amount: bookMaxLabel() })}
+                </button>
+              )}
+              {!isArb && quoteError && illiquidPools.length > 0 && (
+                // Book-only pool(s) on the route: AMM liquidity there would make this swap pass.
+                <div className="dvx:mt-2 dvx:pt-2 dvx:border-t dvx:border-red-200 dvx:dark:border-red-800/50">
+                  <p className="dvx:text-gray-600 dvx:dark:text-gray-300" style={{ fontSize: 12 }}>
+                    {t("illiquid_add_hint")}
+                  </p>
+                  <div className="dvx:flex dvx:flex-wrap dvx:gap-2 dvx:mt-1.5">
+                    {illiquidPools.map((p) => (
+                      <button
+                        key={p.pair}
+                        type="button"
+                        onClick={() => goTo("add-liquidity", { tokenA: p.tokenA, tokenB: p.tokenB })}
+                        className="dvx:px-3 dvx:py-1 dvx:rounded-lg dvx:font-bold dvx:border dvx:border-amber-500 dvx:text-amber-600 dvx:dark:text-amber-400 dvx:bg-transparent"
+                        style={{ fontSize: 12 }}
+                      >
+                        {t("illiquid_add_btn", { pair: `${p.tokenA.split("-")[0]} / ${p.tokenB.split("-")[0]}` })}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

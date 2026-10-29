@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import useLoadTranslations from "../hooks/useLoadTranslations";
 import axios from "axios";
 import BigNumber from "bignumber.js";
-import { ChevronDown, Info } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Info } from "lucide-react";
 import { Card } from "../ui/Card";
 import { SectionTabs } from "../ui/NavTabs";
 import { TvlChart, TvlChange } from "../ui/TvlChart";
@@ -21,6 +21,9 @@ import { RecentSwaps } from "../ui/RecentSwaps";
 import { useJexLpPositions } from "../ui/ExternalLpWithdraw";
 import { JexAddLiquidity } from "../ui/JexAddLiquidity";
 import { PriceChart } from "../ui/PriceChart";
+import { OrderBookDepth } from "../ui/OrderBookDepth";
+import { useFeatureFlags, JEX_ADD_ENABLED } from "../featureFlags";
+import { orderForQuoteDisplay } from "../helpers/quotePriority";
 import {
   fetchChartable,
   chartEntryForPool,
@@ -72,10 +75,6 @@ function formatAmount(bn: BigNumber): string {
  * user holds LP in come first and additionally show the position value, pool
  * share, estimated fees, per-token share and a Remove action.
  */
-// JEXchange "+ Add" button (inline JexAddLiquidity form) — tested OK on mainnet,
-// hidden while JEXchange shuts down; flip to true to bring it back.
-const JEX_ADD_ENABLED = true;
-
 export const Pools = () => {
   const {
     apiUrl,
@@ -132,6 +131,12 @@ export const Pools = () => {
   };
   // Pool whose TVL chart is expanded (DinoVox only — history isn't tracked for external DEXes).
   const [chartPool, setChartPool] = React.useState<string | null>(null);
+  // Pool whose order-book depth chart is open (fetched on open only).
+  const [depthPool, setDepthPool] = React.useState<string | null>(null);
+  const flags = useFeatureFlags();
+  // Manual base/quote flip for the open depth chart — reset whenever a
+  // different pool's depth is opened (cf. the toggle button's onClick).
+  const [depthInverted, setDepthInverted] = React.useState(false);
   // Pool whose price chart is expanded + the chartable pairs (one fetch, cached).
   const [pricePool, setPricePool] = React.useState<string | null>(null);
   const [chartable, setChartable] = React.useState<ChartableEntry[]>([]);
@@ -955,6 +960,64 @@ export const Pools = () => {
                           </>
                         );
                       })()}
+                      {/* Order-book depth (limit orders escrowed in this pair) — off on mainnet for now (useFeatureFlags). */}
+                      {flags.orderBook && (
+                      <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDepthPool(depthPool === pool.address ? null : pool.address);
+                          setDepthInverted(false);
+                        }}
+                        className="dvx:w-full dvx:flex dvx:items-center dvx:justify-between dvx:mt-3 dvx:pt-2 dvx:border-t dvx:border-gray-100 dvx:dark:border-[#333] dvx:text-xs dvx:font-semibold dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-600 dvx:dark:hover:text-gray-200 dvx:transition-colors"
+                      >
+                        <span>{t("depth_toggle")}</span>
+                        <ChevronDown
+                          className={`dvx:h-3.5 dvx:w-3.5 dvx:transition-transform ${depthPool === pool.address ? "dvx:rotate-180" : ""}`}
+                        />
+                      </button>
+                      {depthPool === pool.address &&
+                        (() => {
+                          // Souche (USDC/WEGLD/VOXEGLD...) toujours affichée en
+                          // référence (quote) par défaut ; paire arbitraire
+                          // (OLV/BOD...) : ordre on-chain inchangé. Inversable
+                          // manuellement via le bouton ci-dessous.
+                          const { base, quote } = orderForQuoteDisplay(
+                            { identifier: pool.tokenA, ticker: tickerA, decimals: decA },
+                            { identifier: pool.tokenB, ticker: tickerB, decimals: decB },
+                            depthInverted,
+                          );
+                          const rBase = new BigNumber(base.identifier === pool.tokenA ? pool.reserveA : pool.reserveB).shiftedBy(-base.decimals);
+                          const rQuote = new BigNumber(quote.identifier === pool.tokenA ? pool.reserveA : pool.reserveB).shiftedBy(-quote.decimals);
+                          return (
+                            <>
+                              <div className="dvx:flex dvx:justify-end dvx:mt-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setDepthInverted((v) => !v)}
+                                  className="dvx:flex dvx:items-center dvx:gap-1 dvx:bg-transparent dvx:p-0 dvx:text-[11px] dvx:font-semibold dvx:text-gray-400 dvx:hover:text-gray-600 dvx:dark:hover:text-gray-200"
+                                  title={t("depth_invert")}
+                                >
+                                  <ArrowUpDown className="dvx:h-3 dvx:w-3" />
+                                  {base.ticker}/{quote.ticker}
+                                </button>
+                              </div>
+                              <OrderBookDepth
+                                apiUrl={apiUrl}
+                                pairAddr={pool.address}
+                                tokenA={base.identifier}
+                                tokenB={quote.identifier}
+                                decimalsA={base.decimals}
+                                decimalsB={quote.decimals}
+                                tickerA={base.ticker}
+                                tickerB={quote.ticker}
+                                spotAinB={rBase.gt(0) && rQuote.gt(0) ? rQuote.div(rBase).toNumber() : null}
+                              />
+                            </>
+                          );
+                        })()}
+                      </>
+                      )}
                     </>
                   )}
                 </div>
