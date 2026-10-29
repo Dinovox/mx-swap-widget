@@ -482,5 +482,7 @@
   "depth_preview_row": "Votre ordre : +{{amount}} dans ce palier",
   "depth_preview_tip": "Palier où votre ordre sera classé : {{lo}} – {{hi}} {{b}}",
   "limit_coming_soon": "Prochainement",
-  "limit_coming_soon_desc": "Les ordres limites arrivent bientôt sur DinoVox : fixez votre prix, vos tokens seront échangés automatiquement dès qu'il est atteint."
+  "limit_coming_soon_desc": "Les ordres limites arrivent bientôt sur DinoVox : fixez votre prix, vos tokens seront échangés automatiquement dès qu'il est atteint.",
+  "modal_title": "Échanger des tokens",
+  "modal_close": "Fermer"
 }

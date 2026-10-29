@@ -3,6 +3,9 @@ import './widget.css';
 
 // Components
 export { SwapWidget } from "./components/SwapWidget";
+export type { SwapWidgetProps } from "./components/SwapWidget";
+export { SwapModal } from "./components/SwapModal";
+export type { SwapModalProps } from "./components/SwapModal";
 export { Swap } from "./components/Swap";
 export { Liquidity } from "./components/Liquidity";
 export { AddLiquidity } from "./components/AddLiquidity";

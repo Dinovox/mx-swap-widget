@@ -11,6 +11,7 @@ import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
 import { useGetUserESDT } from "../hooks/useGetUserEsdt";
 import { Card } from "../ui/Card";
 import { SectionTabs } from "../ui/NavTabs";
+import { useWidgetMode } from "../context/WidgetModeContext";
 import { TokenSelect, type TokenBalanceInfo } from "../ui/TokenSelect";
 import bigToHex from "../helpers/bigToHex";
 import strToHex from "../helpers/strToHex";
@@ -110,6 +111,10 @@ export const Swap = () => {
   const { t } = useTranslation("swap");
   useLoadTranslations("swap");
   const [searchParams, setSearchParams] = useWidgetSearchParams();
+  // Modal (SwapModal): tokens come from defaultFrom/defaultTo only and the
+  // host page URL is never read nor written.
+  const { mode, canNavigate } = useWidgetMode();
+  const isModal = mode === "modal";
 
   /* ---- EGLD balance (fetched directly from API, no sdk-dapp hook) ---- */
   const [egldBalance, setEgldBalance] = useState<string | null>(null);
@@ -442,8 +447,8 @@ export const Swap = () => {
     if (tokens.length === 0 || urlInitDoneRef.current) return;
     urlInitDoneRef.current = true;
 
-    const fromId = searchParams.get("from") || defaultFrom;
-    const toId = searchParams.get("to") || defaultTo;
+    const fromId = (isModal ? null : searchParams.get("from")) || defaultFrom;
+    const toId = (isModal ? null : searchParams.get("to")) || defaultTo;
 
     const foundIn = fromId ? tokens.find((t) => t.identifier === fromId) : null;
     const foundOut = toId ? tokens.find((t) => t.identifier === toId) : null;
@@ -456,7 +461,7 @@ export const Swap = () => {
 
   /* ---------- Sync token selection to URL ---------- */
   useEffect(() => {
-    if (!urlInitDoneRef.current) return;
+    if (!urlInitDoneRef.current || isModal) return;
     setSearchParams(
       (prev: URLSearchParams) => {
         const next = new URLSearchParams(prev);
@@ -1037,9 +1042,16 @@ export const Swap = () => {
       <Card
         className="dvx:border-2 dvx:border-cyan-500/20"
         title={
-          <div className="dvx:flex dvx:flex-col dvx:items-start dvx:w-full dvx:gap-4">
-            <SectionTabs active="swap" />
-          </div>
+          isModal ? (
+            // Modal: plain title (no section tabs, the modal shows the swap form only).
+            <span style={{ fontSize: 18 }} className="dvx:font-black dvx:tracking-tight">
+              {t("modal_title")}
+            </span>
+          ) : (
+            <div className="dvx:flex dvx:flex-col dvx:items-start dvx:w-full dvx:gap-4">
+              <SectionTabs active="swap" />
+            </div>
+          )
         }
         description={
           <>
@@ -1445,7 +1457,8 @@ export const Swap = () => {
                         <span className="dvx:mt-0.5 dvx:shrink-0">⚠</span>
                         <span>{t("high_impact_warning")}</span>
                       </div>
-                      {hasDinoVoxHop &&
+                      {canNavigate &&
+                        hasDinoVoxHop &&
                         firstDinoHop &&
                         (() => {
                           // Put hub token as tokenA, other as tokenB
@@ -1721,7 +1734,7 @@ export const Swap = () => {
                   {t("error_book_max_use", { amount: bookMaxLabel() })}
                 </button>
               )}
-              {!isArb && quoteError && illiquidPools.length > 0 && (
+              {canNavigate && !isArb && quoteError && illiquidPools.length > 0 && (
                 // Book-only pool(s) on the route: AMM liquidity there would make this swap pass.
                 <div className="dvx:mt-2 dvx:pt-2 dvx:border-t dvx:border-red-200 dvx:dark:border-red-800/50">
                   <p className="dvx:text-gray-600 dvx:dark:text-gray-300" style={{ fontSize: 12 }}>

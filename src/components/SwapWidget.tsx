@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 import { I18nextProvider } from "react-i18next";
 import { useSwapConfig, SwapConfigProvider } from "../context/SwapConfigContext";
 import type { SwapConfig } from "../context/SwapConfigContext";
 import { useSwapView } from "../hooks/useSwapView";
 import { SwapViewProvider } from "../context/SwapViewContext";
 import widgetI18n from "../i18n";
-import { getNearestThemeAncestor } from "../helpers/domTheme";
+import { useWidgetShell } from "../hooks/useWidgetShell";
 import { Swap } from "./Swap";
 import { Liquidity } from "./Liquidity";
 import { AddLiquidity } from "./AddLiquidity";
@@ -18,58 +18,14 @@ import { FarmsRewards } from "./FarmsRewards";
 import { LimitOrders, LimitComingSoon } from "./LimitOrders";
 import { featureFlagsFor } from "../featureFlags";
 
-type SwapWidgetProps = Pick<SwapConfig, 'defaultFrom' | 'defaultTo' | 'whitelist' | 'blacklist' | 'address' | 'networkApiAddress' | 'chainId' | 'explorerAddress' | 'onSignTransactions'>;
+export type SwapWidgetProps = Pick<SwapConfig, 'defaultFrom' | 'defaultTo' | 'whitelist' | 'blacklist' | 'address' | 'networkApiAddress' | 'chainId' | 'explorerAddress' | 'onSignTransactions'>;
 
 export const SwapWidget: React.FC<SwapWidgetProps> = (props) => {
   const outerConfig = useSwapConfig();
   const { language, theme } = outerConfig;
   const { view, goTo } = useSwapView();
 
-  // When theme is not pinned, mirror the host app's dark mode reactively.
-  // Deliberately *not* falling back to prefers-color-scheme: a host with its own
-  // light/dark toggle (e.g. our own dapp) signals "light" by simply not having the
-  // class, which looks identical to "this host doesn't manage dark mode at all" —
-  // a media-query fallback can't tell those apart, and would override an explicit
-  // light choice whenever the OS/browser happens to prefer dark. A host that isn't
-  // covered by this class convention should pass `theme="dark"` explicitly instead.
-  //
-  // Checked from this wrapper's *parent* (not itself) via getNearestThemeAncestor —
-  // same "nearest .dark/.light ancestor wins" logic the compiled CSS custom-variant
-  // uses, and the same helper TokenSelect uses for its own dark detection, so the
-  // two can't disagree about a host's ancestry the way they used to (this used to
-  // check only `document.documentElement`, missing a host that toggles the class
-  // somewhere lower in the tree).
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const [hostDark, setHostDark] = useState(
-    () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
-  );
-  useEffect(() => {
-    if (theme !== undefined) return;
-    const evaluate = () =>
-      setHostDark(getNearestThemeAncestor(wrapperRef.current?.parentElement ?? null) === 'dark');
-    evaluate();
-    const observer = new MutationObserver(evaluate);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'], subtree: true });
-    return () => observer.disconnect();
-  }, [theme]);
-
-  useEffect(() => {
-    const lang = (
-      language ||
-      (typeof navigator !== 'undefined' ? navigator.language : 'en') ||
-      'en'
-    ).split('-')[0];
-    if (widgetI18n.language !== lang && widgetI18n.isInitialized) {
-      widgetI18n.changeLanguage(lang);
-    }
-  }, [language]);
-
-  const themeClass =
-    theme === 'dark' ? 'dark'
-    : theme === 'light' ? 'light'
-    : theme === 'mid' ? 'dark'
-    : hostDark ? 'dark'
-    : '';
+  const { wrapperRef, themeClass } = useWidgetShell(language, theme);
 
   // chainId may come as a SwapWidget prop (merged into the provider below),
   // so resolve the flags from the merged value, not the outer config alone.

@@ -482,5 +482,7 @@
   "depth_preview_row": "Your order: +{{amount}} in this bucket",
   "depth_preview_tip": "Bucket your order will be filed under: {{lo}} – {{hi}} {{b}}",
   "limit_coming_soon": "Coming soon",
-  "limit_coming_soon_desc": "Limit orders are coming soon to DinoVox: set your price and your tokens will be swapped automatically once it's reached."
+  "limit_coming_soon_desc": "Limit orders are coming soon to DinoVox: set your price and your tokens will be swapped automatically once it's reached.",
+  "modal_title": "Swap tokens",
+  "modal_close": "Close"
 }

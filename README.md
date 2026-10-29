@@ -91,6 +91,95 @@ export const SwapPage = () => (
 
 ---
 
+## Modal mode
+
+`SwapModal` opens the swap form **over the current page** — e.g. on the Buy / Sell buttons of a token chart or a wallet — with the tokens pre-selected, without leaving the page.
+
+### 1. Share one config between the page and the modal
+
+Define the widget config once (a small hook in your app), then reuse it for the full `/swap` page and for every modal — both always target the same API, contracts and network:
+
+```tsx
+// hooks/useSwapWidgetConfig.ts
+import type { SwapConfig } from "@dinovox/mx-swap-widget";
+
+export const useSwapWidgetConfig = () => {
+  const { address } = useGetAccount();
+  const { network } = useGetNetworkConfig();
+
+  // SwapConfigProvider config — on mainnet, only what differs from the defaults.
+  const config: Partial<SwapConfig> = {
+    language: i18n.language,
+    onConnect: () => navigate("/unlock"),
+  };
+
+  // Wallet / network props, identical for SwapWidget and SwapModal.
+  const widgetProps = {
+    address,
+    networkApiAddress: network.apiAddress,
+    chainId: network.chainId,
+    explorerAddress: network.explorerAddress,
+    onSignTransactions: (txs, info) =>
+      signAndSendTransactions({ transactions: txs, transactionsDisplayInfo: info }),
+  };
+
+  return { config, widgetProps };
+};
+```
+
+```tsx
+// Full page
+const { config, widgetProps } = useSwapWidgetConfig();
+
+<SwapConfigProvider config={config}>
+  <SwapWidget {...widgetProps} />
+</SwapConfigProvider>
+```
+
+### 2. Open the modal
+
+```tsx
+import { SwapConfigProvider, SwapModal } from "@dinovox/mx-swap-widget";
+
+const { config, widgetProps } = useSwapWidgetConfig();
+const [swap, setSwap] = useState<{ tokenIn: string; tokenOut: string } | null>(null);
+
+<button onClick={() => setSwap({ tokenIn: "USDC-c76f1f", tokenOut: token })}>Buy</button>
+<button onClick={() => setSwap({ tokenIn: token, tokenOut: "USDC-c76f1f" })}>Sell</button>
+
+<SwapConfigProvider config={config}>
+  <SwapModal
+    {...widgetProps}
+    open={!!swap}
+    onClose={() => setSwap(null)}
+    tokenIn={swap?.tokenIn}
+    tokenOut={swap?.tokenOut}
+    onNavigate={(view, params) => navigate(`/swap?${new URLSearchParams(params)}#${view}`)} // optional
+  />
+</SwapConfigProvider>
+```
+
+### Behaviour
+
+- Same swap engine as `SwapWidget` (routing, quotes, gas, referral) — swap form only, no section tabs, no hash routing.
+- **Never touches the host URL** (no `?from=&to=`, no `#hash`): tokens come from `tokenIn` / `tokenOut`, and the form is reset on every opening.
+- Closes on ✕, <kbd>Esc</kbd> or a click on the backdrop; page scroll is locked while open. Rendered in a portal on `document.body`.
+
+### Props
+
+The same wallet / network props as `SwapWidget` (`address`, `networkApiAddress`, `chainId`, `explorerAddress`, `onSignTransactions`, `whitelist`, `blacklist`), plus:
+
+| Prop         | Type                      | Description                                                                                                                                  |
+| ------------ | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`       | `boolean`                 | Controlled visibility                                                                                                                        |
+| `onClose`    | `() => void`              | Called on ✕, Esc or backdrop click                                                                                                           |
+| `tokenIn`    | `string`                  | Token sold (identifier, or `EGLD`)                                                                                                           |
+| `tokenOut`   | `string`                  | Token bought                                                                                                                                 |
+| `onNavigate` | `(view, params?) => void` | Optional. Target of in-form links to other views (e.g. "add liquidity"), typically your full swap page. When omitted, those links are hidden. |
+| `zIndex`     | `number`                  | Overlay z-index (default `1000`)                                                                                                             |
+
+---
+
 ## Navigation
 
 The widget manages its own view switching via URL hash fragments — no host router required, no page reloads.
