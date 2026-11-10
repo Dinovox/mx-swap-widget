@@ -1,0 +1,982 @@
+{
+    "buildInfo": {
+        "contractCrate": {
+            "name": "fee-collector",
+            "version": "0.0.1"
+        },
+        "framework": {
+            "name": "multiversx-sc",
+            "version": "0.63.3"
+        }
+    },
+    "docs": [
+        "Collecteur des frais protocole des paires DinoVox.",
+        "",
+        "Les paires versent leur part protocole à leur `accumulator_address` par",
+        "simple transfert (factory::setPairAccumulator pour pointer une paire",
+        "existante ici). Aucun endpoint de dépôt : le contrat est déployé payable",
+        "ET payable-by-SC — les paires (contrats) comme un wallet (ex. rapatrier",
+        "les frais déjà accumulés sur les anciens accumulators) lui versent",
+        "directement, sans appel de fonction. Pour chaque token",
+        "reçu (hors VOXEGLD), processFees cherche la paire officielle",
+        "VOXEGLD/token dans la factory ; si elle existe et a des réserves AMM, il",
+        "ouvre sur son carnet un ordre de VENTE du token contre VOXEGLD à",
+        "`premium_bps` au-dessus du prix de référence (+10 % par défaut). L'ordre",
+        "ne se remplit que si des acheteurs font monter le token jusqu'à ce prix :",
+        "le collecteur accumule du VOXEGLD sans jamais vendre au marché. Sans",
+        "paire, ou paire sans AMM : le token reste dans le collecteur, intact.",
+        "",
+        "Le collecteur étant un contrat, la paire crédite ses produits de fill au",
+        "lieu de les lui virer (pair::pay_maker) : claimProceeds les rapatrie.",
+        "compound dépose ensuite le VOXEGLD en single-side sur la paire",
+        "VOXEGLD/WEGLD et transfère les LP à une adresse dédiée.",
+        "",
+        "Déclenchement : processFees et compound sont ouverts à tous — leur",
+        "protection contre le sandwich est la référence à cliquet (price_ref.rs),",
+        "qui suppose qu'un observateur honnête (notre bot, sans privilège) les",
+        "appelle régulièrement. claimProceeds aussi (il ne fait que rapatrier ce",
+        "qui est dû). Un ordre posé n'est jamais repricé : il attend d'être rempli",
+        "— cancelOrders n'est qu'une sortie de secours, réservée à l'owner."
+    ],
+    "name": "FeeCollector",
+    "constructor": {
+        "inputs": [
+            {
+                "name": "factory_address",
+                "type": "Address"
+            },
+            {
+                "name": "target_token",
+                "type": "TokenIdentifier"
+            }
+        ],
+        "outputs": []
+    },
+    "upgradeConstructor": {
+        "inputs": [],
+        "outputs": []
+    },
+    "endpoints": [
+        {
+            "docs": [
+                "Ouvert à tous (cf. price_ref.rs). Traite chaque token de la liste (cf.",
+                "Outcome). Ne revert jamais à cause d'un token : toutes les conditions",
+                "de createOrder sont vérifiées avant l'appel. Observe aussi le prix",
+                "(référence) à chaque passage — à appeler souvent, l'intervalle entre",
+                "ordres est appliqué ici."
+            ],
+            "name": "processFees",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "tokens",
+                    "type": "variadic<TokenIdentifier>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "variadic<multi<TokenIdentifier,Outcome>>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Rapatrie le VOXEGLD des ordres remplis (crédité par la paire, cf.",
+                "pair::pay_maker). Liste vide = toutes les paires où le collecteur a",
+                "posé un ordre. Ouvert à tous. Retire du registre une paire sans ordre",
+                "actif ni produit en attente. Retourne le VOXEGLD total réclamé."
+            ],
+            "name": "claimProceeds",
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "pairs",
+                    "type": "variadic<Address>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Sortie de secours de l'owner (paire abandonnée, bug du carnet), pas un",
+                "outil de repricing : un ordre posé attend d'être rempli. Annule des",
+                "ordres du collecteur sur une paire (liste vide = tous ses ordres actifs",
+                "de cette paire) — les tokens reviennent ici et l'intervalle du token",
+                "est remis à zéro. processFees étant ouvert à tous, n'importe qui les",
+                "remettrait aussitôt en vente sur la même paire : désactiver le token",
+                "(setTokenDisabled) ou mettre le collecteur en pause AVANT d'annuler.",
+                "Pas soumis à la pause, comme pair::cancelOrder. Retourne le nombre",
+                "annulé."
+            ],
+            "name": "cancelOrders",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "pair",
+                    "type": "Address"
+                },
+                {
+                    "name": "order_ids",
+                    "type": "variadic<u64>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "u32"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Ouvert à tous. Dépose le VOXEGLD du collecteur (plafonné à",
+                "max_zap_reserve_bps de la réserve, un dépôt par min_zap_interval) en",
+                "single-side sur la paire VOXEGLD/quote et transfère les LP reçus à",
+                "`receiver`. Le dépôt single-side revend environ la moitié du VOXEGLD",
+                "dans la paire : il ne doit pas se faire sur un VOXEGLD écrasé dans la",
+                "même transaction (le sandwich coûterait jusqu'à 1 − √(p_manipulé/p) du",
+                "dépôt). D'où la même référence à cliquet que processFees, sur le prix",
+                "du VOXEGLD en quote : dépôt reporté si le spot est plus de",
+                "max_price_deviation_bps sous la référence. Un VOXEGLD gonflé, lui, ne",
+                "coûte rien au collecteur (il revend plus cher). Observe le prix à",
+                "chaque appel, même sans dépôt : à appeler souvent."
+            ],
+            "name": "compound",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "Outcome"
+                }
+            ]
+        },
+        {
+            "name": "setFactoryAddress",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "address",
+                    "type": "Address"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setOrderConfig",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "premium_bps",
+                    "type": "u64"
+                },
+                {
+                    "name": "max_order_reserve_bps",
+                    "type": "u64"
+                },
+                {
+                    "name": "min_order_interval",
+                    "type": "u64"
+                },
+                {
+                    "name": "min_pair_target_reserve",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "decay_bps_per_day = 0 ou max_decay_seconds = 0 : la référence ne",
+                "baisse jamais — aucun ordre sous le plus haut observé."
+            ],
+            "name": "setRefConfig",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "decay_bps_per_day",
+                    "type": "u64"
+                },
+                {
+                    "name": "warmup_seconds",
+                    "type": "u64"
+                },
+                {
+                    "name": "max_decay_seconds",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "name": "setLpConfig",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "quote_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "receiver",
+                    "type": "Address"
+                },
+                {
+                    "name": "max_zap_reserve_bps",
+                    "type": "u64"
+                },
+                {
+                    "name": "max_price_deviation_bps",
+                    "type": "u64"
+                },
+                {
+                    "name": "min_zap_amount",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "min_zap_interval",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Désactive la phase 2 : le VOXEGLD s'accumule dans le collecteur."
+            ],
+            "name": "clearLpConfig",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Veto de l'owner sur un token (paire VOXEGLD/token douteuse, token",
+                "qu'on préfère garder...). Le token reste dans le collecteur."
+            ],
+            "name": "setTokenDisabled",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "disabled",
+                    "type": "bool"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Efface la référence d'un token — elle repart du spot au prochain",
+                "passage, avec un nouveau warm-up (ex. référence gonflée par un pic",
+                "artificiel, qu'on ne veut pas attendre de voir décroître)."
+            ],
+            "name": "resetPriceRef",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Sortie manuelle (migration, token sans paire VOXEGLD qu'on veut",
+                "traiter à la main...). Ne touche pas aux ordres en cours (tokens",
+                "escrowés dans les paires) : cancelOrders d'abord."
+            ],
+            "name": "withdraw",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "EgldOrEsdtTokenIdentifier"
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "to",
+                    "type": "Address"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Ce que ferait processFees pour `token` maintenant : (outcome,",
+                "montant mis en vente, min_amount_out, référence de prix)."
+            ],
+            "name": "previewProcess",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "Outcome"
+                },
+                {
+                    "type": "BigUint"
+                },
+                {
+                    "type": "BigUint"
+                },
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Ce que ferait compound maintenant : (outcome, VOXEGLD déposé,",
+                "référence de prix du VOXEGLD en quote)."
+            ],
+            "name": "previewCompound",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "Outcome"
+                },
+                {
+                    "type": "BigUint"
+                },
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Paire officielle VOXEGLD/token selon la factory."
+            ],
+            "name": "getPairFor",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "optional<Address>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "VOXEGLD en attente de claimProceeds, par paire."
+            ],
+            "name": "getClaimableProceeds",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "variadic<multi<Address,BigUint>>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "getLpConfig",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "optional<LpConfig>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "getFactoryAddress",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "Address"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "VOXEGLD — le token accumulé."
+            ],
+            "name": "getTargetToken",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "TokenIdentifier"
+                }
+            ]
+        },
+        {
+            "name": "getOrderConfig",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "OrderConfig"
+                }
+            ]
+        },
+        {
+            "name": "getDisabledTokens",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "variadic<TokenIdentifier>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Paires où le collecteur a posé au moins un ordre pas encore soldé",
+                "(actif ou produits à réclamer) — parcourues par claimProceeds."
+            ],
+            "name": "getOrderPairs",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "variadic<Address>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "getLastOrderAt",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "getLastZapAt",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "getVersion",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "getPriceRef",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "optional<PriceRef>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "name": "getRefConfig",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "RefConfig"
+                }
+            ]
+        },
+        {
+            "name": "pause",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "unpause",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "name": "isPaused",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "bool"
+                }
+            ]
+        }
+    ],
+    "events": [
+        {
+            "identifier": "orderPlaced",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "pair",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "order_id",
+                    "type": "u64",
+                    "indexed": true
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "min_amount_out",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "reference_price",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "identifier": "orderCancelled",
+            "inputs": [
+                {
+                    "name": "pair",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "order_id",
+                    "type": "u64",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "amount_target = VOXEGLD réclamé ; amount_other = l'autre token de la",
+                "paire (toujours 0 en pratique : le collecteur ne pose que des ordres",
+                "token → VOXEGLD)."
+            ],
+            "identifier": "proceedsClaimed",
+            "inputs": [
+                {
+                    "name": "pair",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "amount_target",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "amount_other",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "identifier": "lpCompounded",
+            "inputs": [
+                {
+                    "name": "pair",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "amount_in",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "lp_amount",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "receiver",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "identifier": "withdrawn",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "EgldOrEsdtTokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "amount",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "to",
+                    "type": "Address",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "identifier": "pauseContract",
+            "inputs": []
+        },
+        {
+            "identifier": "unpauseContract",
+            "inputs": []
+        }
+    ],
+    "esdtAttributes": [],
+    "hasCallback": false,
+    "types": {
+        "LpConfig": {
+            "type": "struct",
+            "fields": [
+                {
+                    "docs": [
+                        "Token de cotation de la paire de dépôt (WEGLD) — la paire",
+                        "VOXEGLD/quote est résolue via la factory à chaque appel."
+                    ],
+                    "name": "quote_token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "docs": [
+                        "Reçoit les LP (adresse dédiée, puis vault SC — payable-by-SC requis)."
+                    ],
+                    "name": "receiver",
+                    "type": "Address"
+                },
+                {
+                    "docs": [
+                        "Plafond d'un dépôt, en bps de la réserve VOXEGLD de la paire."
+                    ],
+                    "name": "max_zap_reserve_bps",
+                    "type": "u64"
+                },
+                {
+                    "docs": [
+                        "Écart toléré du spot SOUS la référence, en bps (100 = 1 %)."
+                    ],
+                    "name": "max_price_deviation_bps",
+                    "type": "u64"
+                },
+                {
+                    "docs": [
+                        "Plancher absolu d'un dépôt (évite un zap de poussière que la paire",
+                        "rejetterait : \"insufficient liquidity minted\"...)."
+                    ],
+                    "name": "min_zap_amount",
+                    "type": "BigUint"
+                },
+                {
+                    "docs": [
+                        "Délai minimum entre deux dépôts. compound étant ouvert à tous, sans",
+                        "lui un même appelant enchaînerait les dépôts plafonnés dans une seule",
+                        "transaction et le plafond ne voudrait plus rien dire."
+                    ],
+                    "name": "min_zap_interval",
+                    "type": "u64"
+                }
+            ]
+        },
+        "OrderConfig": {
+            "type": "struct",
+            "fields": [
+                {
+                    "docs": [
+                        "Prime au-dessus de la référence, en bps (1 000 = ordre à +10 %)."
+                    ],
+                    "name": "premium_bps",
+                    "type": "u64"
+                },
+                {
+                    "docs": [
+                        "Plafond d'un ordre, en bps de la réserve AMM du token vendu."
+                    ],
+                    "name": "max_order_reserve_bps",
+                    "type": "u64"
+                },
+                {
+                    "docs": [
+                        "Délai minimum entre deux ordres d'un même token (regroupe les frais",
+                        "en ordres moins nombreux) — remis à zéro par cancelOrders."
+                    ],
+                    "name": "min_order_interval",
+                    "type": "u64"
+                },
+                {
+                    "docs": [
+                        "Réserve VOXEGLD minimale de la paire : une paire fantôme ou quasi vide",
+                        "ne donne pas un prix exploitable."
+                    ],
+                    "name": "min_pair_target_reserve",
+                    "type": "BigUint"
+                }
+            ]
+        },
+        "Outcome": {
+            "type": "enum",
+            "docs": [
+                "Résultat d'un traitement — un par token pour processFees, un seul pour",
+                "compound. Aucun de ces cas ne revert : un token non traitable reste tel",
+                "quel dans le collecteur, les autres tokens du même appel continuent."
+            ],
+            "variants": [
+                {
+                    "docs": [
+                        "Ordre posé (processFees) / dépôt LP effectué (compound)."
+                    ],
+                    "name": "Done",
+                    "discriminant": 0
+                },
+                {
+                    "docs": [
+                        "processFees : le token cible lui-même — il part au dépôt LP (compound)."
+                    ],
+                    "name": "TargetToken",
+                    "discriminant": 1
+                },
+                {
+                    "docs": [
+                        "Token écarté par l'owner (setTokenDisabled) ; compound : config LP absente."
+                    ],
+                    "name": "Disabled",
+                    "discriminant": 2
+                },
+                {
+                    "docs": [
+                        "Aucune paire VOXEGLD/token dans la factory."
+                    ],
+                    "name": "NoPair",
+                    "discriminant": 3
+                },
+                {
+                    "docs": [
+                        "Paire sans réserves AMM (ou sans LP pour compound)."
+                    ],
+                    "name": "NoAmm",
+                    "discriminant": 4
+                },
+                {
+                    "docs": [
+                        "Réserve VOXEGLD de la paire sous min_pair_target_reserve."
+                    ],
+                    "name": "PoolTooSmall",
+                    "discriminant": 5
+                },
+                {
+                    "docs": [
+                        "Référence de prix encore en warm-up."
+                    ],
+                    "name": "WarmingUp",
+                    "discriminant": 6
+                },
+                {
+                    "docs": [
+                        "Paire en pause / inactive / createOrder en pause / carnet désactivé."
+                    ],
+                    "name": "PairUnavailable",
+                    "discriminant": 7
+                },
+                {
+                    "docs": [
+                        "min_order_interval pas encore écoulé depuis le dernier ordre du token",
+                        "(compound : min_zap_interval depuis le dernier dépôt)."
+                    ],
+                    "name": "TooSoon",
+                    "discriminant": 8
+                },
+                {
+                    "docs": [
+                        "Montant disponible sous le minimum (paire ou configuration) ; solde",
+                        "nul : pas d'observation du prix."
+                    ],
+                    "name": "BelowMinimum",
+                    "discriminant": 9
+                },
+                {
+                    "docs": [
+                        "processFees : prix hors du garde-fou ×factor de la paire ;",
+                        "compound : spot trop sous la référence (VOXEGLD sous pression)."
+                    ],
+                    "name": "PriceOutOfBounds",
+                    "discriminant": 10
+                }
+            ]
+        },
+        "PriceRef": {
+            "type": "struct",
+            "docs": [
+                "Référence de prix « à cliquet » d'un token que le collecteur vend.",
+                "",
+                "processFees est ouvert à tous : n'importe qui peut l'appeler depuis son",
+                "propre contrat, entre une vente massive du token (spot écrasé) et son",
+                "rachat, qui remplirait alors l'ordre du collecteur à prix cassé —",
+                "sandwich atomique, précédent SushiMaker. L'ordre ne part donc jamais du",
+                "spot seul mais de cette référence :",
+                "- à la HAUSSE elle suit le spot instantanément (un ordre n'est jamais posé",
+                "  sous le marché) ;",
+                "- à la BAISSE elle perd au plus `decay_bps_per_day` par jour, et une",
+                "  absence d'observation ne compte jamais pour plus de `max_decay_seconds`.",
+                "  Un spot écrasé le temps d'une transaction ne la fait pas bouger ; un vrai",
+                "  repli est suivi en quelques jours, les ordres restant entre-temps",
+                "  au-dessus du marché (aucune pression vendeuse).",
+                "",
+                "Hypothèse de sécurité : un observateur honnête (bot, sans privilège)",
+                "appelle processFees régulièrement. Chaque observation honnête ramène la",
+                "référence au vrai prix ; pour l'abaisser, un attaquant doit fausser TOUTES",
+                "les observations pendant des jours (front-run de chaque appel du bot), et",
+                "ne gagne alors que sur un ordre par intervalle, plafonné en taille. Sans",
+                "aucun observateur honnête pendant des jours, il peut la faire glisser au",
+                "rythme de la décroissance — à surveiller, pause owner au besoin. Jamais de",
+                "remise à zéro après une longue absence : elle permettrait de repartir d'un",
+                "prix manipulé.",
+                "",
+                "Warm-up : la première observation d'un token (seulement une fois détenu,",
+                "cf. plan_order dans lib.rs) fixe la référence au spot, mais aucun ordre",
+                "avant `warmup_seconds` ; entre-temps les observations ne peuvent que la",
+                "remonter (max). Une référence gonflée (spot poussé à la hausse pendant une",
+                "observation) ne coûte que du retard — ordres trop chers, non remplis, le",
+                "temps de la décroissance — ou un resetPriceRef de l'owner.",
+                "",
+                "Prix dans la convention de pair::orderbook (`node.price`) : unités brutes",
+                "du token reçu par unité brute du token vendu, × PRICE_SCALE (10^36).",
+                "",
+                "`pair` : paire observée. Si elle change (setFactoryAddress, autre token",
+                "de cotation via setLpConfig), l'ancienne référence est dans une autre",
+                "unité : elle repart de zéro, warm-up compris."
+            ],
+            "fields": [
+                {
+                    "name": "price",
+                    "type": "BigUint"
+                },
+                {
+                    "name": "updated_at",
+                    "type": "u64"
+                },
+                {
+                    "name": "first_seen",
+                    "type": "u64"
+                },
+                {
+                    "name": "pair",
+                    "type": "Address"
+                }
+            ]
+        },
+        "RefConfig": {
+            "type": "struct",
+            "fields": [
+                {
+                    "docs": [
+                        "Baisse max de la référence, en bps par jour (500 = 5 %/jour),",
+                        "proportionnelle au temps écoulé depuis la dernière observation."
+                    ],
+                    "name": "decay_bps_per_day",
+                    "type": "u64"
+                },
+                {
+                    "docs": [
+                        "Délai d'observation avant le premier ordre (ou dépôt LP) d'un token."
+                    ],
+                    "name": "warmup_seconds",
+                    "type": "u64"
+                },
+                {
+                    "docs": [
+                        "Temps écoulé compté au plus pour une baisse : après une longue absence",
+                        "d'observation, la référence ne perd qu'une fenêtre d'un coup — une",
+                        "baisse plus forte exige des observations répétées dans le temps."
+                    ],
+                    "name": "max_decay_seconds",
+                    "type": "u64"
+                }
+            ]
+        }
+    }
+}

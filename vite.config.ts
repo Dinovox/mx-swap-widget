@@ -23,6 +23,9 @@ const flattenLayers = {
 
 // Post-build Vite plugin: adds !important to every declaration in dist/style.css
 // so host app styles (Bootstrap, etc.) can never override widget styles.
+// Skips the `:where(...)` preflight in widget.css: it must stay the lowest
+// priority — made !important, its `font-size: 100%` / `padding: 0` / `border: 0`
+// beat every inline `style={{ fontSize, padding, border }}` on widget buttons.
 const addImportantToDistCss = {
   name: "add-important-to-dist-css",
   closeBundle() {
@@ -30,7 +33,10 @@ const addImportantToDistCss = {
     if (!existsSync(cssPath)) return;
     const css = readFileSync(cssPath, "utf-8");
     const root = postcss.parse(css);
-    root.walkDecls((decl) => { decl.important = true; });
+    root.walkRules((rule) => {
+      if (rule.selector.startsWith(":where(")) return;
+      rule.walkDecls((decl) => { decl.important = true; });
+    });
     writeFileSync(cssPath, root.toResult().css, "utf-8");
   },
 };

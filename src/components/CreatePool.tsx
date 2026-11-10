@@ -98,12 +98,19 @@ export const CreatePool = () => {
 
   // tokenA's actual candidate list: VOXEGLD regardless of balance, every
   // other branded token only if the connected wallet actually holds it.
+  // Mainnet only for the branding rule (same as LimitOrders): devnet/testnet
+  // test tokens are rarely branded — there, any held token is offered, even
+  // one the DEX API doesn't list yet (never paired).
+  const brandedOnly = chainId === "1";
   const tokenAOptions = useMemo(() => {
     const heldIds = new Set(walletTokens.map((t) => t.identifier));
-    return allTokens.filter(
+    const listed = allTokens.filter(
       (t) => t.identifier === VOXEGLD_IDENTIFIER || heldIds.has(t.identifier),
     );
-  }, [allTokens, walletTokens]);
+    if (brandedOnly) return listed;
+    const listedIds = new Set(listed.map((t) => t.identifier));
+    return [...listed, ...walletTokens.filter((t) => !listedIds.has(t.identifier))];
+  }, [allTokens, walletTokens, brandedOnly]);
 
   useEffect(() => {
     if (!apiUrl) return;
@@ -123,7 +130,7 @@ export const CreatePool = () => {
             logoUrl: t.logoUrl ?? null,
           }),
         );
-        setAllTokens(brandedTokensVoxEgldFirst(allTokens));
+        setAllTokens(chainId === "1" ? brandedTokensVoxEgldFirst(allTokens) : allTokens);
         setLpTokenSet(
           new Set(
             (poolsRes.data.pools || [])
@@ -134,7 +141,7 @@ export const CreatePool = () => {
       })
       .catch(console.error)
       .finally(() => setTokensLoading(false));
-  }, [apiUrl]);
+  }, [apiUrl, chainId]);
 
   useEffect(() => {
     if (tokensLoading) return;

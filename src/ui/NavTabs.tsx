@@ -1,8 +1,9 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useGoTo } from "../context/SwapViewContext";
+import { useFeatureFlags } from "../featureFlags";
 
-export type Section = "swap" | "limit" | "dca" | "liquidity" | "farms";
+export type Section = "swap" | "limit" | "dca" | "liquidity" | "farms" | "fees";
 
 /**
  * Top-level sections, rendered as the card title itself (in place of the old
@@ -12,6 +13,7 @@ export type Section = "swap" | "limit" | "dca" | "liquidity" | "farms";
 export const SectionTabs = ({ active }: { active: Section }) => {
   const goTo = useGoTo();
   const { t } = useTranslation("swap");
+  const flags = useFeatureFlags();
 
   // Fit the 4 sections in the available width by stepping down a size ladder,
   // keeping every label readable as long as possible: icons-only for the
@@ -51,7 +53,7 @@ export const SectionTabs = ({ active }: { active: Section }) => {
     if (row.offsetWidth > wrap.clientWidth && level < LEVELS.length - 1) setLevel(level + 1);
   }, [level, widthKey]); // eslint-disable-line react-hooks/exhaustive-deps
   // Labels change with the language → re-fit from the top.
-  const labelsKey = `${t("tab_swap")}|${t("tab_limit")}|${t("tab_dca")}|${t("tab_liquidity")}|${t("tab_farms")}`;
+  const labelsKey = `${t("tab_swap")}|${t("tab_limit")}|${t("tab_dca")}|${t("tab_liquidity")}|${t("tab_farms")}|${flags.dexFees ? t("tab_fees") : ""}`;
   React.useLayoutEffect(() => {
     setLevel(0);
     setWidthKey((k) => k + 1);
@@ -64,6 +66,7 @@ export const SectionTabs = ({ active }: { active: Section }) => {
     { key: "dca", icon: "⏱️", label: t("tab_dca") },
     { key: "liquidity", icon: "💧", label: t("tab_liquidity") },
     { key: "farms", icon: "🌾", label: t("tab_farms") },
+    ...(flags.dexFees ? [{ key: "fees" as const, icon: "♻️", label: t("tab_fees") }] : []),
   ];
 
   return (

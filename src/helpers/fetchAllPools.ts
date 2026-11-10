@@ -5,7 +5,14 @@ const PAGE_SIZE = 200; // API max
 
 export interface PoolsPage {
   pools: LiquidityPool[];
-  summary?: { poolCount: number; poolCountPriced: number; tvlUsd: string | null; volume24hSwapCount: number } | null;
+  summary?: {
+    poolCount: number;
+    poolCountPriced: number;
+    tvlUsd: string | null;
+    bookTvlUsd?: string | null;
+    totalTvlUsd?: string | null;
+    volume24hSwapCount: number;
+  } | null;
   pagination?: { limit: number; offset: number; total: number };
 }
 

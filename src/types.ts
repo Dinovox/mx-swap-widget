@@ -53,6 +53,12 @@ export interface LiquidityPool extends Required<Pick<PoolInfo, 'lpToken' | 'rese
   /** TVL change vs. the snapshot 24h / 7d ago (DinoVox pools). null = no snapshot in that window yet. */
   tvlChange24hPct?: string | null;
   tvlChange7dPct?: string | null;
+  /**
+   * Funds escrowed by this pair's active limit orders (GET /pools, DinoVox only; null on
+   * other DEXes, undefined = older API). Never part of tvlUsd: makers earn no LP fees.
+   * amountA/amountB in raw units, like reserveA/reserveB.
+   */
+  book?: { amountA: string; amountB: string; tvlUsd: string | null; orderCount: number } | null;
   /** Pair is whitelisted on the dca-router — a DCA order can be created on it. */
   dcaReady?: boolean;
   /** Source DEX (returned by /pools). */

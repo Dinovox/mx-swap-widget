@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Maximize2, X } from "lucide-react";
 import { fetchCandles, type Candle, type ChartableEntry, type ChartInterval } from "../helpers/charts";
+import { fetchBookLevels } from "./OrderBookDepth";
 
 // viewBox width — the SVG stretches to the container; wicks / guides use
 // non-scaling-stroke so they stay 1px whatever the aspect ratio.
@@ -55,14 +56,26 @@ type Props = {
    * always open (the host disclosure handles collapsing), no remembered state.
    */
   embedded?: boolean;
+  /** Order-book levels to overlay (price of entry.token in entry.quote) — discreet dashed lines. */
+  bookLevels?: BookLevel[];
+  /**
+   * Without `bookLevels`: fetch the shown pool's order book and overlay it
+   * (needs the tokens' decimals). Ignored when `bookLevels` is given.
+   */
+  showBook?: { decimalsOf: (id: string) => number | undefined };
 };
+
+/** `preview`: the order being typed — drawn in amber and always kept in range. */
+export type BookLevel = { side: "ask" | "bid"; price: number; preview?: boolean };
+
+const PREVIEW = "#f59e0b";
 
 /**
  * Candlestick price chart of a token against VOXEGLD / USDC / WEGLD (direct
  * DinoVox pools only). `entries` = the chartable entries of ONE token (one per
  * quote currency). Collapsible inline card + an enlarged modal view.
  */
-export const PriceChart = ({ apiUrl, entries, tickerOf, embedded = false }: Props) => {
+export const PriceChart = ({ apiUrl, entries, tickerOf, embedded = false, bookLevels, showBook }: Props) => {
   const { t, i18n } = useTranslation("swap");
   const [openState, setOpen] = React.useState(() => {
     if (embedded) return true;
@@ -112,6 +125,25 @@ export const PriceChart = ({ apiUrl, entries, tickerOf, embedded = false }: Prop
       cancelled = true;
     };
   }, [apiUrl, entry?.poolAddress, entry?.invertPrice, interval, days, open, enlarged]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Own order-book fetch (showBook) — refetched with the candles.
+  const [fetchedLevels, setFetchedLevels] = React.useState<BookLevel[] | undefined>(undefined);
+  const decToken = entry ? showBook?.decimalsOf(entry.token) : undefined;
+  const decQuote = entry ? showBook?.decimalsOf(entry.quote) : undefined;
+  React.useEffect(() => {
+    setFetchedLevels(undefined);
+    if (bookLevels || (!open && !enlarged) || !entry || decToken == null || decQuote == null) return;
+    let cancelled = false;
+    fetchBookLevels(apiUrl, entry.poolAddress, entry.token, entry.quote, decToken, decQuote)
+      .then((l) => !cancelled && setFetchedLevels(l))
+      .catch(() => {
+        /* no book (pair not upgraded, network): no overlay */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, entry?.poolAddress, entry?.token, entry?.quote, decToken, decQuote, !!bookLevels, interval, days, open, enlarged]); // eslint-disable-line react-hooks/exhaustive-deps
+  const levels = bookLevels ?? fetchedLevels;
 
   // Esc closes the enlarged view.
   React.useEffect(() => {
@@ -202,6 +234,7 @@ export const PriceChart = ({ apiUrl, entries, tickerOf, embedded = false }: Prop
         gridLines={gridLines}
         locale={i18n.language}
         tradesLabel={(count) => t("chart_trades", { count })}
+        bookLevels={levels}
       />
     );
 
@@ -298,6 +331,7 @@ function CandleCanvas({
   gridLines,
   locale,
   tradesLabel,
+  bookLevels,
 }: {
   candles: Candle[];
   interval: ChartInterval;
@@ -306,6 +340,7 @@ function CandleCanvas({
   gridLines: number;
   locale: string;
   tradesLabel: (count: number) => string;
+  bookLevels?: BookLevel[];
 }) {
   const [hover, setHover] = React.useState<number | null>(null);
   const H = height;
@@ -316,8 +351,9 @@ function CandleCanvas({
   const now = Date.now();
   const t0 = Math.min(candles[0].time, now - days * 86_400_000);
   const t1 = Math.max(candles[candles.length - 1].time + step, now);
-  const lo = Math.min(...candles.map((c) => c.low));
-  const hi = Math.max(...candles.map((c) => c.high));
+  const previewPrices = (bookLevels ?? []).filter((l) => l.preview && Number.isFinite(l.price) && l.price > 0).map((l) => l.price);
+  const lo = Math.min(...candles.map((c) => c.low), ...previewPrices);
+  const hi = Math.max(...candles.map((c) => c.high), ...previewPrices);
   const span = hi - lo || hi * 0.02 || 1;
   const yLo = lo - span * 0.06;
   const yHi = hi + span * 0.06;
@@ -332,6 +368,10 @@ function CandleCanvas({
     stepPath += i === 0 ? `M${cx(c)},${y(c.close)}` : `H${cx(c)}V${y(c.close)}`;
   });
   stepPath += `H${W}`;
+
+  // Order-book levels inside the visible price range only (a far-off order
+  // must not squash the candles).
+  const shownLevels = (bookLevels ?? []).filter((l) => Number.isFinite(l.price) && l.price >= yLo && l.price <= yHi);
 
   // Evenly spaced horizontal price levels.
   const levels = Array.from({ length: gridLines }, (_, i) => yLo + ((yHi - yLo) * (i + 0.5)) / gridLines);
@@ -375,6 +415,20 @@ function CandleCanvas({
           {levels.map((v) => (
             <line key={v} x1={0} x2={W} y1={y(v)} y2={y(v)} stroke="rgba(156,163,175,0.18)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
           ))}
+          {shownLevels.map((l, i) => (
+            <line
+              key={`book-${i}`}
+              x1={0}
+              x2={W}
+              y1={y(l.price)}
+              y2={y(l.price)}
+              stroke={l.preview ? PREVIEW : l.side === "bid" ? UP : DOWN}
+              strokeOpacity={l.preview ? 0.95 : 0.45}
+              strokeWidth={l.preview ? 1.5 : 1}
+              strokeDasharray={l.preview ? undefined : "6 4"}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
           <path d={stepPath} fill="none" stroke="rgba(156,163,175,0.45)" strokeWidth={1} strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
           {candles.map((c, i) => {
             const color = c.close >= c.open ? UP : DOWN;
@@ -402,6 +456,15 @@ function CandleCanvas({
             key={v}
             className="dvx:absolute dvx:text-[9px] dvx:text-gray-400 dvx:pointer-events-none dvx:whitespace-nowrap"
             style={{ left: 6, top: y(v), transform: "translateY(-50%)" }}
+          >
+            {fmtPrice(v)}
+          </span>
+        ))}
+        {previewPrices.map((v) => (
+          <span
+            key={`preview-${v}`}
+            className="dvx:absolute dvx:text-[9px] dvx:font-bold dvx:pointer-events-none dvx:whitespace-nowrap dvx:rounded dvx:px-1"
+            style={{ left: 2, top: y(v), transform: "translateY(-50%)", color: "#111", backgroundColor: PREVIEW }}
           >
             {fmtPrice(v)}
           </span>

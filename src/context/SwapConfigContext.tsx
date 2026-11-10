@@ -25,6 +25,12 @@ export interface SwapConfig {
    * shows a "not available" state).
    */
   farmsAddress?: string;
+  /**
+   * Fee collector smart contract address (swapv2/fee-collector) — the
+   * "Dex Fees" tab triggers its public endpoints. Not deployed on mainnet
+   * yet: defaults to "" (the tab then shows a "not available" state).
+   */
+  feeCollectorAddress?: string;
   /** WEGLD token identifier  e.g. 'WEGLD-bd4d79' */
   wegldIdentifier: string;
   /**
@@ -145,6 +151,7 @@ const DEFAULT_CONFIG: ResolvedSwapConfig = {
     "erd1qqqqqqqqqqqqqpgqy4k64jchmpxrh74xxgds9wtzkz2d5r4ufm8smqsnjw",
   farmsAddress:
     "erd1qqqqqqqqqqqqqpgqqh0mhf3szafyu0j9h4gn0fc5nfa03es5fm8s9fp70y",
+  feeCollectorAddress: "",
   wegldIdentifier: "WEGLD-bd4d79",
   networkApiAddress: "https://api.multiversx.com",
   chainId: "1",

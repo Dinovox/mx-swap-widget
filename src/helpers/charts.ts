@@ -1,4 +1,5 @@
 import axios from "axios";
+import { orderForQuoteDisplay } from "./quotePriority";
 
 /** One chartable (token, quote) pair: a DinoVox pool paired directly with VOXEGLD or USDC. */
 export interface ChartableEntry {
@@ -117,17 +118,33 @@ export function fetchReferenceTokenCharts(apiUrl: string, tokenId: string): Prom
 /**
  * Chart entry of ONE pool card: the /pools/chartable entry of that pool, else
  * — for VOXEGLD vs USDC / WEGLD, which chartable never lists as a token —
- * an entry built from the pool itself (price of VOXEGLD in the other token).
+ * an entry built from the pool itself (price of VOXEGLD in the other token),
+ * else — secondary pairs (OLV/SEGLD…), with `anyPair` (DinoVox pools only:
+ * /ohlc indexes them all) — the pool's own price, quoted like the
+ * order book (orderForQuoteDisplay: USDC > WEGLD > VOXEGLD, otherwise
+ * tokenA in tokenB).
  */
 export function chartEntryForPool(
   chartable: ChartableEntry[],
   pool: { address: string; tokenA: string; tokenB: string; tvlUsd?: string | null },
+  { anyPair = false }: { anyPair?: boolean } = {},
 ): ChartableEntry | null {
   const listed = chartable.find((e) => e.poolAddress === pool.address);
   if (listed) return listed;
   const ticker = (id: string) => id.split("-")[0];
   const vox = [pool.tokenA, pool.tokenB].find((id) => ticker(id) === "VOXEGLD");
   const other = vox && (pool.tokenA === vox ? pool.tokenB : pool.tokenA);
-  if (!vox || !other || !REFERENCE_QUOTES.includes(ticker(other))) return null;
-  return { token: vox, quote: other, poolAddress: pool.address, tvlUsd: pool.tvlUsd ?? null, invertPrice: pool.tokenA !== vox };
+  if (vox && other && REFERENCE_QUOTES.includes(ticker(other))) {
+    return { token: vox, quote: other, poolAddress: pool.address, tvlUsd: pool.tvlUsd ?? null, invertPrice: pool.tokenA !== vox };
+  }
+  if (!anyPair) return null;
+  const asCandidate = (id: string) => ({ identifier: id, ticker: ticker(id), decimals: 0 });
+  const { base, quote } = orderForQuoteDisplay(asCandidate(pool.tokenA), asCandidate(pool.tokenB), false);
+  return {
+    token: base.identifier,
+    quote: quote.identifier,
+    poolAddress: pool.address,
+    tvlUsd: pool.tvlUsd ?? null,
+    invertPrice: pool.tokenA !== base.identifier,
+  };
 }

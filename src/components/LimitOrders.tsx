@@ -17,7 +17,9 @@ import bigToHex from "../helpers/bigToHex";
 import strToHex from "../helpers/strToHex";
 import { brandedTokensVoxEgldFirst } from "../helpers/brandedTokens";
 import { Card } from "../ui/Card";
-import { OrderBookDepth } from "../ui/OrderBookDepth";
+import { OrderBookDepth, PRICE_SCALE_DEC } from "../ui/OrderBookDepth";
+import { PriceChart, type BookLevel } from "../ui/PriceChart";
+import { chartEntryForPool, fetchChartable, type ChartableEntry } from "../helpers/charts";
 import { orderForQuoteDisplay } from "../helpers/quotePriority";
 import { SectionTabs } from "../ui/NavTabs";
 import { TokenSelect, TokenLogo, type TokenBalanceInfo } from "../ui/TokenSelect";
@@ -44,6 +46,7 @@ const ISSUE_LP_GAS = 150_000_000; // same as CreatePool step 2 (async issue + ca
 const ISSUE_LP_COST = 50_000_000_000_000_000n; // 0.05 EGLD, forwarded by the factory to the ESDT system SC
 const BELOW_MARKET_TOLERANCE = 0.995; // warn when selling > 0.5% under the AMM spot
 const DEFAULT_MAX_PRICE_DEVIATION_FACTOR = 20; // init()/upgrade() default (orderbook.rs V8)
+const DEFAULT_MAX_PRICE_DISCOUNT_BPS = 5_000; // init()/upgrade() default (orderbook.rs V6): at most 50% under spot
 
 interface PairInfo {
   address: string;
@@ -72,6 +75,78 @@ interface BookOrder {
   createdAt: string;
 }
 
+/** GET /orderbook/orders/summary — payload léger pour construire un sélecteur
+ * "par paire" sans télécharger le détail de chaque ordre (cf. conversation
+ * 2026-10-31 : un wallet actif peut accumuler des milliers d'ordres toutes
+ * paires confondues). */
+interface PairOrderSummary {
+  pairAddr: string;
+  tokenA: string | null;
+  tokenB: string | null;
+  activeCount: number;
+  pastCount: number;
+}
+
+/** GET /orderbook/orders/buckets — ordres actifs d'un utilisateur agrégés par palier (marquage du carnet). */
+interface MineBucket {
+  tokenIn: string;
+  bucketId: number;
+  orderCount: number;
+  totalAmountRemaining: string;
+}
+
+/**
+ * Ordres de l'utilisateur dans UN palier du carnet, chargés à l'ouverture de
+ * la ligne (GET /orderbook/orders?bucketId=...) — évite de télécharger tous
+ * les ordres d'une paire (milliers possibles) juste pour marquer le carnet.
+ */
+function DepthBucketOrders({
+  apiUrl,
+  address,
+  pairAddr,
+  tokenIn,
+  bucketId,
+  refreshKey,
+  renderRow,
+}: {
+  apiUrl: string;
+  address: string;
+  pairAddr: string;
+  tokenIn: string;
+  bucketId: number;
+  refreshKey: number;
+  renderRow: (o: BookOrder) => React.ReactNode;
+}) {
+  const { t } = useTranslation("swap");
+  const [res, setRes] = React.useState<{ orders: BookOrder[]; total: number } | undefined>(undefined);
+  React.useEffect(() => {
+    let cancelled = false;
+    axios
+      .get<{ orders: BookOrder[]; total: number }>(`${apiUrl}/orderbook/orders`, {
+        params: { address, pairAddr, tokenIn, bucketId, status: "active", limit: 200 },
+      })
+      .then((r) => !cancelled && setRes({ orders: r.data.orders ?? [], total: r.data.total ?? 0 }))
+      .catch(() => !cancelled && setRes({ orders: [], total: 0 }));
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, address, pairAddr, tokenIn, bucketId, refreshKey]);
+
+  const note = "dvx:px-2 dvx:py-1 dvx:text-gray-400";
+  if (!res) return <div className={note} style={{ fontSize: 11 }}>{t("depth_loading")}</div>;
+  if (res.orders.length === 0) return <div className={note} style={{ fontSize: 11 }}>{t("limit_no_active")}</div>;
+  return (
+    <>
+      {[...res.orders].sort((a, b) => new BigNumber(a.price).comparedTo(b.price) ?? 0).map(renderRow)}
+      {res.total > res.orders.length && (
+        <div className={note} style={{ fontSize: 10 }}>
+          {t("limit_orders_capped", { shown: res.orders.length, total: res.total })}
+        </div>
+      )}
+    </>
+  );
+}
+
 /** LP name/ticker the factory requires at createPair (same derivation as CreatePool). */
 function lpNamesFor(tickerX: string, tickerY: string): { name: string; ticker: string } {
   const clean = (s: string) => s.split("-")[0].toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -91,7 +166,7 @@ function lpNamesFor(tickerX: string, tickerY: string): { name: string; ticker: s
 async function fetchOrderBookInfo(
   networkApiAddress: string,
   pair: string,
-): Promise<{ supported: boolean; ratio: number; maxDeviationFactor: number | null }> {
+): Promise<{ supported: boolean; ratio: number; maxDeviationFactor: number | null; maxDiscountBps: number | null }> {
   const ratioP = (async () => {
     try {
       const { data } = await axios.post(`${networkApiAddress}/query`, { scAddress: pair, funcName: "getMinOrderRatio", args: [] });
@@ -124,8 +199,23 @@ async function fetchOrderBookInfo(
       return DEFAULT_MAX_PRICE_DEVIATION_FACTOR;
     }
   })();
-  const [{ supported, ratio }, maxDeviationFactor] = await Promise.all([ratioP, factorP]);
-  return { supported, ratio, maxDeviationFactor };
+  // getMaxPriceDiscountBps (orderbook.rs V6) — same null-if-absent rule as the
+  // factor. An empty answer is a real 0 (no order under the spot allowed).
+  const discountP = (async () => {
+    try {
+      const { data } = await axios.post(`${networkApiAddress}/query`, { scAddress: pair, funcName: "getMaxPriceDiscountBps", args: [] });
+      const b64: string | undefined = data?.returnData?.[0];
+      if (b64 == null) return null;
+      const hex = Array.from(atob(b64), (c) => c.charCodeAt(0).toString(16).padStart(2, "0")).join("");
+      return hex ? parseInt(hex, 16) : 0;
+    } catch (err: any) {
+      const msg = String(err?.response?.data?.code ?? err?.response?.data?.message ?? "");
+      if (msg.includes("function not found")) return null;
+      return DEFAULT_MAX_PRICE_DISCOUNT_BPS;
+    }
+  })();
+  const [{ supported, ratio }, maxDeviationFactor, maxDiscountBps] = await Promise.all([ratioP, factorP, discountP]);
+  return { supported, ratio, maxDeviationFactor, maxDiscountBps };
 }
 
 const b64ToBig = (b64: string | undefined): BigNumber => {
@@ -262,7 +352,20 @@ export const LimitOrders = () => {
   const [tokenIn, setTokenIn] = React.useState<DexToken | null>(null);
   const [tokenOut, setTokenOut] = React.useState<DexToken | null>(null);
   const [amount, setAmount] = React.useState("");
-  const [price, setPrice] = React.useState(""); // 1 tokenIn = price tokenOut
+  // The limit is typed EITHER as a unit price or as the total received
+  // ("Contre" input) — whichever was edited last is the anchor, the other
+  // one is derived from it (cf. priceBN / minOutRaw below).
+  const [price, setPriceInput] = React.useState(""); // 1 tokenIn = price tokenOut
+  const [receive, setReceive] = React.useState(""); // total tokenOut for the whole amount
+  const [priceAnchor, setPriceAnchor] = React.useState<"price" | "receive">("price");
+  const setPrice = (v: string) => {
+    setPriceInput(v);
+    setPriceAnchor("price");
+  };
+  const setReceiveInput = (v: string) => {
+    setReceive(v);
+    setPriceAnchor("receive");
+  };
 
   /* ---- URL ?from=&to= (refresh / share), same params as Swap ---- */
   const [searchParams, setSearchParams] = useWidgetSearchParams();
@@ -323,11 +426,17 @@ export const LimitOrders = () => {
   React.useEffect(() => {
     loadPair();
   }, [loadPair]);
-  // Manual base/quote flip for the depth chart below — reset whenever the
-  // selected pair changes (cf. orderForQuoteDisplay, src/helpers/quotePriority.ts).
+  // Manual base/quote flip for the depth chart below, toggled together with
+  // the form's direction (invertTokens) — reset only when switching to ANOTHER
+  // pair: inverting the tokens reloads the same pair (address → undefined →
+  // same address), which must keep the flip (cf. orderForQuoteDisplay,
+  // src/helpers/quotePriority.ts).
   const [depthInverted, setDepthInverted] = React.useState(false);
+  const lastPairAddr = React.useRef<string | null>(null);
   React.useEffect(() => {
-    setDepthInverted(false);
+    if (!pair?.address || pair.address === lastPairAddr.current) return;
+    if (lastPairAddr.current !== null) setDepthInverted(false);
+    lastPairAddr.current = pair.address;
   }, [pair?.address]);
   React.useEffect(() => {
     if (!pairPolling) return;
@@ -335,19 +444,33 @@ export const LimitOrders = () => {
     return () => clearInterval(i);
   }, [pairPolling, loadPair]);
 
+  // Price chart above the book: pools with indexed history (one fetch) + the
+  // book's levels (1 base = price quote) to overlay on it.
+  const [chartable, setChartable] = React.useState<ChartableEntry[]>([]);
+  React.useEffect(() => {
+    if (!apiUrl) return;
+    fetchChartable(apiUrl)
+      .then(setChartable)
+      .catch(() => setChartable([]));
+  }, [apiUrl]);
+  const [depthLevels, setDepthLevels] = React.useState<{ pool: string; base: string; levels: BookLevel[] } | null>(null);
+
   const [minRatio, setMinRatio] = React.useState(DEFAULT_MIN_ORDER_RATIO);
   const [bookSupported, setBookSupported] = React.useState(true);
   // null = unknown (older pair without the V8 guard, or not fetched yet) —
   // the deviation check below stays silent/non-blocking in that case.
   const [maxDeviationFactor, setMaxDeviationFactor] = React.useState<number | null>(null);
+  const [maxDiscountBps, setMaxDiscountBps] = React.useState<number | null>(null);
   React.useEffect(() => {
     setBookSupported(true);
     setMaxDeviationFactor(null);
+    setMaxDiscountBps(null);
     if (!pair?.address || !networkApiAddress) return;
-    fetchOrderBookInfo(networkApiAddress, pair.address).then(({ supported, ratio, maxDeviationFactor }) => {
+    fetchOrderBookInfo(networkApiAddress, pair.address).then(({ supported, ratio, maxDeviationFactor, maxDiscountBps }) => {
       setBookSupported(supported);
       setMinRatio(ratio);
       setMaxDeviationFactor(maxDeviationFactor);
+      setMaxDiscountBps(maxDiscountBps);
     });
   }, [pair?.address, networkApiAddress]);
 
@@ -364,12 +487,44 @@ export const LimitOrders = () => {
     const v = new BigNumber(amount);
     return v.isFinite() && v.gt(0) ? v.shiftedBy(decIn).integerValue(BigNumber.ROUND_DOWN) : null;
   })();
+  const receiveRaw = (() => {
+    const v = new BigNumber(receive);
+    return v.isFinite() && v.gt(0) ? v.shiftedBy(decOut).integerValue(BigNumber.ROUND_DOWN) : null;
+  })();
   const priceBN = (() => {
+    if (priceAnchor === "receive") {
+      return amountRaw && receiveRaw ? receiveRaw.shiftedBy(-decOut).div(amountRaw.shiftedBy(-decIn)) : null;
+    }
     const v = new BigNumber(price);
     return v.isFinite() && v.gt(0) ? v : null;
   })();
-  // min_amount_out: what the maker wants for the WHOLE amount, floored to raw units.
-  const minOutRaw = amountRaw && priceBN ? amountRaw.shiftedBy(-decIn).times(priceBN).shiftedBy(decOut).integerValue(BigNumber.ROUND_DOWN) : null;
+  // min_amount_out: what the maker wants for the WHOLE amount, floored to raw units
+  // (taken as typed when the total is the anchor).
+  const minOutRaw =
+    priceAnchor === "receive"
+      ? amountRaw && receiveRaw
+      : amountRaw && priceBN ? amountRaw.shiftedBy(-decIn).times(priceBN).shiftedBy(decOut).integerValue(BigNumber.ROUND_DOWN) : null;
+  // Exact (unrounded) total the user asked for, in raw tokenOut units — differs
+  // from minOutRaw when tokenOut's decimals can't hold it (e.g. 1 × 1.99 of a
+  // 0-decimal token → 1): the order then really executes at minOut / amount.
+  const idealOutRaw = !amountRaw
+    ? null
+    : priceAnchor === "price"
+      ? priceBN && amountRaw.shiftedBy(-decIn).times(priceBN).shiftedBy(decOut)
+      : (() => {
+          const v = new BigNumber(receive);
+          return v.isFinite() && v.gt(0) ? v.shiftedBy(decOut) : null;
+        })();
+  const outRounded = !!minOutRaw && !!idealOutRaw && !idealOutRaw.eq(minOutRaw);
+  const effectivePrice = outRounded && amountRaw && minOutRaw ? minOutRaw.shiftedBy(-decOut).div(amountRaw.shiftedBy(-decIn)) : null;
+  // What each input shows: the typed value for the anchor, the derived one otherwise.
+  const priceInputValue = priceAnchor === "price" ? price : priceBN ? priceBN.precision(12, BigNumber.ROUND_DOWN).toFixed() : "";
+  const receiveInputValue = priceAnchor === "receive" ? receive : minOutRaw && minOutRaw.gt(0) ? minOutRaw.shiftedBy(-decOut).toFixed() : "";
+  // Changing the sold amount keeps the unit price (the total follows).
+  const changeAmount = (v: string) => {
+    if (priceAnchor === "receive" && priceBN) setPrice(priceInputValue);
+    setAmount(v);
+  };
   // Anti-spam floor (per pair, owner-adjustable ratio) — refreshed with the pair and after each tx.
   const [minOrder, setMinOrder] = React.useState<MinOrderInfo | null>(null);
   React.useEffect(() => {
@@ -395,10 +550,21 @@ export const LimitOrders = () => {
   // blocking it client-side avoids a doomed transaction. Silent (false)
   // when maxDeviationFactor is unknown (older pair, fetch not done yet) —
   // never block on a limit this client hasn't actually confirmed exists.
-  const priceTooFarFromMarket =
-    spot && priceBN && maxDeviationFactor != null
-      ? priceBN.gt(spot.times(maxDeviationFactor)) || priceBN.times(maxDeviationFactor).lt(spot)
-      : false;
+  // Lower bound (V6): no more than maxDiscountBps under the spot — stricter
+  // than spot/factor by default (50% vs 95%), so the factor effectively only
+  // caps the price from above. Both floors are checked; the message shows the
+  // stricter one.
+  const priceTooHigh = spot && priceBN && maxDeviationFactor != null ? priceBN.gt(spot.times(maxDeviationFactor)) : false;
+  const priceTooLow =
+    !!spot &&
+    !!priceBN &&
+    ((maxDiscountBps != null && priceBN.times(10_000).lt(spot.times(10_000 - maxDiscountBps))) ||
+      (maxDeviationFactor != null && priceBN.times(maxDeviationFactor).lt(spot)));
+  const maxDiscountPct = Math.min(
+    maxDiscountBps != null ? maxDiscountBps / 100 : 100,
+    maxDeviationFactor ? (1 - 1 / maxDeviationFactor) * 100 : 100,
+  );
+  const priceTooFarFromMarket = priceTooLow || priceTooHigh;
 
   const insufficient = !!amountRaw && amountRaw.gt(tokenIn ? balanceOf(tokenIn.identifier) : "0");
   const belowMin = !!amountRaw && !!minOrderRaw && amountRaw.lt(minOrderRaw);
@@ -415,9 +581,12 @@ export const LimitOrders = () => {
   const invertTokens = () => {
     setTokenIn(tokenOut);
     setTokenOut(tokenIn);
+    setDepthInverted((v) => !v);
     if (priceBN && minOutRaw && minOutRaw.gt(0)) {
       setAmount(minOutRaw.shiftedBy(-decOut).toFixed());
-      setPrice(new BigNumber(1).div(priceBN).precision(12, BigNumber.ROUND_DOWN).toFixed());
+      // Same anchor as before: a typed total becomes the new total (exact, no rounding).
+      if (priceAnchor === "receive") setReceiveInput(amount);
+      else setPrice(new BigNumber(1).div(priceBN).precision(12, BigNumber.ROUND_DOWN).toFixed());
     } else {
       setAmount("");
       setPrice(priceBN ? new BigNumber(1).div(priceBN).precision(12, BigNumber.ROUND_DOWN).toFixed() : "");
@@ -498,6 +667,7 @@ export const LimitOrders = () => {
   const scheduleRefresh = () => {
     for (const ms of [6_000, 15_000, 30_000]) setTimeout(() => {
       setRefreshKey((k) => k + 1);
+      loadMineBuckets();
       loadOrders();
     }, ms);
   };
@@ -519,7 +689,7 @@ export const LimitOrders = () => {
       { processing: t("limit_processing_create"), success: t("limit_success_create"), error: t("limit_error_create") },
     );
     if (ok) {
-      setAmount("");
+      changeAmount("");
       scheduleRefresh();
     }
   };
@@ -535,23 +705,133 @@ export const LimitOrders = () => {
     if (ok) scheduleRefresh();
   };
 
-  /* ---- My orders ---- */
+  /* ---- My orders ----
+   * Scopé À UNE PAIRE (la paire de swap courante par défaut) plutôt que
+   * toutes paires confondues — un wallet actif peut accumuler des milliers
+   * d'ordres au total (constaté : 15k+ sur un wallet de test devnet), ce
+   * qui rendait la liste précédente très lourde à charger et à afficher
+   * (cf. conversation 2026-10-31). `pairSummaries` (payload léger, juste
+   * des compteurs) permet de proposer les AUTRES paires où l'utilisateur a
+   * des ordres sans jamais télécharger leur détail tant qu'elles ne sont
+   * pas sélectionnées.
+   */
+  const [pairSummaries, setPairSummaries] = React.useState<PairOrderSummary[]>([]);
+  const [ordersPairOverride, setOrdersPairOverride] = React.useState<string | null>(null);
+  const ordersPairAddr = ordersPairOverride ?? pair?.address ?? null;
+
+  // Les ordres actifs se consultent/annulent directement dans le carnet : on
+  // ne charge que leurs agrégats par palier (`mineBuckets`), le détail d'un
+  // palier se charge au clic sur sa ligne ● (cf. DepthBucketOrders). La liste
+  // complète (`orders`) n'est plus qu'un repli quand la paire choisie n'a pas
+  // pu être chargée dans le formulaire (token inconnu, cf. selectOrdersPair).
+  const ordersInDepth = !!pair && ordersPairAddr === pair.address;
+  const [mineBuckets, setMineBuckets] = React.useState<MineBucket[]>([]);
+  const [mineTotal, setMineTotal] = React.useState(0);
   const [orders, setOrders] = React.useState<BookOrder[]>([]);
+  const [ordersTotal, setOrdersTotal] = React.useState(0);
+  const [pastOrders, setPastOrders] = React.useState<BookOrder[]>([]);
   const [showHistory, setShowHistory] = React.useState(false);
-  const loadOrders = React.useCallback(() => {
-    if (!apiUrl || !address) return setOrders([]);
+
+  const loadSummary = React.useCallback(() => {
+    if (!apiUrl || !address) return setPairSummaries([]);
     axios
-      .get<{ orders: BookOrder[] }>(`${apiUrl}/orderbook/orders`, { params: { address } })
-      .then((res) => setOrders(res.data.orders ?? []))
-      .catch(() => setOrders([]));
+      .get<{ pairs: PairOrderSummary[] }>(`${apiUrl}/orderbook/orders/summary`, { params: { address } })
+      .then((res) => setPairSummaries(res.data.pairs ?? []))
+      .catch(() => setPairSummaries([]));
   }, [apiUrl, address]);
+  const loadMineBuckets = React.useCallback(() => {
+    if (!apiUrl || !address || !ordersPairAddr) {
+      setMineBuckets([]);
+      setMineTotal(0);
+      return;
+    }
+    axios
+      .get<{ buckets: MineBucket[]; total: number }>(`${apiUrl}/orderbook/orders/buckets`, {
+        params: { address, pairAddr: ordersPairAddr },
+      })
+      .then((res) => {
+        setMineBuckets(res.data.buckets ?? []);
+        setMineTotal(res.data.total ?? 0);
+      })
+      .catch(() => {
+        setMineBuckets([]);
+        setMineTotal(0);
+      });
+  }, [apiUrl, address, ordersPairAddr]);
+  const loadOrders = React.useCallback(() => {
+    if (!apiUrl || !address || !ordersPairAddr || ordersInDepth) return setOrders([]);
+    axios
+      .get<{ orders: BookOrder[]; total: number }>(`${apiUrl}/orderbook/orders`, {
+        params: { address, pairAddr: ordersPairAddr, status: "active", limit: 200 },
+      })
+      .then((res) => {
+        setOrders(res.data.orders ?? []);
+        setOrdersTotal(res.data.total ?? 0);
+      })
+      .catch(() => {
+        setOrders([]);
+        setOrdersTotal(0);
+      });
+  }, [apiUrl, address, ordersPairAddr, ordersInDepth]);
+  const loadPastOrders = React.useCallback(() => {
+    if (!apiUrl || !address || !ordersPairAddr) return setPastOrders([]);
+    axios
+      .get<{ orders: BookOrder[] }>(`${apiUrl}/orderbook/orders`, {
+        params: { address, pairAddr: ordersPairAddr, status: "filled,cancelled", limit: 100 },
+      })
+      .then((res) => setPastOrders(res.data.orders ?? []))
+      .catch(() => setPastOrders([]));
+  }, [apiUrl, address, ordersPairAddr]);
+
+  React.useEffect(() => {
+    loadSummary();
+    const i = setInterval(loadSummary, 30_000);
+    return () => clearInterval(i);
+  }, [loadSummary]);
+  React.useEffect(() => {
+    loadMineBuckets();
+    const i = setInterval(loadMineBuckets, 30_000);
+    return () => clearInterval(i);
+  }, [loadMineBuckets]);
   React.useEffect(() => {
     loadOrders();
     const i = setInterval(loadOrders, 30_000);
     return () => clearInterval(i);
   }, [loadOrders]);
-  const activeOrders = orders.filter((o) => o.status === "active");
-  const pastOrders = orders.filter((o) => o.status !== "active");
+  React.useEffect(() => {
+    setShowHistory(false);
+    setPastOrders([]);
+  }, [ordersPairAddr]);
+  React.useEffect(() => {
+    if (showHistory) loadPastOrders();
+  }, [showHistory, loadPastOrders]);
+
+  // Choisir une paire dans "Mes ordres" la charge aussi dans le formulaire
+  // (et donc dans le carnet, où ces ordres sont marqués). L'override garde la
+  // liste affichée pendant le chargement du pair, puis s'efface dès qu'un
+  // pair est résolu — y compris si l'utilisateur change ensuite de tokens.
+  React.useEffect(() => {
+    if (pair !== undefined) setOrdersPairOverride(null);
+  }, [pair]);
+  const selectOrdersPair = (p: PairOrderSummary) => {
+    if (p.pairAddr === pair?.address) return setOrdersPairOverride(null);
+    setOrdersPairOverride(p.pairAddr);
+    const find = (id: string | null) => (id ? tokensOut.find((tk) => tk.identifier === id) ?? null : null);
+    const a = find(p.tokenA);
+    const b = find(p.tokenB);
+    // Token inconnu de la liste (ni API ni wallet) : on affiche seulement les ordres.
+    if (!a || !b) return;
+    setTokenIn(a);
+    setTokenOut(b);
+    setAmount("");
+    setPrice("");
+  };
+
+  const currentPairSummary = pairSummaries.find((p) => p.pairAddr === ordersPairAddr) ?? null;
+  const tickerOf = (identifier: string) => identifier.split("-")[0];
+  const logoOf = (identifier: string | null) => (identifier ? tokensOut.find((tk) => tk.identifier === identifier)?.logoUrl ?? null : null);
+  const [openDepthBand, setOpenDepthBand] = React.useState<string | null>(null);
+  React.useEffect(() => setOpenDepthBand(null), [pair?.address, depthInverted]);
 
   /* ---- Form state ---- */
   const blocker = !tokenIn || !tokenOut
@@ -573,22 +853,31 @@ export const LimitOrders = () => {
               : !priceBN
                 ? t("limit_enter_price")
                 : priceTooFarFromMarket
-                  ? t("limit_price_too_far", { factor: maxDeviationFactor })
+                  ? t("limit_price_too_far_btn")
                   : !minOutRaw || minOutRaw.lte(0)
                     ? t("limit_out_too_small")
                     : null;
 
-  const inputCls =
-    "dvx:w-full dvx:rounded-xl dvx:border dvx:border-gray-200 dvx:dark:border-[#444] dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-2.5 dvx:text-sm dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 dvx:focus:ring-amber-500";
+  // Same look as Swap: framed sections + compact right-aligned amount inputs.
+  const cardCls = "dvx:rounded-2xl dvx:border dvx:border-gray-200 dvx:dark:border-[#333] dvx:bg-gray-50 dvx:dark:bg-[#1e1e1e] dvx:p-4";
+  const fieldBorder = (state: "idle" | "active" | "error") =>
+    state === "error"
+      ? "dvx:border-red-400 dvx:dark:border-red-500 dvx:focus:ring-red-400"
+      : state === "active"
+        ? "dvx:border-amber-400 dvx:dark:border-amber-500 dvx:focus:ring-amber-500"
+        : "dvx:border-gray-200 dvx:dark:border-[#444] dvx:focus:ring-amber-500";
+  const fieldBase =
+    "dvx:rounded-xl dvx:border dvx:bg-[#ffffff] dvx:dark:bg-[#2a2a2a] dvx:px-3 dvx:py-2.5 dvx:text-sm dvx:font-semibold dvx:text-gray-900 dvx:dark:text-white dvx:focus:outline-none dvx:focus:ring-2 dvx:transition-colors";
+  const amountCls = (state: "idle" | "active" | "error") => `dvx:w-28 dvx:xs:w-36 dvx:flex-shrink-0 dvx:text-right ${fieldBase} ${fieldBorder(state)}`;
   const label = "dvx:block dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400 dvx:mb-1.5";
 
   const orderRow = (o: BookOrder) => {
     const initial = new BigNumber(o.amountInInitial);
     const remaining = new BigNumber(o.amountInRemaining);
     const filledPct = initial.gt(0) ? initial.minus(remaining).div(initial).times(100).toNumber() : 0;
-    // price = ceil(min_out * 1e18 / amount_in) in raw units → human "1 IN = x OUT".
-    const humanPrice = new BigNumber(o.price).shiftedBy(-18).shiftedBy(o.tokenInDecimals - o.tokenOutDecimals);
-    const wantOut = initial.times(o.price).shiftedBy(-18);
+    // price = ceil(min_out * 1e36 / amount_in) in raw units → human "1 IN = x OUT".
+    const humanPrice = new BigNumber(o.price).shiftedBy(-PRICE_SCALE_DEC).shiftedBy(o.tokenInDecimals - o.tokenOutDecimals);
+    const wantOut = initial.times(o.price).shiftedBy(-PRICE_SCALE_DEC);
     const key = `cancel:${o.pairAddr}:${o.orderId}`;
     return (
       <div
@@ -626,6 +915,62 @@ export const LimitOrders = () => {
     );
   };
 
+  // Ligne compacte d'un ordre dans le détail d'un palier du carnet (cf. DepthBucketOrders).
+  // Exprimée dans le sens du carnet affiché : quantité de `baseId`, prix en
+  // token de référence — un achat (escrow du token de référence) a donc son
+  // prix brut inversé et sa quantité = le minimum de base reçu.
+  const depthOrderRow = (o: BookOrder, baseId: string) => {
+    const initial = new BigNumber(o.amountInInitial);
+    const remaining = new BigNumber(o.amountInRemaining);
+    const filledPct = initial.gt(0) ? initial.minus(remaining).div(initial).times(100).toNumber() : 0;
+    const humanPrice = new BigNumber(o.price).shiftedBy(-PRICE_SCALE_DEC).shiftedBy(o.tokenInDecimals - o.tokenOutDecimals);
+    const isSell = o.tokenIn === baseId;
+    const baseAmount = isSell
+      ? fmt(remaining, o.tokenInDecimals)
+      : fmt(remaining.times(o.price).shiftedBy(-PRICE_SCALE_DEC).integerValue(BigNumber.ROUND_DOWN), o.tokenOutDecimals);
+    // Quote side: what a sell expects for its remaining amount, what a buy still escrows.
+    const quoteAmount = isSell
+      ? fmt(remaining.times(o.price).shiftedBy(-PRICE_SCALE_DEC).integerValue(BigNumber.ROUND_DOWN), o.tokenOutDecimals)
+      : fmt(remaining, o.tokenInDecimals);
+    const baseTicker = isSell ? o.tokenInTicker : o.tokenOutTicker;
+    const quoteTicker = isSell ? o.tokenOutTicker : o.tokenInTicker;
+    const priceInQuote = isSell ? humanPrice : new BigNumber(1).div(humanPrice);
+    const key = `cancel:${o.pairAddr}:${o.orderId}`;
+    return (
+      <div
+        key={o.orderId}
+        className="dvx:flex dvx:items-center dvx:gap-2 dvx:px-2 dvx:py-1 dvx:border-b dvx:border-gray-100 dvx:dark:border-[#333] dvx:last:border-b-0"
+        style={{ fontSize: 11 }}
+      >
+        <span className="dvx:flex-1 dvx:min-w-0 dvx:text-gray-700 dvx:dark:text-gray-200" style={{ overflowWrap: "anywhere" }}>
+          <span className="dvx:font-bold" style={{ color: isSell ? "#dc2626" : "#16a34a" }}>
+            {t(isSell ? "depth_order_sell" : "depth_order_buy")}
+          </span>{" "}
+          <span className="dvx:font-semibold">
+            {baseAmount} {baseTicker}
+          </span>
+          <span className="dvx:text-gray-400"> {t("depth_order_for")} </span>
+          <span className="dvx:font-semibold">
+            {quoteAmount} {quoteTicker}
+          </span>
+          <span className="dvx:text-gray-400">
+            {" "}@ {fmtPrice(priceInQuote)}
+            {filledPct > 0 && ` · ${t("limit_filled_pct", { pct: filledPct.toFixed(1) })}`}
+          </span>
+        </span>
+        <button
+          type="button"
+          onClick={() => cancelOrder(o)}
+          disabled={busy !== null}
+          className="dvx:bg-transparent dvx:p-0 dvx:font-bold dvx:text-red-500 dvx:hover:text-red-400 dvx:disabled:opacity-50"
+          style={{ fontSize: 11 }}
+        >
+          {busy === key ? "…" : t("limit_cancel")}
+        </button>
+      </div>
+    );
+  };
+
   return (
     <div className="dvx:flex dvx:flex-col dvx:w-full dvx:gap-6">
       <Card
@@ -638,44 +983,57 @@ export const LimitOrders = () => {
         description={t("limit_desc")}
       >
         <div className="dvx:flex dvx:flex-col dvx:gap-4 dvx:mt-4">
+          <div className="dvx:space-y-2">
           {/* Sell */}
-          <div>
-            <div className="dvx:flex dvx:justify-between dvx:items-end">
-              <span className={label}>{t("limit_sell")}</span>
-              {tokenIn && (
+          <div style={palette.inner} className={cardCls}>
+            <div className="dvx:flex dvx:items-center dvx:justify-between dvx:mb-2">
+              <p className={label} style={{ marginBottom: 0 }}>{t("limit_sell")}</p>
+            </div>
+            {tokenIn && address && (
+              <div className="dvx:flex dvx:justify-end dvx:mb-3">
                 <button
                   type="button"
-                  onClick={() => setAmount(new BigNumber(balanceOf(tokenIn.identifier)).shiftedBy(-decIn).toFixed())}
-                  className="dvx:mb-1.5 dvx:bg-transparent dvx:p-0 dvx:font-semibold dvx:text-amber-500"
-                  style={{ fontSize: 11 }}
+                  onClick={() => changeAmount(new BigNumber(balanceOf(tokenIn.identifier)).shiftedBy(-decIn).toFixed())}
+                  className="dvx:flex dvx:items-center dvx:gap-1.5 dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-amber-500 dvx:bg-transparent dvx:hover:text-amber-600 dvx:transition-colors"
                 >
-                  {t("balance")} : {fmt(balanceOf(tokenIn.identifier), decIn)} · MAX
+                  <span className="dvx:text-gray-400">{t("balance")} :</span>
+                  {fmt(balanceOf(tokenIn.identifier), decIn)}
+                  <span className="dvx:bg-amber-100 dvx:dark:bg-amber-900/30 dvx:text-amber-600 dvx:dark:text-amber-400 dvx:px-1.5 dvx:py-0.5 dvx:rounded dvx:text-[9px] dvx:font-bold">
+                    MAX
+                  </span>
                 </button>
-              )}
-            </div>
-            <div className="dvx:flex dvx:gap-2">
+              </div>
+            )}
+            <div className="dvx:flex dvx:items-center dvx:gap-3">
               <TokenSelect value={tokenIn} onChange={setTokenIn} tokens={tokensIn} balances={balances} exclude={tokenOut?.identifier} loading={tokensLoading} />
-              <input type="number" min="0" placeholder="0.0" value={amount} onChange={(e) => setAmount(e.target.value)} className={inputCls} style={{ maxWidth: 180 }} />
+              <input
+                type="number"
+                min="0"
+                placeholder="0.0"
+                value={amount}
+                onChange={(e) => changeAmount(e.target.value)}
+                style={palette.input}
+                className={amountCls(insufficient ? "error" : "idle")}
+              />
             </div>
-            {/* Anti-spam floor of this pair (ratio adjustable per pair by the owner). */}
-            {minOrder && tokenIn && (
+            {/* Anti-spam floor of this pair (ratio adjustable per pair by the owner) —
+                shown only when it actually constrains the order (min ≥ 1 raw unit). */}
+            {minOrder && minOrder.min.gt(0) && tokenIn && (
               <p
                 className={belowMin ? "dvx:text-red-500 dvx:font-semibold" : "dvx:text-gray-500 dvx:dark:text-gray-400"}
                 style={{ fontSize: 11, marginTop: 6 }}
                 title={t("limit_min_tooltip")}
               >
-                {minOrder.min.gt(0)
-                  ? t(minOrder.basisIsReserve ? "limit_min_reserve" : "limit_min_book", {
-                      amount: `${fmt(minOrder.min, decIn)} ${tokenIn.ticker}`,
-                      pct: ratioPctLabel(minOrder.ratio),
-                    })
-                  : t("limit_min_none")}
+                {t(minOrder.basisIsReserve ? "limit_min_reserve" : "limit_min_book", {
+                  amount: `${fmt(minOrder.min, decIn)} ${tokenIn.ticker}`,
+                  pct: ratioPctLabel(minOrder.ratio),
+                })}
               </p>
             )}
           </div>
 
           {/* Invert direction */}
-          <div className="dvx:flex dvx:justify-center" style={{ margin: "-6px 0" }}>
+          <div className="dvx:flex dvx:justify-center dvx:-my-0.5 dvx:relative dvx:z-10">
             <button
               type="button"
               onClick={invertTokens}
@@ -689,16 +1047,32 @@ export const LimitOrders = () => {
           </div>
 
           {/* Buy */}
-          <div>
-            <div className="dvx:flex dvx:justify-between dvx:items-end">
-              <span className={label}>{t("limit_buy")}</span>
-              {tokenOut && address && (
-                <span className="dvx:mb-1.5 dvx:font-semibold dvx:text-gray-400" style={{ fontSize: 11 }}>
-                  {t("balance")} : {fmt(balanceOf(tokenOut.identifier), decOut)}
-                </span>
-              )}
+          <div style={palette.inner} className={cardCls}>
+            <div className="dvx:flex dvx:items-center dvx:justify-between dvx:mb-2">
+              <p className={label} style={{ marginBottom: 0 }}>{t("limit_buy")}</p>
             </div>
-            <TokenSelect value={tokenOut} onChange={setTokenOut} tokens={tokensOut} exclude={tokenIn?.identifier} loading={tokensLoading} />
+            {tokenOut && address && (
+              <div className="dvx:flex dvx:justify-end dvx:mb-3">
+                <span className="dvx:flex dvx:items-center dvx:gap-1.5 dvx:text-[10px] dvx:font-semibold dvx:uppercase dvx:tracking-wider dvx:text-gray-400">
+                  {t("balance")} : <span className="dvx:text-amber-500">{fmt(balanceOf(tokenOut.identifier), decOut)}</span>
+                </span>
+              </div>
+            )}
+            <div className="dvx:flex dvx:items-center dvx:gap-3">
+              <TokenSelect value={tokenOut} onChange={setTokenOut} tokens={tokensOut} exclude={tokenIn?.identifier} loading={tokensLoading} />
+              {/* Total received for the whole amount — editing it recomputes the unit price. */}
+              <input
+                type="number"
+                min="0"
+                placeholder="0.0"
+                value={receiveInputValue}
+                onChange={(e) => setReceiveInput(e.target.value)}
+                title={t("limit_receive_input_tip")}
+                style={palette.input}
+                className={amountCls(priceAnchor === "receive" ? "active" : "idle")}
+              />
+            </div>
+          </div>
           </div>
 
           {/* No pair → deploy it (createPair only, no LP steps) */}
@@ -717,27 +1091,6 @@ export const LimitOrders = () => {
                 className="dinoButton orange dvx:mt-3 dvx:w-full dvx:text-sm dvx:disabled:opacity-50"
               >
                 {pairPolling === "exists" ? t("create_tx_waiting") : busy === "pair" ? t("create_tx_pending") : t("limit_deploy_pair")}
-              </button>
-            </div>
-          )}
-
-          {/* Optional step 3 — active pair with no AMM liquidity: orders work (book only),
-              but swaps can only consume a few orders at a time; liquidity smooths it out. */}
-          {pair && pair.isActive && !spot && tokenIn && tokenOut && (
-            <div className="dvx:rounded-xl dvx:p-3 dvx:bg-gray-50 dvx:dark:bg-[#1f1f1f]" style={{ boxShadow: "0 0 0 1px rgba(156, 163, 175, 0.35)" }}>
-              <p className="dvx:font-bold dvx:text-gray-800 dvx:dark:text-gray-100" style={{ fontSize: 13 }}>
-                {t("limit_liquidity_title")}
-              </p>
-              <p className="dvx:mt-1 dvx:text-gray-600 dvx:dark:text-gray-300" style={{ fontSize: 12 }}>
-                {t("limit_liquidity_desc")}
-              </p>
-              <button
-                type="button"
-                onClick={() => goTo("add-liquidity", { tokenA: pair.tokenA, tokenB: pair.tokenB })}
-                className="dvx:mt-2 dvx:px-3 dvx:py-1.5 dvx:rounded-lg dvx:font-bold dvx:border dvx:border-amber-500 dvx:text-amber-600 dvx:dark:text-amber-400 dvx:bg-transparent"
-                style={{ fontSize: 12 }}
-              >
-                {t("limit_liquidity_btn", { pair: `${tokenIn.ticker} / ${tokenOut.ticker}` })}
               </button>
             </div>
           )}
@@ -770,26 +1123,51 @@ export const LimitOrders = () => {
 
           {/* Limit price */}
           {pair && (
-            <div>
-              <div className="dvx:flex dvx:justify-between dvx:items-end">
-                <span className={label}>{t("limit_price", { a: tokenIn?.ticker ?? "", b: tokenOut?.ticker ?? "" })}</span>
+            <div style={palette.inner} className={cardCls}>
+              <div className="dvx:flex dvx:flex-wrap dvx:justify-between dvx:items-center dvx:gap-2 dvx:mb-3">
+                <p className={label} style={{ marginBottom: 0 }}>{t("limit_price", { a: tokenIn?.ticker ?? "", b: tokenOut?.ticker ?? "" })}</p>
                 {spot && (
-                  <button
-                    type="button"
-                    onClick={() => setPrice(fmtPrice(spot).replace(/,/g, ""))}
-                    className="dvx:mb-1.5 dvx:bg-transparent dvx:p-0 dvx:font-semibold dvx:text-amber-500"
-                    style={{ fontSize: 11 }}
-                  >
-                    {t("limit_market")} : {fmtPrice(spot)}
-                  </button>
+                  <div className="dvx:flex dvx:items-center dvx:gap-2">
+                    {[-1, 1].map((dir) => {
+                      // ±1% from the current price, or from the spot when none is set yet.
+                      const nudge = () => setPrice((priceBN ?? spot).times(1 + dir / 100).precision(8, BigNumber.ROUND_HALF_UP).toFixed());
+                      return (
+                        <button
+                          key={dir}
+                          type="button"
+                          onClick={nudge}
+                          className="dvx:font-semibold dvx:text-amber-500"
+                          style={{ fontSize: 11, order: dir < 0 ? 0 : 2, padding: "1px 6px", borderRadius: 6, border: "1px solid rgba(245,158,11,0.5)", background: "transparent", lineHeight: 1.4 }}
+                        >
+                          {dir < 0 ? "-1%" : "+1%"}
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => setPrice(fmtPrice(spot).replace(/,/g, ""))}
+                      className="dvx:bg-transparent dvx:p-0 dvx:font-semibold dvx:text-amber-500"
+                      style={{ fontSize: 11, order: 1 }}
+                    >
+                      {t("limit_market")} : {fmtPrice(spot)}
+                    </button>
+                  </div>
                 )}
               </div>
-              <input type="number" min="0" placeholder="0.0" value={price} onChange={(e) => setPrice(e.target.value)} className={inputCls} />
+              <input
+                type="number"
+                min="0"
+                placeholder="0.0"
+                value={priceInputValue}
+                onChange={(e) => setPrice(e.target.value)}
+                style={palette.input}
+                className={`dvx:w-full ${fieldBase} ${fieldBorder(priceTooFarFromMarket ? "error" : priceAnchor === "price" && priceBN ? "active" : "idle")}`}
+              />
               <div className="dvx:mt-1.5 dvx:flex dvx:flex-wrap dvx:justify-between dvx:gap-2" style={{ fontSize: 12 }}>
                 <span className="dvx:text-gray-500 dvx:dark:text-gray-400">
                   {minOutRaw && minOutRaw.gt(0) && tokenOut
                     ? t("limit_receive", { amount: fmt(minOutRaw, decOut), ticker: tokenOut.ticker })
-                    : t("limit_no_market_hint")}
+                    : !spot && t("limit_no_market_hint")}
                 </span>
                 {deviationPct != null && Number.isFinite(deviationPct) && (
                   <span className={`dvx:font-bold ${deviationPct >= 0 ? "dvx:text-green-600 dvx:dark:text-green-400" : "dvx:text-red-500"}`}>
@@ -798,9 +1176,30 @@ export const LimitOrders = () => {
                   </span>
                 )}
               </div>
+              {outRounded && idealOutRaw && minOutRaw && tokenIn && tokenOut && (
+                <div className="dvx:mt-1 dvx:text-amber-600 dvx:dark:text-amber-400" style={{ fontSize: 11 }}>
+                  {t("limit_rounded_warn", {
+                    ideal: `${fmt(idealOutRaw, decOut)} ${tokenOut.ticker}`,
+                    rounded: `${fmt(minOutRaw, decOut)} ${tokenOut.ticker}`,
+                    decimals: decOut,
+                    a: tokenIn.ticker,
+                    price: `${fmtPrice(effectivePrice ?? new BigNumber(0))} ${tokenOut.ticker}`,
+                  })}{" "}
+                  <button
+                    type="button"
+                    onClick={() => setReceiveInput(idealOutRaw.integerValue(BigNumber.ROUND_CEIL).shiftedBy(-decOut).toFixed())}
+                    className="dvx:bg-transparent dvx:p-0 dvx:font-bold dvx:underline dvx:text-amber-600 dvx:dark:text-amber-400"
+                    style={{ fontSize: 11 }}
+                  >
+                    {t("limit_round_up", { amount: `${fmt(idealOutRaw.integerValue(BigNumber.ROUND_CEIL), decOut)} ${tokenOut.ticker}` })}
+                  </button>
+                </div>
+              )}
               {priceTooFarFromMarket ? (
                 <p className="dvx:mt-1 dvx:font-semibold dvx:text-red-500" style={{ fontSize: 11 }}>
-                  {t("limit_price_too_far", { factor: maxDeviationFactor })}
+                  {priceTooLow
+                    ? t("limit_price_too_low", { pct: +maxDiscountPct.toFixed(2) })
+                    : t("limit_price_too_far", { factor: maxDeviationFactor })}
                 </p>
               ) : (
                 belowMarket && (
@@ -809,6 +1208,28 @@ export const LimitOrders = () => {
                   </p>
                 )
               )}
+            </div>
+          )}
+
+          {/* Optional step 3 — active pair with no AMM liquidity: orders work (book only),
+              but swaps can only consume a few orders at a time; liquidity smooths it out.
+              Placed after the inputs so it doesn't split the order form. */}
+          {pair && pair.isActive && !spot && tokenIn && tokenOut && (
+            <div className="dvx:rounded-xl dvx:p-3 dvx:bg-gray-50 dvx:dark:bg-[#1f1f1f]" style={{ boxShadow: "0 0 0 1px rgba(156, 163, 175, 0.35)" }}>
+              <p className="dvx:font-bold dvx:text-gray-800 dvx:dark:text-gray-100" style={{ fontSize: 13 }}>
+                {t("limit_liquidity_title")}
+              </p>
+              <p className="dvx:mt-1 dvx:text-gray-600 dvx:dark:text-gray-300" style={{ fontSize: 12 }}>
+                {t("limit_liquidity_desc")}
+              </p>
+              <button
+                type="button"
+                onClick={() => goTo("add-liquidity", { tokenA: pair.tokenA, tokenB: pair.tokenB })}
+                className="dvx:mt-2 dvx:px-3 dvx:py-1.5 dvx:rounded-lg dvx:font-bold dvx:border dvx:border-amber-500 dvx:text-amber-600 dvx:dark:text-amber-400 dvx:bg-transparent"
+                style={{ fontSize: 12 }}
+              >
+                {t("limit_liquidity_btn", { pair: `${tokenIn.ticker} / ${tokenOut.ticker}` })}
+              </button>
             </div>
           )}
 
@@ -827,12 +1248,51 @@ export const LimitOrders = () => {
               const baseIsRealA = base.identifier === pair.tokenA;
               const spotRealAinRealB = spot ? (inIsA ? spot.toNumber() : 1 / spot.toNumber()) : null;
               const spotBaseInQuote = spotRealAinRealB == null ? null : baseIsRealA ? spotRealAinRealB : 1 / spotRealAinRealB;
+              // Chart in the form's direction (1 tokenIn = ? tokenOut, like the limit
+              // price field) — the book may be shown the other way (⇅ / quote priority).
+              // Order being typed: effective price once rounded.
+              const typedPrice = effectivePrice ?? priceBN;
+              const previewPrice = typedPrice && typedPrice.gt(0) ? typedPrice.toNumber() : null;
+              const bookToChart = (p: number) => (tokenIn?.identifier === base.identifier ? p : 1 / p);
+              // Same pool (pool history only, cf. chartEntryForPool).
+              const listed = chartEntryForPool(chartable, pair, { anyPair: true });
+              const chartEntry: ChartableEntry | null =
+                listed && tokenIn && tokenOut
+                  ? {
+                      token: tokenIn.identifier,
+                      quote: tokenOut.identifier,
+                      poolAddress: pair.address,
+                      tvlUsd: listed.tvlUsd,
+                      invertPrice: tokenIn.identifier !== pair.tokenA,
+                    }
+                  : null;
               return (
                 <div>
+                  {chartEntry && (
+                    <div className="dvx:mb-3">
+                      <PriceChart
+                        apiUrl={apiUrl}
+                        entries={[chartEntry]}
+                        tickerOf={(id) => (id === base.identifier ? base.ticker : id === quote.identifier ? quote.ticker : id.split("-")[0])}
+                        bookLevels={[
+                          // Book levels re-expressed per chart token: a buy of the book's base
+                          // is a sell of the chart token when the chart is the other way.
+                          ...(depthLevels?.pool === pair.address && depthLevels.base === base.identifier
+                            ? depthLevels.levels.map((l) => ({
+                                side: tokenIn?.identifier === base.identifier ? l.side : l.side === "ask" ? ("bid" as const) : ("ask" as const),
+                                price: bookToChart(l.price),
+                              }))
+                            : []),
+                          // The form always sells the chart token.
+                          ...(previewPrice != null && Number.isFinite(previewPrice) ? [{ side: "ask" as const, price: previewPrice, preview: true }] : []),
+                        ]}
+                      />
+                    </div>
+                  )}
                   <div className="dvx:flex dvx:justify-end dvx:mb-1">
                     <button
                       type="button"
-                      onClick={() => setDepthInverted((v) => !v)}
+                      onClick={invertTokens}
                       className="dvx:flex dvx:items-center dvx:gap-1 dvx:bg-transparent dvx:p-0 dvx:text-[11px] dvx:font-semibold dvx:text-gray-400 dvx:hover:text-gray-600 dvx:dark:hover:text-gray-200"
                       title={t("depth_invert")}
                     >
@@ -850,6 +1310,7 @@ export const LimitOrders = () => {
                     tickerA={base.ticker}
                     tickerB={quote.ticker}
                     spotAinB={spotBaseInQuote}
+                    onLevels={(levels) => setDepthLevels({ pool: pair.address, base: base.identifier, levels })}
                     // Bucket the order being typed will land in (same raw price as createOrder).
                     // "ask" = escrows the depth chart's component-A token — which real token
                     // that is depends on both the swap direction (inIsA) AND whether the
@@ -858,11 +1319,54 @@ export const LimitOrders = () => {
                       amountRaw && minOutRaw && minOutRaw.gt(0)
                         ? {
                             side: inIsA === baseIsRealA ? "ask" : "bid",
-                            priceRaw: minOutRaw.times("1e18").plus(amountRaw).minus(1).idiv(amountRaw).toFixed(0),
+                            priceRaw: minOutRaw.shiftedBy(PRICE_SCALE_DEC).plus(amountRaw).minus(1).idiv(amountRaw).toFixed(0),
                             amount: amountRaw.shiftedBy(-decIn).toNumber(),
                           }
                         : null
                     }
+                    // Same direction as the form (sell tokenIn for tokenOut).
+                    onSwap={tokenIn && tokenOut ? () => goTo("swap", { from: tokenIn.identifier, to: tokenOut.identifier }) : undefined}
+                    // Book price is 1 base = x quote; the form's is 1 tokenIn = ? tokenOut.
+                    onPickPrice={
+                      tokenIn
+                        ? (p) => {
+                            const bp = new BigNumber(p);
+                            if (!bp.isFinite() || bp.lte(0)) return;
+                            const formPrice = tokenIn.identifier === base.identifier ? bp : new BigNumber(1).div(bp);
+                            setPrice(formPrice.precision(8, BigNumber.ROUND_HALF_UP).toFixed());
+                          }
+                        : undefined
+                    }
+                    // User's active orders on this pair, aggregated per bucket.
+                    // Same side convention as preview: escrowing base = "ask".
+                    mine={
+                      ordersInDepth
+                        ? mineBuckets.map((m) => {
+                            const isAsk = m.tokenIn === base.identifier;
+                            return {
+                              side: isAsk ? ("ask" as const) : ("bid" as const),
+                              bucketId: m.bucketId,
+                              count: m.orderCount,
+                              amount: new BigNumber(m.totalAmountRemaining).shiftedBy(-(isAsk ? base : quote).decimals).toNumber(),
+                            };
+                          })
+                        : []
+                    }
+                    renderMineOrders={(band) =>
+                      address && (
+                        <DepthBucketOrders
+                          apiUrl={apiUrl}
+                          address={address}
+                          pairAddr={pair.address}
+                          tokenIn={band.side === "ask" ? base.identifier : quote.identifier}
+                          bucketId={band.bucketId}
+                          refreshKey={refreshKey}
+                          renderRow={(o) => depthOrderRow(o, base.identifier)}
+                        />
+                      )
+                    }
+                    openBand={openDepthBand}
+                    onToggleBand={(k) => setOpenDepthBand((cur) => (cur === k ? null : k))}
                     key={`${pair.address}:${refreshKey}:${depthInverted}`}
                   />
                 </div>
@@ -883,22 +1387,102 @@ export const LimitOrders = () => {
         </div>
       </Card>
 
-      {address && (orders.length > 0) && (
+      {address && pairSummaries.length > 0 && (
         <Card
           className="dvx:border-2 dvx:border-cyan-500/20"
           title={<span className="dvx:text-lg dvx:font-black dvx:tracking-tight">{t("limit_my_orders")}</span>}
         >
-          <div className="dvx:flex dvx:flex-col dvx:gap-2 dvx:mt-3">
-            {activeOrders.length === 0 && <p className="dvx:text-gray-400" style={{ fontSize: 12 }}>{t("limit_no_active")}</p>}
-            {activeOrders.map(orderRow)}
-            {pastOrders.length > 0 && (
+          <div className="dvx:flex dvx:flex-col dvx:gap-3 dvx:mt-3">
+            {/* Sélecteur par paire — uniquement les paires où l'utilisateur a des
+                ordres (cf. pairSummaries, payload léger : compteurs seuls). Affiché
+                dès qu'il permet d'atteindre une paire autre que celle affichée. */}
+            {pairSummaries.some((p) => p.pairAddr !== ordersPairAddr) && (
+              // Styles clés en inline : le CSS des pages hôtes écrase les
+              // bordures/tailles des <button> (cf. palette.invertBtn).
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 8 }}>
+                {[...pairSummaries]
+                  .sort((x, y) => y.activeCount - x.activeCount)
+                  .map((p) => {
+                    const isActive = p.pairAddr === ordersPairAddr;
+                    const tickerA = p.tokenA ? tickerOf(p.tokenA) : "?";
+                    const tickerB = p.tokenB ? tickerOf(p.tokenB) : "?";
+                    return (
+                      <button
+                        key={p.pairAddr}
+                        type="button"
+                        onClick={() => selectOrdersPair(p)}
+                        aria-pressed={isActive}
+                        className="dvx:transition-colors dvx:hover:bg-amber-500/5"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          width: "100%",
+                          padding: "8px 10px",
+                          borderRadius: 12,
+                          textAlign: "left",
+                          cursor: "pointer",
+                          border: `1px solid ${isActive ? "rgba(245, 158, 11, 0.9)" : "rgba(156, 163, 175, 0.25)"}`,
+                          background: isActive ? "rgba(245, 158, 11, 0.10)" : "rgba(156, 163, 175, 0.06)",
+                        }}
+                      >
+                        <span style={{ display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
+                          <TokenLogo url={logoOf(p.tokenA)} ticker={tickerA} />
+                          <span style={{ marginLeft: -8, borderRadius: 9999, boxShadow: "0 0 0 2px rgba(0,0,0,0.35)", display: "inline-flex" }}>
+                            <TokenLogo url={logoOf(p.tokenB)} ticker={tickerB} />
+                          </span>
+                        </span>
+                        <span
+                          className={isActive ? "dvx:text-amber-500" : "dvx:text-gray-900 dvx:dark:text-white"}
+                          style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                          title={`${tickerA} / ${tickerB}`}
+                        >
+                          {tickerA} / {tickerB}
+                        </span>
+                        <span
+                          className={isActive ? "dvx:text-amber-500" : "dvx:text-gray-500 dvx:dark:text-gray-300"}
+                          style={{
+                            flexShrink: 0,
+                            fontSize: 10,
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            borderRadius: 9999,
+                            background: isActive ? "rgba(245, 158, 11, 0.18)" : "rgba(156, 163, 175, 0.15)",
+                          }}
+                        >
+                          {t("limit_pair_active_count", { count: p.activeCount })}
+                        </span>
+                      </button>
+                    );
+                  })}
+              </div>
+            )}
+
+            {!ordersPairAddr ? (
+              <p className="dvx:text-gray-400" style={{ fontSize: 12 }}>{t("limit_pick_orders_pair")}</p>
+            ) : ordersInDepth ? (
+              <p className="dvx:text-gray-400" style={{ fontSize: 12 }}>
+                {mineTotal === 0 ? t("limit_no_active") : t("limit_orders_in_depth", { count: mineTotal })}
+              </p>
+            ) : orders.length === 0 ? (
+              <p className="dvx:text-gray-400" style={{ fontSize: 12 }}>{t("limit_no_active")}</p>
+            ) : (
+              <div className="dvx:flex dvx:flex-col dvx:gap-2">{orders.map(orderRow)}</div>
+            )}
+            {!ordersInDepth && ordersTotal > orders.length && (
+              <p className="dvx:text-gray-400" style={{ fontSize: 11 }}>
+                {t("limit_orders_capped", { shown: orders.length, total: ordersTotal })}
+              </p>
+            )}
+
+            {(currentPairSummary?.pastCount ?? 0) > 0 && (
               <button
                 type="button"
                 onClick={() => setShowHistory((v) => !v)}
                 className="dvx:mt-1 dvx:bg-transparent dvx:font-semibold dvx:text-gray-400 dvx:hover:text-amber-500"
                 style={{ fontSize: 12 }}
               >
-                {showHistory ? t("limit_hide_history") : t("limit_show_history", { count: pastOrders.length })}
+                {showHistory ? t("limit_hide_history") : t("limit_show_history", { count: currentPairSummary?.pastCount ?? 0 })}
               </button>
             )}
             {showHistory && pastOrders.map(orderRow)}

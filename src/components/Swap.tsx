@@ -21,6 +21,7 @@ import eCompassLogo from "../assets/ecompass-logo.png";
 import dinovoxLogo from "../assets/dinovox-logo.png";
 import { getThemePalette } from "../ui/themePalette";
 import { PriceChart } from "../ui/PriceChart";
+import { useFeatureFlags } from "../featureFlags";
 import { fetchChartable, fetchReferenceTokenCharts, type ChartableEntry } from "../helpers/charts";
 import type {
   SwapToken,
@@ -70,12 +71,16 @@ const formatUnitPrice = (
   return `$${v.toExponential(2)}`;
 };
 
-/** Apply slippage to a raw amountOut string */
+/**
+ * Apply slippage to a raw amountOut string. Rounded UP (never above amountOut),
+ * same as the backend's min_out (swapv2 tx/builder.ts) — rounding down turned
+ * e.g. 1 unit of a 0-decimal token at 0.5% into a minimum of 0.
+ */
 const applySlippage = (rawAmount: string, slippage: number): bigint =>
   BigInt(
     new BigNumber(rawAmount)
       .multipliedBy(1 - slippage)
-      .toFixed(0, BigNumber.ROUND_DOWN),
+      .toFixed(0, BigNumber.ROUND_UP),
   );
 
 type ActiveField = "in" | "out";
@@ -85,6 +90,7 @@ type ActiveField = "in" | "out";
 /* ------------------------------------------------------------------ */
 
 export const Swap = () => {
+  const flags = useFeatureFlags();
   const {
     apiUrl,
     routerAddress,
@@ -158,11 +164,41 @@ export const Swap = () => {
     if (!apiUrl || !isReferenceToken || !chartTokenId) return setReferenceEntries([]);
     fetchReferenceTokenCharts(apiUrl, chartTokenId).then(setReferenceEntries).catch(() => setReferenceEntries([]));
   }, [apiUrl, isReferenceToken, chartTokenId]);
-  const chartEntries = useMemo(() => {
+  const listedEntries = useMemo(() => {
     if (!chartTokenId) return [];
     if (isReferenceToken) return referenceEntries;
     return chartable.filter((e) => e.token === chartTokenId);
   }, [chartable, chartTokenId, isReferenceToken, referenceEntries]);
+  // No listed chart (secondary pair, e.g. MPH/XMPH): fall back on the direct
+  // DinoVox tokenIn/tokenOut pool if it exists — bought token priced in the
+  // sold one.
+  const chartInId = tokenIn?.identifier === "EGLD" ? wegld_identifier : tokenIn?.identifier;
+  const [pairEntry, setPairEntry] = useState<ChartableEntry | null>(null);
+  useEffect(() => {
+    setPairEntry(null);
+    if (!apiUrl || !chartInId || !chartTokenId || chartInId === chartTokenId || listedEntries.length > 0) return;
+    let cancelled = false;
+    axios
+      .get(`${apiUrl}/pools/pair`, { params: { tokenA: chartInId, tokenB: chartTokenId } })
+      .then(({ data }) => {
+        if (cancelled || !data?.address || !data.isActive) return;
+        setPairEntry({
+          token: chartTokenId,
+          quote: chartInId,
+          poolAddress: data.address,
+          tvlUsd: data.tvlUsd ?? null,
+          invertPrice: data.tokenA !== chartTokenId,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, chartInId, chartTokenId, listedEntries.length]);
+  const chartEntries = useMemo(
+    () => (listedEntries.length > 0 ? listedEntries : pairEntry ? [pairEntry] : []),
+    [listedEntries, pairEntry],
+  );
   const urlInitDoneRef = useRef(false);
   const [amountIn, setAmountIn] = useState("");
   const [amountOut, setAmountOut] = useState("");
@@ -603,7 +639,9 @@ export const Swap = () => {
             ? "error_no_route"
             : code === "INSUFFICIENT_LIQUIDITY"
               ? "error_insufficient_liquidity"
-              : (err?.response?.data?.message ?? "error_quote"),
+              : code === "SIMULATION_FAILED"
+                ? "error_simulation_failed"
+                : (err?.response?.data?.message ?? "error_quote"),
       );
       setQuote(null);
     } finally {
@@ -891,6 +929,42 @@ export const Swap = () => {
   const priceImpactPct = quote
     ? (parseFloat(quote.priceImpact) * 100).toFixed(2)
     : null;
+
+  // Impact > 5%: suggest a limit order that still ends in tokenOut — on the
+  // direct tokenIn/tokenOut pair, or else buying tokenOut with VOXEGLD (the
+  // user then needs VOXEGLD first) — on the first pair that exists and is
+  // active. Selling tokenIn for VOXEGLD wouldn't buy tokenOut, so it's never
+  // suggested. EGLD ≡ WEGLD.
+  const [limitSuggestion, setLimitSuggestion] = useState<{ from: string; to: string; fromTicker: string; toTicker: string; viaVox: boolean } | null>(null);
+  const highImpact = !!priceImpactPct && parseFloat(priceImpactPct) > 5;
+  const suggestInId = tokenIn?.identifier === "EGLD" ? wegld_identifier : tokenIn?.identifier;
+  const suggestOutId = tokenOut?.identifier === "EGLD" ? wegld_identifier : tokenOut?.identifier;
+  useEffect(() => {
+    setLimitSuggestion(null);
+    const vox = tokens.find((tk) => tk.ticker === "VOXEGLD");
+    if (!flags.orderBook || !highImpact || !apiUrl || !vox || !suggestInId || !suggestOutId) return;
+    const tickerOf = (id: string) => tokens.find((tk) => tk.identifier === id)?.ticker ?? id.split("-")[0];
+    if (suggestInId === suggestOutId) return;
+    const candidates: Array<[string, string]> = [[suggestInId, suggestOutId]];
+    if (suggestInId !== vox.identifier && suggestOutId !== vox.identifier) candidates.push([vox.identifier, suggestOutId]);
+    let cancelled = false;
+    (async () => {
+      for (const [from, to] of candidates) {
+        try {
+          const { data } = await axios.get(`${apiUrl}/pools/pair`, { params: { tokenA: from, tokenB: to } });
+          if (data?.address && data.isActive) {
+            if (!cancelled) setLimitSuggestion({ from, to, fromTicker: tickerOf(from), toTicker: tickerOf(to), viaVox: from !== suggestInId });
+            return;
+          }
+        } catch {
+          /* no such pair: try the next one */
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [flags.orderBook, highImpact, apiUrl, suggestInId, suggestOutId, tokens]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const impactColor = priceImpactPct
     ? parseFloat(priceImpactPct) < 1
@@ -1303,6 +1377,8 @@ export const Swap = () => {
               apiUrl={apiUrl}
               entries={chartEntries}
               tickerOf={(id) => tokens.find((tk) => tk.identifier === id)?.ticker ?? id.split("-")[0]}
+              // Order-book levels overlaid on the chart (same flag as the Limit view).
+              showBook={flags.orderBook ? { decimalsOf: (id) => tokens.find((tk) => tk.identifier === id)?.decimals } : undefined}
             />
           )}
 
@@ -1482,6 +1558,20 @@ export const Swap = () => {
                     </div>
                   );
                 })()}
+                {limitSuggestion && (
+                  <div className="dvx:mt-2 dvx:rounded-lg dvx:border dvx:border-amber-300 dvx:dark:border-amber-700/60 dvx:bg-amber-50 dvx:dark:bg-amber-900/15 dvx:px-3 dvx:py-2 dvx:text-xs dvx:text-amber-700 dvx:dark:text-amber-300">
+                    <span>{t(limitSuggestion.viaVox ? "limit_suggest_text_via" : "limit_suggest_text", { from: limitSuggestion.fromTicker, to: limitSuggestion.toTicker })}</span>{" "}
+                    {canNavigate && (
+                      <button
+                        type="button"
+                        onClick={() => goTo("limit", { from: limitSuggestion.from, to: limitSuggestion.to })}
+                        className="dvx:underline dvx:font-semibold dvx:bg-transparent dvx:p-0 dvx:text-amber-700 dvx:dark:text-amber-300"
+                      >
+                        {t("limit_suggest_cta")}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* ---- Multiroute split (test feature, opt-in) ---- */}
@@ -1732,6 +1822,20 @@ export const Swap = () => {
                   style={{ fontSize: 12 }}
                 >
                   {t("error_book_max_use", { amount: bookMaxLabel() })}
+                </button>
+              )}
+              {!isArb && quoteError === "error_simulation_failed" && (
+                // No quote → the 10s auto-refresh is stopped: offer a manual retry
+                // (the chain state may have moved since the simulation).
+                <button
+                  type="button"
+                  onClick={() => fetchQuote()}
+                  disabled={quoteLoading}
+                  className="dvx:flex dvx:items-center dvx:gap-1 dvx:mt-2 dvx:px-3 dvx:py-1 dvx:rounded-lg dvx:font-bold dvx:bg-amber-500 dvx:text-black dvx:disabled:opacity-50"
+                  style={{ fontSize: 12 }}
+                >
+                  <RefreshCw className={`dvx:h-3 dvx:w-3 ${quoteLoading ? "dvx:animate-spin" : ""}`} />
+                  {t("error_simulation_retry")}
                 </button>
               )}
               {canNavigate && !isArb && quoteError && illiquidPools.length > 0 && (

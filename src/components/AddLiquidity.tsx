@@ -211,12 +211,15 @@ export const AddLiquidity = () => {
 
   // tokenA's actual candidate list: VOXEGLD regardless of balance, every
   // other branded token only if the connected wallet actually holds it.
+  // Mainnet only for the branding rule (same as LimitOrders): devnet/testnet
+  // test tokens are rarely branded.
+  const brandedOnly = chainId === "1";
   const tokenAOptions = useMemo(() => {
     const heldIds = new Set(walletTokens.map((t) => t.identifier));
-    return brandedTokensVoxEgldFirst(tokens).filter(
+    return (brandedOnly ? brandedTokensVoxEgldFirst(tokens) : tokens).filter(
       (t) => t.identifier === VOXEGLD_IDENTIFIER || heldIds.has(t.identifier),
     );
-  }, [tokens, walletTokens]);
+  }, [tokens, walletTokens, brandedOnly]);
 
   const balancesA = useGetUserESDT(tokenA?.identifier ?? undefined, {
     enabled: !!tokenA && !!address,

@@ -8,7 +8,7 @@ import { ArrowUpDown, ChevronDown, Info } from "lucide-react";
 import { Card } from "../ui/Card";
 import { SectionTabs } from "../ui/NavTabs";
 import { TvlChart, TvlChange } from "../ui/TvlChart";
-import { DcaBadge } from "../ui/DcaBadge";
+import { DcaBadge, LimitBadge } from "../ui/DcaBadge";
 import { FarmBadge } from "../ui/FarmBadge";
 import {
   fetchRewardedStakedTokens,
@@ -20,7 +20,7 @@ import { RecentSwaps } from "../ui/RecentSwaps";
 // tab badge is shown; render <ExternalLpWithdraw {...jexLp} /> to bring it back.
 import { useJexLpPositions } from "../ui/ExternalLpWithdraw";
 import { JexAddLiquidity } from "../ui/JexAddLiquidity";
-import { PriceChart } from "../ui/PriceChart";
+import { PriceChart, type BookLevel } from "../ui/PriceChart";
 import { OrderBookDepth } from "../ui/OrderBookDepth";
 import { useFeatureFlags, JEX_ADD_ENABLED } from "../featureFlags";
 import { orderForQuoteDisplay } from "../helpers/quotePriority";
@@ -41,7 +41,12 @@ const VOXEGLD_IDENTIFIER = "VOXEGLD-5872e5";
 interface PoolsSummary {
   poolCount: number;
   poolCountPriced: number;
+  /** AMM reserves only. */
   tvlUsd: string | null;
+  /** Funds of the active limit orders (DinoVox pools) — undefined on an older API. */
+  bookTvlUsd?: string | null;
+  /** tvlUsd + bookTvlUsd — undefined on an older API. */
+  totalTvlUsd?: string | null;
   volume24hSwapCount: number;
 }
 
@@ -75,6 +80,48 @@ function formatAmount(bn: BigNumber): string {
  * user holds LP in come first and additionally show the position value, pool
  * share, estimated fees, per-token share and a Remove action.
  */
+/**
+ * Split of a USD total at a glance (AMM vs order books, LP vs farmed): a thin
+ * two-colour bar + legend with amounts and shares. Inline sizes/colours:
+ * readable even with a stale host CSS.
+ */
+const SplitBar = ({
+  parts,
+  align,
+  title,
+}: {
+  parts: { color: string; label: string; usd: number }[];
+  align: "start" | "end";
+  title?: string;
+}) => {
+  parts = parts.filter((p) => p.usd > 0);
+  const total = parts.reduce((acc, p) => acc + p.usd, 0);
+  const pct = (usd: number) => (total > 0 ? (usd / total) * 100 : 0);
+  return (
+    <div
+      className={title ? "dvx:cursor-help" : undefined}
+      title={title}
+      style={{ display: "flex", flexDirection: "column", alignItems: `flex-${align}`, gap: 4, margin: "4px 0 2px" }}
+    >
+      <div style={{ display: "flex", width: 180, maxWidth: "100%", height: 6, borderRadius: 3, overflow: "hidden", background: "rgba(127,127,127,0.2)" }}>
+        {parts.map((p) => (
+          <div key={p.label} style={{ width: `${pct(p.usd)}%`, background: p.color }} />
+        ))}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: `flex-${align}`, columnGap: 10, rowGap: 2, fontSize: 11 }}>
+        {parts.map((p) => (
+          <span key={p.label} style={{ display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: p.color, flexShrink: 0 }} />
+            <span className="dvx:text-gray-500 dvx:dark:text-gray-400">{p.label}</span>
+            <span className="dvx:font-semibold dvx:text-gray-800 dvx:dark:text-gray-100">{formatUsd(p.usd)}</span>
+            <span className="dvx:text-gray-400">{Math.round(pct(p.usd))}%</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const Pools = () => {
   const {
     apiUrl,
@@ -137,6 +184,9 @@ export const Pools = () => {
   // Manual base/quote flip for the open depth chart — reset whenever a
   // different pool's depth is opened (cf. the toggle button's onClick).
   const [depthInverted, setDepthInverted] = React.useState(false);
+  // Levels of the open depth chart (1 base = price quote) — overlaid on the
+  // same pool's price chart while both sections are open.
+  const [depthLevels, setDepthLevels] = React.useState<{ pool: string; base: string; levels: BookLevel[] } | null>(null);
   // Pool whose price chart is expanded + the chartable pairs (one fetch, cached).
   const [pricePool, setPricePool] = React.useState<string | null>(null);
   const [chartable, setChartable] = React.useState<ChartableEntry[]>([]);
@@ -197,6 +247,53 @@ export const Pools = () => {
     }
     fetchAllPools(apiUrl).then(setAllPools).catch(console.error);
   }, [apiUrl, address]);
+  /* ---- User's active limit orders: tokens escrowed in the order books ----
+     Remaining amount per escrowed token (a partially filled order counts for
+     its remainder only — fills are paid to the user directly), aggregated by
+     the backend in /orderbook/orders/summary `escrowed`. Older API without
+     it: summed here from /buckets, one call per pair with active orders. */
+  const [myBookRaw, setMyBookRaw] = React.useState<Record<string, string>>({});
+  React.useEffect(() => {
+    setMyBookRaw({});
+    if (!apiUrl || !address || !flags.orderBook) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await axios.get<{
+          pairs: { pairAddr: string; activeCount: number }[];
+          escrowed?: { token: string; amount: string }[];
+        }>(`${apiUrl}/orderbook/orders/summary`, { params: { address } });
+        if (data.escrowed) {
+          if (!cancelled) setMyBookRaw(Object.fromEntries(data.escrowed.map((e) => [e.token, e.amount])));
+          return;
+        }
+        const active = (data.pairs ?? []).filter((p) => p.activeCount > 0);
+        const perPair = await Promise.all(
+          active.map((p) =>
+            axios
+              .get<{ buckets: { tokenIn: string; totalAmountRemaining: string }[] }>(`${apiUrl}/orderbook/orders/buckets`, {
+                params: { address, pairAddr: p.pairAddr },
+              })
+              .then((res) => res.data.buckets ?? [])
+              .catch(() => []),
+          ),
+        );
+        const sums: Record<string, BigNumber> = {};
+        for (const b of perPair.flat()) sums[b.tokenIn] = (sums[b.tokenIn] ?? new BigNumber(0)).plus(b.totalAmountRemaining);
+        if (!cancelled) setMyBookRaw(Object.fromEntries(Object.entries(sums).map(([k, v]) => [k, v.toFixed(0)])));
+      } catch {
+        /* older API without the order-book routes: no book share */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, address, flags.orderBook]);
+  const myBookUsd = Object.entries(myBookRaw).reduce((acc, [id, raw]) => {
+    const price = tokenMap[id]?.priceUsd;
+    return price != null ? acc + new BigNumber(raw).shiftedBy(-(tokenMap[id]?.decimals ?? 18)).toNumber() * parseFloat(price) : acc;
+  }, 0);
+
   /* ---- Farms: LP staked in farms (counts as the user's liquidity, 1:1 via
      the position token) + which LP tokens have live farm rewards ---- */
   const [farmed, setFarmed] = React.useState<Record<string, string>>({});
@@ -298,6 +395,22 @@ export const Pools = () => {
     (acc, p) => acc + (positionUsd(p, lpBalanceOf(p)!) ?? 0),
     0,
   );
+  // Part of it staked in farms (the rest sits in the wallet as plain LP).
+  const positionsFarmedUsd = heldPools.reduce(
+    (acc, p) => acc + (p.lpToken && farmed[p.lpToken] ? (positionUsd(p, farmed[p.lpToken]) ?? 0) : 0),
+    0,
+  );
+  // Header TVL = AMM + order book (summary.totalTvlUsd) while the order-book
+  // UI is on (flags.orderBook, same gate as the depth chart); AMM reserves
+  // alone otherwise, or against an older API without these fields.
+  const summaryBookUsd =
+    flags.orderBook && summary?.bookTvlUsd != null
+      ? parseFloat(summary.bookTvlUsd)
+      : 0;
+  const summaryTvl =
+    flags.orderBook && summary?.totalTvlUsd != null
+      ? summary.totalTvlUsd
+      : (summary?.tvlUsd ?? null);
 
   const getTicker = (id: string) => tokenMap[id]?.ticker ?? id.split("-")[0];
   const getDecimals = (id: string) => tokenMap[id]?.decimals ?? 18;
@@ -446,15 +559,33 @@ export const Pools = () => {
         {summary && (
           /* One line: the user's positions on the left (only if any), the
              pools' total TVL on the right. */
-          <div className="dvx:rounded-2xl dvx:border dvx:border-amber-200 dvx:dark:border-amber-800/50 dvx:bg-amber-50 dvx:dark:bg-amber-900/10 dvx:px-4 dvx:py-3 dvx:mt-4 dvx:flex dvx:flex-wrap dvx:items-end dvx:justify-between dvx:gap-x-6 dvx:gap-y-2">
-            {positionsTotalUsd > 0 ? (
-              <div className="dvx:flex dvx:flex-col">
+          <div
+            className="dvx:rounded-2xl dvx:border dvx:border-amber-200 dvx:dark:border-amber-800/50 dvx:bg-amber-50 dvx:dark:bg-amber-900/10 dvx:px-4 dvx:py-3 dvx:mt-4"
+            // Two equal columns (positions | TVL) that stack below ~460px: each
+            // split-bar legend wraps inside its own column instead of pushing
+            // the TVL block to the next line. Inline: stale-host-CSS proof.
+            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", alignItems: "end", columnGap: 24, rowGap: 12 }}
+          >
+            {positionsTotalUsd + myBookUsd > 0 ? (
+              <div className="dvx:flex dvx:flex-col" style={{ minWidth: 0 }}>
                 <span className="dvx:text-[10px] dvx:font-semibold dvx:text-gray-500 dvx:dark:text-gray-400 dvx:uppercase dvx:tracking-wider">
                   {t("pools_your_positions")}
                 </span>
                 <span className="dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400 dvx:text-base">
-                  {formatUsd(positionsTotalUsd)}
+                  {formatUsd(positionsTotalUsd + myBookUsd)}
                 </span>
+                {/* LP in the wallet / LP staked in farms / tokens escrowed in limit orders. */}
+                {[positionsTotalUsd - positionsFarmedUsd, positionsFarmedUsd, myBookUsd].filter((v) => v > 0).length > 1 && (
+                  <SplitBar
+                    align="start"
+                    title={t("pools_positions_split_tooltip")}
+                    parts={[
+                      { color: "#f59e0b", label: t("pools_positions_lp"), usd: Math.max(0, positionsTotalUsd - positionsFarmedUsd) },
+                      { color: "#4ade80", label: t("pools_positions_farmed"), usd: positionsFarmedUsd },
+                      { color: "#22d3ee", label: t("pools_summary_books"), usd: myBookUsd },
+                    ]}
+                  />
+                )}
                 <label className="dvx:inline-flex dvx:items-center dvx:gap-1.5 dvx:text-[10px] dvx:text-gray-400 dvx:cursor-pointer dvx:select-none">
                   <input
                     type="checkbox"
@@ -468,15 +599,26 @@ export const Pools = () => {
             ) : (
               <span />
             )}
-            <div className="dvx:flex dvx:flex-col dvx:items-end dvx:text-right">
+            <div className="dvx:flex dvx:flex-col dvx:items-end dvx:text-right" style={{ minWidth: 0 }}>
               <span className="dvx:text-[10px] dvx:font-semibold dvx:text-gray-500 dvx:dark:text-gray-400 dvx:uppercase dvx:tracking-wider">
                 {t("pools_summary_tvl")}
               </span>
               <span className="dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400 dvx:text-base">
-                {summary.tvlUsd != null
-                  ? formatUsd(parseFloat(summary.tvlUsd))
+                {summaryTvl != null
+                  ? formatUsd(parseFloat(summaryTvl))
                   : "—"}
               </span>
+              {summaryBookUsd > 0 && summaryTvl != null && (
+                // AMM vs order books at a glance.
+                <SplitBar
+                  align="end"
+                  title={t("pools_summary_book_tooltip")}
+                  parts={[
+                    { color: "#f59e0b", label: t("pools_summary_amm"), usd: Math.max(0, parseFloat(summaryTvl) - summaryBookUsd) },
+                    { color: "#22d3ee", label: t("pools_summary_books"), usd: summaryBookUsd },
+                  ]}
+                />
+              )}
               <span className="dvx:text-[10px] dvx:text-gray-400">
                 {t("pools_summary_stats", {
                   poolCount: summary.poolCount,
@@ -606,6 +748,29 @@ export const Pools = () => {
                   ? (feesWindowUsd / windowDays) * 30 * share.toNumber()
                   : null;
               const usdOrZero = (v: number) => (v === 0 ? "$0" : formatUsd(v));
+              // Funds escrowed by this pair's active limit orders: shown apart
+              // from the reserves, never added to the pool's TVL (makers earn
+              // no LP fees — the APR stays on the reserves alone).
+              const book =
+                flags.orderBook && pool.book && pool.book.orderCount > 0
+                  ? pool.book
+                  : null;
+              const bookAmounts = book
+                ? [
+                    new BigNumber(book.amountA).gt(0)
+                      ? `${formatReserve(book.amountA, decA)} ${tickerA}`
+                      : null,
+                    new BigNumber(book.amountB).gt(0)
+                      ? `${formatReserve(book.amountB, decB)} ${tickerB}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" + ")
+                : "";
+              const bookUsd =
+                book?.tvlUsd != null ? parseFloat(book.tvlUsd) : null;
+              // Limit orders live in DinoVox pairs only.
+              const limitReady = flags.orderBook && dexFilter === "DinoVox";
               const reserveBox = (
                 ticker: string,
                 res: string,
@@ -835,13 +1000,19 @@ export const Pools = () => {
                           </button>
                         )}
                       </div>
-                      {(pool.dcaReady || hasLiveFarm(pool)) && (
+                      {(pool.dcaReady || hasLiveFarm(pool) || limitReady) && (
                         <div className="dvx:flex dvx:gap-1.5">
                           {hasLiveFarm(pool) && (
                             <FarmBadge pool={pool.address} />
                           )}
                           {pool.dcaReady && (
                             <DcaBadge
+                              tokenA={pool.tokenA}
+                              tokenB={pool.tokenB}
+                            />
+                          )}
+                          {limitReady && (
+                            <LimitBadge
                               tokenA={pool.tokenA}
                               tokenB={pool.tokenB}
                             />
@@ -876,6 +1047,22 @@ export const Pools = () => {
                     {reserveBox(tickerA, resA, resAUsd, myA, myAUsd)}
                     {reserveBox(tickerB, resB, resBUsd, myB, myBUsd)}
                   </div>
+                  {book && (
+                    <p
+                      className="dvx:flex dvx:items-center dvx:gap-1 dvx:text-[10px] dvx:font-semibold dvx:text-gray-400 dvx:mt-2 dvx:cursor-help"
+                      title={t("pools_book_tooltip", { amounts: bookAmounts })}
+                    >
+                      {t("pools_book", {
+                        count: book.orderCount,
+                        // No USD price for the escrowed side → token amounts instead.
+                        amount:
+                          bookUsd != null && bookUsd > 0
+                            ? formatUsd(bookUsd)
+                            : bookAmounts,
+                      })}
+                      <Info className="dvx:w-3 dvx:h-3 dvx:text-gray-400" />
+                    </p>
+                  )}
                   <a
                     href={`${explorerAddress}/accounts/${pool.address}/tokens`}
                     target="_blank"
@@ -921,9 +1108,9 @@ export const Pools = () => {
                         />
                       )}
                       {(() => {
-                        // Price evolution — only for pairs eligible to a chart
-                        // (direct pool vs VOXEGLD / USDC, + VOXEGLD vs USDC / WEGLD).
-                        const priceEntry = chartEntryForPool(chartable, pool);
+                        // Price evolution — every DinoVox pair; elsewhere only
+                        // VOXEGLD vs USDC / WEGLD.
+                        const priceEntry = chartEntryForPool(chartable, pool, { anyPair: dexFilter === "DinoVox" });
                         if (!priceEntry) return null;
                         return (
                           <>
@@ -955,6 +1142,15 @@ export const Pools = () => {
                                 entries={[priceEntry]}
                                 tickerOf={getTicker}
                                 embedded
+                                bookLevels={
+                                  flags.orderBook && depthPool === pool.address && depthLevels?.pool === pool.address
+                                    ? depthLevels.levels.map((l) => ({
+                                        side: l.side,
+                                        // Chart = price of entry.token in entry.quote; the book's may be the other way.
+                                        price: priceEntry.token === depthLevels.base ? l.price : 1 / l.price,
+                                      }))
+                                    : undefined
+                                }
                               />
                             )}
                           </>
@@ -1012,6 +1208,7 @@ export const Pools = () => {
                                 tickerA={base.ticker}
                                 tickerB={quote.ticker}
                                 spotAinB={rBase.gt(0) && rQuote.gt(0) ? rQuote.div(rBase).toNumber() : null}
+                                onLevels={(levels) => setDepthLevels({ pool: pool.address, base: base.identifier, levels })}
                               />
                             </>
                           );

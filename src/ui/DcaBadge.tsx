@@ -15,6 +15,9 @@ export function dcaDirection(tokenA: string, tokenB: string): { tokenIn: string;
   return rank(tokenB) < rank(tokenA) ? { tokenIn: tokenB, tokenOut: tokenA } : { tokenIn: tokenA, tokenOut: tokenB };
 }
 
+const badgeCls =
+  "dvx:inline-flex dvx:w-fit dvx:shrink-0 dvx:self-end dvx:items-center dvx:gap-1 dvx:text-[10px] dvx:font-semibold dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-500 dvx:dark:text-gray-300 dvx:border dvx:border-gray-200 dvx:dark:border-[#3a3a3a] dvx:hover:text-amber-500 dvx:hover:border-amber-400 dvx:transition-colors dvx:whitespace-nowrap";
+
 /** "⏱️ DCA" shortcut for a dcaReady pool — opens the DCA tab preset on the pair. */
 export const DcaBadge = ({ tokenA, tokenB }: { tokenA: string; tokenB: string }) => {
   const goTo = useGoTo();
@@ -24,10 +27,24 @@ export const DcaBadge = ({ tokenA, tokenB }: { tokenA: string; tokenB: string })
       type="button"
       onClick={() => goTo("dca", dcaDirection(tokenA, tokenB))}
       title={t("pools_dca_ready_tooltip")}
-      className="dvx:inline-flex dvx:w-fit dvx:shrink-0 dvx:self-end dvx:items-center dvx:gap-1 dvx:text-[10px] dvx:font-semibold dvx:px-2 dvx:py-0.5 dvx:rounded-full dvx:bg-gray-100 dvx:dark:bg-[#2a2a2a] dvx:text-gray-500 dvx:dark:text-gray-300 dvx:border dvx:border-gray-200 dvx:dark:border-[#3a3a3a] dvx:hover:text-amber-500 dvx:hover:border-amber-400 dvx:transition-colors dvx:whitespace-nowrap"
+      className={badgeCls}
     >
       <span aria-hidden>⏱️</span>
       {t("tab_dca")}
+    </button>
+  );
+};
+
+/** "🎯 Limit" shortcut — opens the Limit tab preset on the pair, spending the
+ *  base token (same direction as the DCA shortcut). */
+export const LimitBadge = ({ tokenA, tokenB }: { tokenA: string; tokenB: string }) => {
+  const goTo = useGoTo();
+  const { t } = useTranslation("swap");
+  const { tokenIn, tokenOut } = dcaDirection(tokenA, tokenB);
+  return (
+    <button type="button" onClick={() => goTo("limit", { from: tokenIn, to: tokenOut })} className={badgeCls}>
+      <span aria-hidden>🎯</span>
+      {t("tab_limit")}
     </button>
   );
 };

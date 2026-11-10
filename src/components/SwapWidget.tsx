@@ -16,6 +16,7 @@ import { Dca } from "./Dca";
 import { Farms } from "./Farms";
 import { FarmsRewards } from "./FarmsRewards";
 import { LimitOrders, LimitComingSoon } from "./LimitOrders";
+import { DexFees } from "./DexFees";
 import { featureFlagsFor } from "../featureFlags";
 
 export type SwapWidgetProps = Pick<SwapConfig, 'defaultFrom' | 'defaultTo' | 'whitelist' | 'blacklist' | 'address' | 'networkApiAddress' | 'chainId' | 'explorerAddress' | 'onSignTransactions'>;
@@ -41,6 +42,7 @@ export const SwapWidget: React.FC<SwapWidgetProps> = (props) => {
       // Order book disabled: the tab stays visible with a "coming soon" card.
       case 'limit':            return flags.orderBook ? <LimitOrders /> : <LimitComingSoon />;
       case 'farms':            return <Farms />;
+      case 'fees':             return flags.dexFees ? <DexFees /> : <Swap />;
       // Not linked from the UI on purpose — reachable via #farms-rewards only.
       case 'farms-rewards':    return <FarmsRewards />;
       default:                 return <Swap />;
