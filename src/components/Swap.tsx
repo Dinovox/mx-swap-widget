@@ -999,7 +999,7 @@ export const Swap = () => {
   // DEX badge styling shared by the single-route breakdown and the multiroute
   // split-leg list, so a given DEX reads the same color/name in both places.
   // Canonical DEX color code: DinoVox=amber, JExchange=green, XExchange=blue,
-  // OneDex=purple. LiquidStaking isn't a DEX in that code — cyan keeps it
+  // OneDex=purple, AshSwap=pink. LiquidStaking isn't a DEX in that code — cyan keeps it
   // visually distinct from all four (it never appears alongside them anyway,
   // the stake path is its own exclusive single-hop route).
   const getRouteDexStyle = (dexType?: QuoteHop["dexType"]) => {
@@ -1027,6 +1027,12 @@ export const Swap = () => {
           line: "dvx:bg-purple-400 dvx:dark:bg-purple-500",
           label: "dvx:text-purple-600 dvx:dark:text-purple-400",
           name: "OneDex",
+        };
+      case "AshSwapStable":
+        return {
+          line: "dvx:bg-pink-400 dvx:dark:bg-pink-500",
+          label: "dvx:text-pink-600 dvx:dark:text-pink-400",
+          name: "AshSwap",
         };
       default:
         return {

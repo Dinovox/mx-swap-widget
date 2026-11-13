@@ -99,7 +99,7 @@ export interface TokenMeta {
 }
 
 /** DEX filter for the Pools page */
-export type DexFilter = 'DinoVox' | 'XExchange' | 'JExchange' | 'OneDex';
+export type DexFilter = 'DinoVox' | 'XExchange' | 'JExchange' | 'OneDex' | 'AshSwapStable';
 
 /** A single hop in a multi-hop swap route */
 export interface QuoteHop {
@@ -108,7 +108,7 @@ export interface QuoteHop {
   tokenOut: string;
   amountIn: string;
   amountOut: string;
-  dexType?: 'DinoVox' | 'XExchange' | 'JExchange' | 'OneDex' | 'LiquidStaking';
+  dexType?: DexFilter | 'LiquidStaking';
   priceImpact?: string;
 }
 

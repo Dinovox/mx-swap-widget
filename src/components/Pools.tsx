@@ -475,9 +475,9 @@ export const Pools = () => {
               })
         }
       >
-        {/* Full width with equal columns on mobile (4 DEX names must fit), compact from sm up. */}
+        {/* Full width with equal columns on mobile (5 DEX names must fit), compact from sm up. */}
         <div className="dvx:flex dvx:gap-1 dvx:p-1 dvx:bg-gray-100 dvx:dark:bg-[#1a1a1a] dvx:rounded-xl dvx:mt-4 dvx:w-full dvx:sm:w-fit">
-          {(["DinoVox", "XExchange", "JExchange", "OneDex"] as DexFilter[]).map(
+          {(["DinoVox", "XExchange", "JExchange", "OneDex", "AshSwapStable"] as DexFilter[]).map(
             (dex) => (
               <button
                 key={dex}
@@ -496,7 +496,7 @@ export const Pools = () => {
                     : "dvx:text-gray-400 dvx:bg-transparent dvx:hover:text-gray-700 dvx:dark:hover:text-white"
                 }`}
               >
-                {dex}
+                {dex === "AshSwapStable" ? "AshSwap" : dex}
                 {dex === "JExchange" && jexLp.positions.length > 0 && (
                   // Badge: LP to withdraw (inside the button box so truncate can't clip it).
                   <span
