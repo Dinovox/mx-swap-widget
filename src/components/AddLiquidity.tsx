@@ -7,7 +7,6 @@ import { fetchAllPools } from "../helpers/fetchAllPools";
 import { ArrowLeft, ArrowRight, Plus, Shuffle, Info, ChevronDown } from "lucide-react";
 import useLoadTranslations from "../hooks/useLoadTranslations";
 import { Address, Transaction } from "@multiversx/sdk-core";
-import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
 import { useGetUserESDT } from "../hooks/useGetUserEsdt";
 import { Card } from "../ui/Card";
@@ -19,6 +18,7 @@ import { brandedTokensVoxEgldFirst } from "../helpers/brandedTokens";
 import { useSwapConfig } from "../context/SwapConfigContext";
 import BigNumber from "bignumber.js";
 import type { DexToken, PoolInfo, LiquidityPool } from "../types";
+import { GAS_PRICE } from "../helpers/estimateGas";
 
 const SINGLE_SLIPPAGE_PRESETS = [0.005, 0.01, 0.02]; // 0.5 %, 1 %, 2 %
 const VOXEGLD_IDENTIFIER = "VOXEGLD-5872e5";

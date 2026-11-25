@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next";
 import { Check, ChevronDown as ChevronDownIcon, Info, Link2, Lock } from "lucide-react";
 import { TokenLogo } from "../ui/TokenSelect";
 import { Address, Transaction } from "@multiversx/sdk-core";
-import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { Card } from "../ui/Card";
 import { SectionTabs } from "../ui/NavTabs";
 import useLoadTranslations from "../hooks/useLoadTranslations";
@@ -24,7 +23,7 @@ import {
 import { fetchFarmsApi, fetchFarmsConfigApi, fetchFarmPositionsApi, pendingRewardRaw, type FarmsSortBy } from "../helpers/farmsApi";
 import { useWidgetSearchParams } from "../hooks/useWidgetSearchParams";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
-import { estimateGasLimit } from "../helpers/estimateGas";
+import { estimateGasLimit, GAS_PRICE } from "../helpers/estimateGas";
 import bigToHex from "../helpers/bigToHex";
 import strToHex from "../helpers/strToHex";
 import type { LiquidityPool, TokenMeta } from "../types";

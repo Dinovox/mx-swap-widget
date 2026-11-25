@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import useLoadTranslations from "../hooks/useLoadTranslations";
 import { ArrowUpDown, ChevronDown } from "lucide-react";
 import { Address, Transaction } from "@multiversx/sdk-core";
-import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
 import { useGetUserESDT } from "../hooks/useGetUserEsdt";
 import { Card } from "../ui/Card";
@@ -22,6 +21,7 @@ import { useSwapConfig } from "../context/SwapConfigContext";
 import { getThemePalette } from "../ui/themePalette";
 import { useWidgetSearchParams } from "../hooks/useWidgetSearchParams";
 import type { SwapToken, DcaOrder, DcaExecution } from "../types";
+import { GAS_PRICE } from "../helpers/estimateGas";
 
 type TFn = (key: string, options?: Record<string, unknown>) => string;
 

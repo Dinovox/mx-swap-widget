@@ -6,7 +6,6 @@ import { useGoTo } from "../context/SwapViewContext";
 import useLoadTranslations from "../hooks/useLoadTranslations";
 import { ArrowUpDown, RefreshCw, GitBranch } from "lucide-react";
 import { Address, Transaction } from "@multiversx/sdk-core";
-import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
 import { useGetUserESDT } from "../hooks/useGetUserEsdt";
 import { Card } from "../ui/Card";
@@ -30,6 +29,7 @@ import type {
   QuoteResponse,
   ArbResponse,
 } from "../types";
+import { GAS_PRICE } from "../helpers/estimateGas";
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                           */

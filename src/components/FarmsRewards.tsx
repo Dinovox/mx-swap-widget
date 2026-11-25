@@ -3,7 +3,6 @@ import axios from "axios";
 import BigNumber from "bignumber.js";
 import { useTranslation } from "react-i18next";
 import { Address, Transaction } from "@multiversx/sdk-core";
-import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { Card } from "../ui/Card";
 import { SectionTabs } from "../ui/NavTabs";
 import { TokenSelect, TokenLogo, type TokenBalanceInfo } from "../ui/TokenSelect";
@@ -24,7 +23,7 @@ import {
 } from "../helpers/farms";
 import { fetchFarmsApi, fetchFarmsConfigApi } from "../helpers/farmsApi";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
-import { estimateGasLimit } from "../helpers/estimateGas";
+import { estimateGasLimit, GAS_PRICE } from "../helpers/estimateGas";
 import bigToHex from "../helpers/bigToHex";
 import strToHex from "../helpers/strToHex";
 import type { LiquidityPool, TokenMeta } from "../types";

@@ -41,8 +41,8 @@
     "dev": "vite build --watch"
   },
   "peerDependencies": {
-    "@multiversx/sdk-core": ">=15",
-    "@multiversx/sdk-dapp": ">=5",
+    "@multiversx/sdk-core": "^15 || ^16",
+    "@multiversx/sdk-dapp": "^5",
     "axios": ">=1",
     "bignumber.js": ">=9",
     "lucide-react": ">=0.400",

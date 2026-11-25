@@ -8,6 +8,9 @@ import axios from "axios";
 // claimAllRewards settles every followed stream), so a measured limit beats
 // any flat constant.
 
+/** MultiversX minimum gas price (same value as sdk-dapp's GAS_PRICE), kept here so the widget doesn't need sdk-dapp for it. */
+export const GAS_PRICE = 1_000_000_000;
+
 const SIMULATION_GAS_CEILING = 600_000_000; // protocol max per tx — the simulation's budget and the highest limit returned
 const MARGIN = 1.15; // +15%: state can move a bit between simulation and execution
 const MIN_GAS = 1_000_000;

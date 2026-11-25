@@ -3,7 +3,6 @@ import axios from "axios";
 import BigNumber from "bignumber.js";
 import { useTranslation } from "react-i18next";
 import { Address, Transaction } from "@multiversx/sdk-core";
-import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { ChevronDown, ExternalLink, RefreshCw } from "lucide-react";
 import { Card } from "../ui/Card";
 import { SectionTabs } from "../ui/NavTabs";
@@ -19,7 +18,7 @@ type Observation = Pick<FeeTokenPreview, "spotPrice" | "refPrice" | "refUpdatedA
 /** Why observing now is worth it: never observed, reference drifted from the AMM, or not observed for long. */
 type DueReason = "new" | "drift" | "stale" | null;
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
-import { estimateGasLimit } from "../helpers/estimateGas";
+import { estimateGasLimit, GAS_PRICE } from "../helpers/estimateGas";
 import strToHex from "../helpers/strToHex";
 import bigToHex from "../helpers/bigToHex";
 

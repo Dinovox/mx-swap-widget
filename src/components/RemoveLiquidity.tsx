@@ -5,7 +5,6 @@ import { useWidgetSearchParams } from "../hooks/useWidgetSearchParams";
 import { fetchAllPools } from "../helpers/fetchAllPools";
 import { ArrowLeft, ArrowDown } from "lucide-react";
 import { Address, Transaction } from "@multiversx/sdk-core";
-import { GAS_PRICE } from "@multiversx/sdk-dapp/out/constants/mvx.constants";
 import { signAndSendTransactions } from "../helpers/signAndSendTransactions";
 import { useGetUserESDT } from "../hooks/useGetUserEsdt";
 import { Card } from "../ui/Card";
@@ -14,6 +13,7 @@ import strToHex from "../helpers/strToHex";
 import { useSwapConfig } from "../context/SwapConfigContext";
 import BigNumber from "bignumber.js";
 import type { DexToken, LiquidityPool } from "../types";
+import { GAS_PRICE } from "../helpers/estimateGas";
 
 function formatUsd(priceUsd: string, amount: string): string | null {
   const value = parseFloat(priceUsd) * parseFloat(amount);
