@@ -8,7 +8,7 @@ import axios from "axios";
 // claimAllRewards settles every followed stream), so a measured limit beats
 // any flat constant.
 
-const SIMULATION_GAS_CEILING = 600_000_000; // protocol max per tx — only the simulation's budget
+const SIMULATION_GAS_CEILING = 600_000_000; // protocol max per tx — the simulation's budget and the highest limit returned
 const MARGIN = 1.15; // +15%: state can move a bit between simulation and execution
 const MIN_GAS = 1_000_000;
 
@@ -21,7 +21,8 @@ export interface GasEstimateTx {
 }
 
 /**
- * Gas limit for `tx` from a network simulation (+15% margin), or `fallback`
+ * Gas limit for `tx` from a network simulation (+15% margin, capped at the
+ * protocol max: a higher limit is refused outright), or `fallback`
  * when the simulation can't be trusted: network error, revert, or a call that
  * depends on a previous tx of the same batch (simulated against the CURRENT
  * state, it would fail — pass `nonceOffset` > 0 and keep a sane fallback).
@@ -54,7 +55,9 @@ export async function estimateGasLimit(
       { baseURL: networkApiAddress, timeout: 10_000 },
     );
     const units = res?.data?.txGasUnits ?? 0;
-    if (units > 0 && !res?.data?.returnMessage) return Math.max(MIN_GAS, Math.ceil(units * MARGIN));
+    if (units > 0 && !res?.data?.returnMessage) {
+      return Math.min(SIMULATION_GAS_CEILING, Math.max(MIN_GAS, Math.ceil(units * MARGIN)));
+    }
   } catch {
     /* network / simulation unavailable → fallback */
   }

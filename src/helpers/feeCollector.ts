@@ -4,9 +4,13 @@ import feeCollectorAbiJson from "../abis/fee-collector.abi.json";
 import pairAbiJson from "../abis/pair.abi.json";
 
 // fee-collector ABI (swapv2/fee-collector): protocol fees of the DinoVox
-// pairs, sold for VOXEGLD on the pairs' order books (processFees), then
-// deposited single-side into VOXEGLD/WEGLD (compound). Read with free view
-// queries — no backend route yet.
+// pairs, sold for VOXEGLD on the pairs' order books (processFees) — or, for
+// the tokens the owner routed (setLpRoute), deposited single-side into a
+// chosen pool instead — then deposited single-side into VOXEGLD/WEGLD
+// (compound); WEGLD is not sold but deposited on the other side of that pair
+// (compoundQuote); EGLD it receives is staked into VOXEGLD (stake). Read from
+// the backend (fetchFeeCollectorStateFromApi), or with free view queries when
+// it can't.
 const feeCollectorAbi = Abi.create(feeCollectorAbiJson);
 const pairAbi = Abi.create(pairAbiJson);
 
@@ -25,7 +29,23 @@ export type FeeOutcome =
   | "PairUnavailable"
   | "TooSoon"
   | "BelowMinimum"
-  | "PriceOutOfBounds";
+  | "PriceOutOfBounds"
+  /** processFees: the LP pair's quote token (WEGLD), deposited by compoundQuote instead of sold. */
+  | "QuoteToken";
+
+/**
+ * LP route of a token (fee-collector setLpRoute): processFees deposits it
+ * single-side into `pair` instead of selling it. Its prices (spotPrice,
+ * refPrice, refNext) are then in `otherToken` per token, orderCap is the
+ * deposit cap and nextOrderAt the next deposit.
+ */
+export interface FeeTokenRoute {
+  pair: string;
+  /** The pair's other token. */
+  otherToken: string;
+  /** Deposit floor (raw). */
+  minAmount: string;
+}
 
 export interface FeeTokenPreview {
   token: string;
@@ -53,6 +73,8 @@ export interface FeeTokenPreview {
   refNext: string | null;
   /** Size of the next sell order (raw): balance capped at max_order_reserve_bps of the pair's token reserve. */
   orderCap: string | null;
+  /** null: sold on the order book (the default). */
+  route: FeeTokenRoute | null;
 }
 
 export interface CompoundPreview {
@@ -74,6 +96,30 @@ export interface CompoundPreview {
   maxPriceDeviationBps: number;
 }
 
+/**
+ * fee-collector previewCompoundQuote: the quote token (WEGLD) deposited on the
+ * other side of the LP pair, which buys VOXEGLD — only while VOXEGLD trades
+ * under its liquid staking rate, and up to that rate at most.
+ */
+export interface CompoundQuotePreview {
+  outcome: FeeOutcome;
+  /** Quote token compoundQuote would deposit (raw), 0 unless Done. */
+  amount: string;
+  /** Unix seconds after which a new deposit is allowed (TooSoon), else null. */
+  nextZapAt: number | null;
+  /** VOXEGLD price in the quote token on the LP pair (human), null when unread. */
+  spotPrice: string | null;
+  /** Liquid staking rate, EGLD per VOXEGLD (human), null when unread. */
+  stakingRate: string | null;
+}
+
+/** fee-collector previewStake: EGLD → VOXEGLD through the liquid staking contract, the whole balance when Done. */
+export interface StakePreview {
+  outcome: FeeOutcome;
+  /** Collector EGLD balance (raw). */
+  egldBalance: string;
+}
+
 export interface FeeCollectorState {
   targetToken: string;
   /** Sale premium above the reference price, in bps (1 000 = +10 %). */
@@ -86,6 +132,8 @@ export interface FeeCollectorState {
   maxDecaySeconds: number;
   /** Cap of one sell order, in bps of the pair's token reserve (500 = 5 %). */
   maxOrderReserveBps: number;
+  /** Cap of one LP deposit (compound, compoundQuote, routed tokens), in bps of the deposited token's reserve; 0 without LP config. */
+  maxZapReserveBps: number;
   paused: boolean;
   tokens: FeeTokenPreview[];
   /** Target token (VOXEGLD) waiting in filled orders, per pair (raw). */
@@ -93,6 +141,18 @@ export interface FeeCollectorState {
   /** Target token held by the collector itself (raw). */
   targetBalance: string;
   compound: CompoundPreview;
+  /** null on a collector not upgraded yet (no previewCompoundQuote view) or from an older backend. */
+  compoundQuote: CompoundQuotePreview | null;
+  /** null on a collector not upgraded yet (no previewStake view) or from an older backend. */
+  stake: StakePreview | null;
+  /**
+   * Public cancellation of stale orders (cancelStaleOrders), null until the
+   * owner enables it: an order qualifies once older than minAgeSeconds and
+   * priced at least minSpotDeviationBps above the AMM price.
+   */
+  staleOrders: { minAgeSeconds: number; minSpotDeviationBps: number } | null;
+  /** Ids of the orders cancelStaleOrders would cancel right now, per pair (getStaleOrders view, same check). */
+  staleOrderIds: Record<string, string[]>;
   /** Metadata of every token the collector holds. */
   meta: Record<string, CollectorTokenMeta>;
 }
@@ -106,6 +166,26 @@ const bech32 = (v: unknown) => (v instanceof Address ? v.toBech32() : String(v))
 
 const controllerFor = (networkApiAddress: string, chainId: string) =>
   new SmartContractController({ chainID: chainId, networkProvider: new ApiNetworkProvider(networkApiAddress), abi: feeCollectorAbi });
+
+/** fee-collector MAX_PAGE_SIZE: largest page of its registry views. */
+const REGISTRY_PAGE = 100;
+
+/**
+ * The whole registry as (pair, pending target) from getClaimableProceeds,
+ * page after page until a short one. The first page is asked without
+ * arguments: a collector not upgraded yet (no pagination) returns it all.
+ */
+async function readClaimable(q: (fn: string, args?: unknown[]) => Promise<unknown[]>): Promise<unknown[][]> {
+  const [first] = await q("getClaimableProceeds");
+  const items = [...((first ?? []) as unknown[][])];
+  for (let last = items.length; last === REGISTRY_PAGE; ) {
+    const [page] = await q("getClaimableProceeds", [items.length, REGISTRY_PAGE]);
+    const list = (page ?? []) as unknown[][];
+    items.push(...list);
+    last = list.length;
+  }
+  return items;
+}
 
 export interface CollectorTokenMeta {
   ticker: string;
@@ -135,6 +215,33 @@ async function fetchCollectorBalances(
   return { balances, meta };
 }
 
+/**
+ * Same state from the DEX backend (GET /fee-collector/state): one call, read
+ * once for every client behind a short cache, instead of ~5 view queries per
+ * token held. null when the backend can't serve it (older version, collector
+ * not configured there or a different one) — the caller then reads the chain.
+ * `fresh` asks for a re-read, right after one of our transactions.
+ */
+export async function fetchFeeCollectorStateFromApi(apiUrl: string, collector: string, fresh = false): Promise<FeeCollectorState | null> {
+  try {
+    const res = await fetch(`${apiUrl}/fee-collector/state${fresh ? "?fresh=1" : ""}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const body = (await res.json()) as FeeCollectorState & { collector?: string };
+    // An older backend has no `stake` / `compoundQuote` / `route` / `maxZapReserveBps` field.
+    return body.collector === collector
+      ? {
+          ...body,
+          tokens: body.tokens.map((tk) => ({ ...tk, route: tk.route ?? null })),
+          maxZapReserveBps: body.maxZapReserveBps ?? 0,
+          stake: body.stake ?? null,
+          compoundQuote: body.compoundQuote ?? null,
+        }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Everything the Dex Fees view shows: per-token previews, claimable proceeds, compound preview. */
 export async function fetchFeeCollectorState(
   networkApiAddress: string,
@@ -146,17 +253,25 @@ export async function fetchFeeCollectorState(
   const q = (fn: string, args: unknown[] = []) => c.query({ contract, function: fn, arguments: args });
 
   // Multi-value outputs (previewCompound, previewProcess) come back spread, one item per value.
-  const [[target], [orderConfig], [refConfig], [paused], [claimable], compoundParts, [lpConfig], [lastZapAt], { balances, meta }] = await Promise.all([
-    q("getTargetToken"),
-    q("getOrderConfig"),
-    q("getRefConfig"),
-    q("isPaused"),
-    q("getClaimableProceeds"),
-    q("previewCompound"),
-    q("getLpConfig"),
-    q("getLastZapAt"),
-    fetchCollectorBalances(networkApiAddress, collector),
-  ]);
+  const [[target], [orderConfig], [refConfig], [paused], claimable, compoundParts, [lpConfig], [lastZapAt], [staleConfig], stakeParts, quoteParts, [lpRoutes], { balances, meta }] =
+    await Promise.all([
+      q("getTargetToken"),
+      q("getOrderConfig"),
+      q("getRefConfig"),
+      q("isPaused"),
+      readClaimable(q),
+      q("previewCompound"),
+      q("getLpConfig"),
+      q("getLastZapAt"),
+      // Missing views on a collector not upgraded yet: treated as disabled.
+      q("getStaleOrderConfig").catch(() => [null]),
+      q("previewStake").catch(() => null),
+      q("previewCompoundQuote").catch(() => null),
+      q("getLpRoutes").catch(() => [[]]),
+      fetchCollectorBalances(networkApiAddress, collector),
+    ]);
+  // The registry (pairs with an active order or proceeds to claim), as listed by getClaimableProceeds.
+  const orderPairs = claimable.map(([pair]) => pair);
   const targetToken = String(target);
   const cfg = orderConfig as Record<string, unknown>;
   const minOrderInterval = num(cfg.min_order_interval);
@@ -166,6 +281,14 @@ export async function fetchFeeCollectorState(
   const maxDecaySeconds = num(refCfg.max_decay_seconds);
   const maxOrderReserveBps = num(cfg.max_order_reserve_bps);
   const lp = lpConfig as Record<string, unknown> | null | undefined;
+  const zapInterval = lp ? num(lp.min_zap_interval) : 0;
+  const maxZapReserveBps = lp ? num(lp.max_zap_reserve_bps) : 0;
+  // Tokens routed to liquidity (setLpRoute): token → deposit pair.
+  const routes = new Map<string, { pair: string; minAmount: string }>();
+  for (const [token, route] of (lpRoutes ?? []) as unknown[][]) {
+    const r = route as Record<string, unknown>;
+    routes.set(String(token), { pair: bech32(r.pair), minAmount: str(r.min_amount) });
+  }
 
   // The warm-up runs from a price's first observation (first_seen). Still
   // WarmingUp past its end means the observed pair changed: the next call
@@ -181,10 +304,7 @@ export async function fetchFeeCollectorState(
   };
   const warmupEndsAt = async (token: string) => warmupEndOf(await priceRef(token));
 
-  // Raw target per raw token → human "target per 1 token".
   const decimalsOf = (id: string) => meta[id]?.decimals ?? 18;
-  const toHuman = (rawRatio: BigNumber, token: string) =>
-    rawRatio.shiftedBy(decimalsOf(token) - decimalsOf(targetToken)).toFixed();
 
   // Same spot as the contract (lib.rs plan_order): reserve_target / reserve_token
   // of the pair it would sell on (getPairFor).
@@ -207,6 +327,37 @@ export async function fetchFeeCollectorState(
       return null;
     }
   };
+  // A routed token's pair (lib.rs plan_route): prices in its other token.
+  const routeReservesOf = async (token: string, pair: string): Promise<{ otherToken: string; reserveToken: BigNumber; reserveOther: BigNumber } | null> => {
+    try {
+      const contract = new Address(pair);
+      const [[tA, tB], [rA, rB]] = await Promise.all([
+        pairCtl.query({ contract, function: "getTokens", arguments: [] }),
+        pairCtl.query({ contract, function: "getReserves", arguments: [] }),
+      ]);
+      const [rToken, rOther, other] = String(tA) === token ? [rA, rB, String(tB)] : [rB, rA, String(tA)];
+      const reserveToken = new BigNumber(str(rToken));
+      return reserveToken.isZero() ? null : { otherToken: other, reserveToken, reserveOther: new BigNumber(str(rOther)) };
+    } catch {
+      return null;
+    }
+  };
+  const routeReserves = new Map(
+    await Promise.all([...routes].filter(([token]) => balances[token] != null).map(async ([token, r]) => [token, await routeReservesOf(token, r.pair)] as const)),
+  );
+  // The other token of a route may not be held: its decimals still price the token.
+  await Promise.all(
+    [...new Set([...routeReserves.values()].flatMap((r) => (r && !meta[r.otherToken] ? [r.otherToken] : [])))].map(async (id) => {
+      try {
+        const res = await fetch(`${networkApiAddress}/tokens/${id}?fields=identifier,ticker,decimals,assets`);
+        if (!res.ok) return;
+        const it = (await res.json()) as { ticker?: string; decimals?: number; assets?: { svgUrl?: string; pngUrl?: string } };
+        meta[id] = { ticker: it.ticker ?? id.split("-")[0], decimals: it.decimals ?? 18, logoUrl: it.assets?.svgUrl ?? it.assets?.pngUrl ?? null };
+      } catch {
+        // decimals default to 18
+      }
+    }),
+  );
   const now = Math.floor(Date.now() / 1000);
   // price_ref.rs next_price_ref, integer math included: the stored reference
   // loses at most decay_bps_per_day per day (elapsed capped at
@@ -225,19 +376,31 @@ export async function fetchFeeCollectorState(
     tokenIds.map(async (token): Promise<FeeTokenPreview> => {
       const [outcome, amount, minAmountOut] = await q("previewProcess", [token]);
       const o = outcomeOf(outcome);
+      // Routed token (lib.rs plan_route): prices in the other token of its
+      // route's pair, LP deposit cap and interval; otherwise the sale pair.
+      const routed = routes.get(token);
       let nextOrderAt: number | null = null;
       if (o === "TooSoon") {
-        const [last] = await q("getLastOrderAt", [token]);
-        nextOrderAt = num(last) + minOrderInterval;
+        const [last] = await q(routed ? "getLastRouteZapAt" : "getLastOrderAt", [token]);
+        nextOrderAt = num(last) + (routed ? zapInterval : minOrderInterval);
       }
-      const [storedRef, reserves] = await Promise.all([priceRef(token), reservesOf(token)]);
+      const routeRes = routed ? (routeReserves.get(token) ?? null) : null;
+      const [storedRef, orderRes] = await Promise.all([priceRef(token), routed ? Promise.resolve(null) : reservesOf(token)]);
+      const res =
+        routed && routeRes
+          ? { pair: routed.pair, quote: routeRes.otherToken, reserveToken: routeRes.reserveToken, reserveQuote: routeRes.reserveOther }
+          : orderRes
+            ? { pair: orderRes.pair, quote: targetToken, reserveToken: orderRes.reserveToken, reserveQuote: orderRes.reserveTarget }
+            : null;
       // A reference recorded on another pair is in another unit: the contract starts over.
-      const ref = storedRef != null && reserves != null && bech32(storedRef.pair) !== reserves.pair ? null : storedRef;
-      const spotRaw = reserves ? reserves.reserveTarget.times(PRICE_SCALE).idiv(reserves.reserveToken) : null;
-      const refPrice = ref != null ? toHuman(new BigNumber(str(ref.price)).div(PRICE_SCALE), token) : null;
+      const ref = storedRef != null && res != null && bech32(storedRef.pair) !== res.pair ? null : storedRef;
+      // Raw quote per raw token → human "quote per 1 token".
+      const human = (rawRatio: BigNumber) => rawRatio.shiftedBy(decimalsOf(token) - decimalsOf(res?.quote ?? targetToken)).toFixed();
+      const spotRaw = res ? res.reserveQuote.times(PRICE_SCALE).idiv(res.reserveToken) : null;
+      const refPrice = ref != null ? human(new BigNumber(str(ref.price)).div(PRICE_SCALE)) : null;
       const warmup = o === "WarmingUp" ? warmupEndOf(ref) : null;
       const balance = new BigNumber(balances[token]);
-      const cap = reserves ? reserves.reserveToken.times(maxOrderReserveBps).idiv(10_000) : null;
+      const cap = res ? res.reserveToken.times(routed ? maxZapReserveBps : maxOrderReserveBps).idiv(10_000) : null;
       return {
         token,
         balance: balances[token],
@@ -246,17 +409,33 @@ export async function fetchFeeCollectorState(
         minAmountOut: str(minAmountOut),
         nextOrderAt,
         warmupEndsAt: warmup,
-        spotPrice: spotRaw ? toHuman(spotRaw.div(PRICE_SCALE), token) : null,
+        spotPrice: spotRaw ? human(spotRaw.div(PRICE_SCALE)) : null,
         refPrice,
         refUpdatedAt: ref != null ? num(ref.updated_at) : null,
-        refNext: spotRaw ? toHuman(nextRefRaw(ref, spotRaw).div(PRICE_SCALE), token) : null,
+        refNext: spotRaw ? human(nextRefRaw(ref, spotRaw).div(PRICE_SCALE)) : null,
         orderCap: cap ? BigNumber.min(balance, cap).toFixed(0) : null,
+        route: routed ? { pair: routed.pair, otherToken: routeRes ? routeRes.otherToken : "", minAmount: routed.minAmount } : null,
       };
     }),
   );
 
+  // Orders anyone may cancel now, asked to the contract itself (getStaleOrders)
+  // rather than recomputed here: a boundary disagreement would cost a no-op tx.
+  // First page only (the collector's first 100 active orders of each pair):
+  // the backend, which knows how many there are, reads the following ones.
+  const staleCfg = staleConfig as Record<string, unknown> | null | undefined;
+  const staleOrderIds: Record<string, string[]> = {};
+  if (staleCfg) {
+    await Promise.all(
+      orderPairs.map(async (pair) => {
+        const [ids] = await q("getStaleOrders", [pair]);
+        const list = ((ids ?? []) as unknown[]).map(str);
+        if (list.length > 0) staleOrderIds[bech32(pair)] = list;
+      }),
+    );
+  }
+
   const compoundOutcome = outcomeOf(compoundParts[0]);
-  const zapInterval = lp ? num(lp.min_zap_interval) : 0;
   // compound observes the target's price on the target/quote pair, the other
   // way round (lib.rs plan_compound): reserve_quote / reserve_target.
   const quoteToken = lp ? String(lp.quote_token) : null;
@@ -273,6 +452,22 @@ export async function fetchFeeCollectorState(
       refNext: spotRaw ? toQuote(nextRefRaw(ref, spotRaw)) : null,
     };
   }
+  // previewCompoundQuote: (outcome, amount, price, rate), the last two raw × 10^18
+  // (0 = unread); the rate is EGLD (18 decimals) per target token.
+  let compoundQuote: CompoundQuotePreview | null = null;
+  if (quoteParts) {
+    const outcome = outcomeOf(quoteParts[0]);
+    const nextZapAt = outcome === "TooSoon" ? num((await q("getLastQuoteZapAt"))[0]) + zapInterval : null;
+    const spotRaw = new BigNumber(str(quoteParts[2]));
+    const rateRaw = new BigNumber(str(quoteParts[3]));
+    compoundQuote = {
+      outcome,
+      amount: str(quoteParts[1]),
+      nextZapAt,
+      spotPrice: !spotRaw.isZero() && quoteToken ? spotRaw.shiftedBy(decimalsOf(targetToken) - decimalsOf(quoteToken) - 18).toFixed() : null,
+      stakingRate: !rateRaw.isZero() ? rateRaw.shiftedBy(decimalsOf(targetToken) - 36).toFixed() : null,
+    };
+  }
   return {
     targetToken,
     premiumBps: num(cfg.premium_bps),
@@ -280,9 +475,10 @@ export async function fetchFeeCollectorState(
     decayBpsPerDay,
     maxDecaySeconds,
     maxOrderReserveBps,
+    maxZapReserveBps,
     paused: !!paused,
     tokens,
-    claimable: ((claimable ?? []) as unknown[][]).map(([pair, amount]) => ({ pair: bech32(pair), amount: str(amount) })),
+    claimable: claimable.map(([pair, amount]) => ({ pair: bech32(pair), amount: str(amount) })),
     targetBalance: balances[targetToken] ?? "0",
     compound: {
       outcome: compoundOutcome,
@@ -293,6 +489,10 @@ export async function fetchFeeCollectorState(
       ...compoundPrices,
       maxPriceDeviationBps: lp ? num(lp.max_price_deviation_bps) : 0,
     },
+    compoundQuote,
+    stake: stakeParts ? { outcome: outcomeOf(stakeParts[0]), egldBalance: str(stakeParts[1]) } : null,
+    staleOrders: staleCfg ? { minAgeSeconds: num(staleCfg.min_age_seconds), minSpotDeviationBps: num(staleCfg.min_spot_deviation_bps) } : null,
+    staleOrderIds,
     meta,
   };
 }

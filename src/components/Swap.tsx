@@ -492,6 +492,19 @@ export const Swap = () => {
     if (foundIn) setTokenIn(foundIn);
     if (foundOut) setTokenOut(foundOut);
 
+    // Prefilled amount, e.g. the review-and-sign link of the DEX MCP server
+    // (?from=EGLD&to=MEX-455c57&amountIn=1.5): human units, one side only.
+    const isAmount = (v: string | null): v is string => !!v && /^\d+(\.\d+)?$/.test(v);
+    const qAmountIn = isModal ? null : searchParams.get("amountIn");
+    const qAmountOut = isModal ? null : searchParams.get("amountOut");
+    if (foundOut && isAmount(qAmountOut)) {
+      setActiveField("out");
+      setAmountOut(qAmountOut);
+    } else if (foundIn && isAmount(qAmountIn)) {
+      setActiveField("in");
+      setAmountIn(qAmountIn);
+    }
+
     urlInitDoneRef.current = true;
   }, [tokens, tokensLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -505,6 +518,9 @@ export const Swap = () => {
         else next.delete("from");
         if (tokenOut) next.set("to", tokenOut.identifier);
         else next.delete("to");
+        // Read once at init: a copied URL must not carry a stale amount.
+        next.delete("amountIn");
+        next.delete("amountOut");
         return next;
       },
       { replace: true },

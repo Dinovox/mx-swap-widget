@@ -51,10 +51,11 @@ export function featureFlagsFor(chainId: string | undefined): FeatureFlags {
   const mainnet = (chainId ?? MAINNET_CHAIN_ID) === MAINNET_CHAIN_ID;
   return {
     orderBook: true,
+    dexFees: true,
     // Mainnet: localhost only, to test against the upgraded pairs before release.
     // orderBook: !mainnet || isLocalhost(),
     // TEMP: enable orderbook on mainnet for testing
-    dexFees: chainId === "D",
+    // dexFees: chainId === "D" || isLocalhost(),
   };
 }
 

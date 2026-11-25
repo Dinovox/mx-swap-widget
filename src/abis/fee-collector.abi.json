@@ -25,18 +25,41 @@
         "ne se remplit que si des acheteurs font monter le token jusqu'à ce prix :",
         "le collecteur accumule du VOXEGLD sans jamais vendre au marché. Sans",
         "paire, ou paire sans AMM : le token reste dans le collecteur, intact.",
+        "Exception choisie par l'owner (setLpRoute) : un token routé n'est pas mis",
+        "en vente, processFees le dépose en single-side sur une paire de la",
+        "factory qui le contient (ex. USDC/VOXEGLD), LP à l'adresse dédiée, avec",
+        "les garde-fous de compound.",
         "",
         "Le collecteur étant un contrat, la paire crédite ses produits de fill au",
         "lieu de les lui virer (pair::pay_maker) : claimProceeds les rapatrie.",
         "compound dépose ensuite le VOXEGLD en single-side sur la paire",
-        "VOXEGLD/WEGLD et transfère les LP à une adresse dédiée.",
+        "VOXEGLD/WEGLD et transfère les LP à une adresse dédiée. Le WEGLD reçu",
+        "(frais des paires WEGLD) n'est pas vendu : compoundQuote le dépose de",
+        "l'autre côté de cette même paire, ce qui achète du VOXEGLD tant qu'il y",
+        "cote sous le taux du liquid staking. L'EGLD reçu (contrat payable) n'a pas",
+        "de paire : stake le confie au contrat de liquid staking, qui verse du",
+        "VOXEGLD au taux du contrat, déposé lui aussi par compound.",
+        "",
+        "Pas d'endpoint de retrait, owner compris : les fonds ne quittent le",
+        "collecteur que vers le carnet de la paire VOXEGLD/token (createOrder ;",
+        "un ordre ne revient qu'ici, annulé ou payé en VOXEGLD), vers la",
+        "liquidité VOXEGLD/WEGLD (addLiquiditySingle de compound et compoundQuote,",
+        "LP à l'adresse dédiée) ou celle de la paire d'un token routé",
+        "(processFees, idem) et, pour l'EGLD, vers le liquid staking (stake,",
+        "payé en VOXEGLD). Un token sans paire VOXEGLD attend qu'elle soit créée",
+        "(factory::createPair est ouvert à tous).",
         "",
         "Déclenchement : processFees et compound sont ouverts à tous — leur",
         "protection contre le sandwich est la référence à cliquet (price_ref.rs),",
         "qui suppose qu'un observateur honnête (n'importe qui, sans privilège) les",
-        "appelle régulièrement. claimProceeds aussi (il ne fait que rapatrier ce",
-        "qui est dû). Un ordre posé n'est jamais repricé : il attend d'être rempli",
-        "— cancelOrders n'est qu'une sortie de secours, réservée à l'owner."
+        "appelle régulièrement. claimProceeds, stake et compoundQuote aussi : le",
+        "premier ne fait que rapatrier ce qui est dû, les deux autres s'appuient",
+        "sur le taux du liquid staking, qui ne se manipule pas. Un ordre posé",
+        "attend d'être rempli, sauf s'il reste trop longtemps trop loin au-dessus",
+        "du marché : cancelStaleOrders, ouvert à tous sous conditions",
+        "(StaleOrderConfig), le rend alors au collecteur, qui le reposera au prix",
+        "de la référence. cancelOrders reste la sortie de secours de l'owner, sans",
+        "condition."
     ],
     "name": "FeeCollector",
     "constructor": {
@@ -60,10 +83,11 @@
         {
             "docs": [
                 "Ouvert à tous (cf. price_ref.rs). Traite chaque token de la liste (cf.",
-                "Outcome). Ne revert jamais à cause d'un token : toutes les conditions",
-                "de createOrder sont vérifiées avant l'appel. Observe aussi le prix",
-                "(référence) à chaque passage — à appeler souvent, l'intervalle entre",
-                "ordres est appliqué ici."
+                "Outcome) : ordre de vente, ou dépôt LP pour un token routé",
+                "(setLpRoute). Ne revert jamais à cause d'un token : toutes les",
+                "conditions de createOrder et d'addLiquiditySingle sont vérifiées avant",
+                "l'appel. Observe aussi le prix (référence) à chaque passage — à appeler",
+                "souvent, l'intervalle entre ordres (ou dépôts) est appliqué ici."
             ],
             "name": "processFees",
             "mutability": "mutable",
@@ -84,9 +108,11 @@
         {
             "docs": [
                 "Rapatrie le VOXEGLD des ordres remplis (crédité par la paire, cf.",
-                "pair::pay_maker). Liste vide = toutes les paires où le collecteur a",
-                "posé un ordre. Ouvert à tous. Retire du registre une paire sans ordre",
-                "actif ni produit en attente. Retourne le VOXEGLD total réclamé."
+                "pair::pay_maker), MAX_PAIR_CALLS paires réclamées au plus par appel.",
+                "Liste vide = les MAX_SCAN premières paires du registre ; au-delà,",
+                "passer la liste (getClaimableProceeds donne les montants dus par",
+                "paire). Ouvert à tous. Retire du registre une paire sans ordre actif",
+                "ni produit en attente. Retourne le VOXEGLD total réclamé."
             ],
             "name": "claimProceeds",
             "mutability": "mutable",
@@ -105,18 +131,62 @@
         },
         {
             "docs": [
-                "Sortie de secours de l'owner (paire abandonnée, bug du carnet), pas un",
-                "outil de repricing : un ordre posé attend d'être rempli. Annule des",
-                "ordres du collecteur sur une paire (liste vide = tous ses ordres actifs",
-                "de cette paire) — les tokens reviennent ici et l'intervalle du token",
-                "est remis à zéro. processFees étant ouvert à tous, n'importe qui les",
-                "remettrait aussitôt en vente sur la même paire : désactiver le token",
-                "(setTokenDisabled) ou mettre le collecteur en pause AVANT d'annuler.",
-                "Pas soumis à la pause, comme pair::cancelOrder. Retourne le nombre",
-                "annulé."
+                "Sortie de secours de l'owner (paire abandonnée, bug du carnet), sans",
+                "condition — le repricing des ordres périmés passe, lui, par",
+                "cancelStaleOrders. Annule des ordres du collecteur sur une paire",
+                "(liste vide = ses ordres actifs de cette paire), MAX_PAIR_CALLS au",
+                "plus par appel, l'appel suivant prend la suite — les tokens reviennent",
+                "ici et l'intervalle du token est remis à zéro. processFees étant",
+                "ouvert à tous, n'importe qui les remettrait aussitôt en vente sur la",
+                "même paire : désactiver le token (setTokenDisabled) ou mettre le",
+                "collecteur en pause AVANT d'annuler. Pas soumis à la pause, comme",
+                "pair::cancelOrder. Retourne le nombre annulé."
             ],
             "name": "cancelOrders",
             "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "pair",
+                    "type": "Address"
+                },
+                {
+                    "name": "order_ids",
+                    "type": "variadic<u64>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "u32"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Ouvert à tous, une fois activé par l'owner (setStaleOrderConfig) :",
+                "annule les ordres du collecteur sur `pair` à la fois assez vieux",
+                "(min_age_seconds depuis leur création) et assez loin au-dessus du",
+                "cours AMM courant (min_spot_deviation_bps) pour que leur exécution",
+                "soit improbable. Liste vide = les ordres éligibles parmi les MAX_SCAN",
+                "premiers ordres actifs de la paire (au-delà, passer les ids, cf.",
+                "getStaleOrders) ; un id non éligible est ignoré ; MAX_PAIR_CALLS",
+                "annulations au plus par appel, l'appel suivant prend la suite. Les",
+                "tokens reviennent ici et repartent en vente au prochain processFees,",
+                "au prix de la référence à cliquet : c'est elle qui borne la baisse du",
+                "prix demandé, pas cette annulation (un ancien ordre de WEGLD, lui,",
+                "revient au dépôt LP de compoundQuote).",
+                "",
+                "Contrairement à cancelOrders, l'intervalle entre ordres n'est PAS",
+                "remis à zéro : sinon annuler N ordres permettrait d'en reposer N",
+                "d'affilée, et le plafond d'un ordre par token et par intervalle ne",
+                "voudrait plus rien dire. Le cours AMM lu ici se manipule dans la",
+                "transaction (dump éclair) : au pire, un vieil ordre proche du marché",
+                "est annulé puis reposé au prix de la référence — il perd sa place",
+                "dans la file, sans jamais se vendre sous la référence. Retourne le",
+                "nombre d'ordres annulés."
+            ],
+            "name": "cancelStaleOrders",
             "mutability": "mutable",
             "inputs": [
                 {
@@ -150,6 +220,50 @@
                 "chaque appel, même sans dépôt : à appeler souvent."
             ],
             "name": "compound",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "Outcome"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Ouvert à tous. Dépose le token de cotation du collecteur (WEGLD : frais",
+                "des paires WEGLD, dust des dépôts) en single-side sur la paire",
+                "VOXEGLD/quote de compound, LP à `receiver` : l'autre côté de la",
+                "liquidité, au lieu d'une vente sur le carnet. Le dépôt achète environ",
+                "la moitié en VOXEGLD, donc seulement si le VOXEGLD y cote sous le taux",
+                "du liquid staking (sa valeur de remboursement, un quote valant un EGLD),",
+                "et au plus jusqu'à ramener le cours à ce taux : le collecteur ne paie",
+                "jamais le VOXEGLD au-dessus de sa valeur (frais de swap à part). Ce taux",
+                "ne se manipule pas dans la transaction, d'où l'absence de référence à",
+                "cliquet : un VOXEGLD gonflé juste avant réduit ou reporte le dépôt (au",
+                "pire, achat au taux), un VOXEGLD écrasé le fait acheter moins cher.",
+                "Intervalle propre (last_quote_zap_at) : n'attend pas compound et ne le",
+                "bloque pas."
+            ],
+            "name": "compoundQuote",
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "Outcome"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Ouvert à tous. Stake tout l'EGLD du collecteur sur le contrat de liquid",
+                "staking (setStakingContract), qui verse le token cible au taux du",
+                "contrat — compound le déposera ensuite en liquidité. Ni référence de",
+                "prix ni plafond : ce taux n'est pas un cours AMM, il ne se manipule pas",
+                "dans la transaction (un don d'EGLD au contrat enrichirait tous les",
+                "détenteurs, collecteur compris). Revert si aucun token cible ne",
+                "revient (contrat mal configuré) : l'EGLD ne part pas."
+            ],
+            "name": "stake",
             "mutability": "mutable",
             "inputs": [],
             "outputs": [
@@ -262,6 +376,64 @@
         },
         {
             "docs": [
+                "Active (ou règle) l'annulation publique des ordres périmés. Les deux",
+                "conditions sont obligatoires : sans âge minimum, un ordre tout juste",
+                "posé serait annulable sur un simple creux de marché ; sans écart",
+                "minimum, n'importe quel vieil ordre le serait."
+            ],
+            "name": "setStaleOrderConfig",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "min_age_seconds",
+                    "type": "u64"
+                },
+                {
+                    "name": "min_spot_deviation_bps",
+                    "type": "u64"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Désactive l'annulation publique : seul cancelOrders (owner) reste."
+            ],
+            "name": "clearStaleOrderConfig",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Contrat de liquid staking qui convertit l'EGLD en token cible (stake).",
+                "Même shard : stake l'appelle en synchrone."
+            ],
+            "name": "setStakingContract",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "address",
+                    "type": "Address"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Désactive stake : l'EGLD reste dans le collecteur."
+            ],
+            "name": "clearStakingContract",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [],
+            "outputs": []
+        },
+        {
+            "docs": [
                 "Veto de l'owner sur un token (paire VOXEGLD/token douteuse, token",
                 "qu'on préfère garder...). Le token reste dans le collecteur."
             ],
@@ -282,11 +454,40 @@
         },
         {
             "docs": [
-                "Efface la référence d'un token — elle repart du spot au prochain",
-                "passage, avec un nouveau warm-up (ex. référence gonflée par un pic",
-                "artificiel, qu'on ne veut pas attendre de voir décroître)."
+                "Réoriente les frais de `token` vers la liquidité : processFees le",
+                "dépose en single-side sur `pair` (LP à lp_config.receiver) au lieu de",
+                "le mettre en vente sur le carnet — cf. plan_route pour les garde-fous.",
+                "`pair` : paire de la factory qui contient `token`, l'autre token est",
+                "libre. `min_amount` : plancher d'un dépôt, en unités brutes du token",
+                "(0 = aucun). Remplace la route existante du token. Le token cible et",
+                "le token de cotation ont déjà leur dépôt (compound, compoundQuote)."
             ],
-            "name": "resetPriceRef",
+            "name": "setLpRoute",
+            "onlyOwner": true,
+            "mutability": "mutable",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                },
+                {
+                    "name": "pair",
+                    "type": "Address"
+                },
+                {
+                    "name": "min_amount",
+                    "type": "BigUint"
+                }
+            ],
+            "outputs": []
+        },
+        {
+            "docs": [
+                "Retour au carnet : processFees remet le token en vente. Si la route",
+                "n'était pas sa paire VOXEGLD/token, la référence repart de zéro,",
+                "warm-up compris (autre paire observée, cf. price_ref.rs)."
+            ],
+            "name": "removeLpRoute",
             "onlyOwner": true,
             "mutability": "mutable",
             "inputs": [
@@ -299,25 +500,17 @@
         },
         {
             "docs": [
-                "Sortie manuelle (migration, token sans paire VOXEGLD qu'on veut",
-                "traiter à la main...). Ne touche pas aux ordres en cours (tokens",
-                "escrowés dans les paires) : cancelOrders d'abord."
+                "Efface la référence d'un token — elle repart du spot au prochain",
+                "passage, avec un nouveau warm-up (ex. référence gonflée par un pic",
+                "artificiel, qu'on ne veut pas attendre de voir décroître)."
             ],
-            "name": "withdraw",
+            "name": "resetPriceRef",
             "onlyOwner": true,
             "mutability": "mutable",
             "inputs": [
                 {
                     "name": "token",
-                    "type": "EgldOrEsdtTokenIdentifier"
-                },
-                {
-                    "name": "amount",
-                    "type": "BigUint"
-                },
-                {
-                    "name": "to",
-                    "type": "Address"
+                    "type": "TokenIdentifier"
                 }
             ],
             "outputs": []
@@ -372,6 +565,47 @@
         },
         {
             "docs": [
+                "Ce que ferait compoundQuote maintenant : (outcome, quote déposé, cours",
+                "du VOXEGLD en quote, taux du liquid staking) — ces deux derniers à",
+                "l'échelle de getEgldRatio (10^18), 0 s'ils n'ont pas pu être lus."
+            ],
+            "name": "previewCompoundQuote",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "Outcome"
+                },
+                {
+                    "type": "BigUint"
+                },
+                {
+                    "type": "BigUint"
+                },
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Ce que ferait stake maintenant : (outcome, solde EGLD du collecteur,",
+                "staké en entier si outcome = Done)."
+            ],
+            "name": "previewStake",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "Outcome"
+                },
+                {
+                    "type": "BigUint"
+                }
+            ]
+        },
+        {
+            "docs": [
                 "Paire officielle VOXEGLD/token selon la factory."
             ],
             "name": "getPairFor",
@@ -391,14 +625,69 @@
         },
         {
             "docs": [
-                "VOXEGLD en attente de claimProceeds, par paire."
+                "VOXEGLD en attente de claimProceeds, par paire du registre — page",
+                "[offset, offset + limit), limit ≤ MAX_PAGE_SIZE (défaut) ; une page",
+                "incomplète est la dernière."
             ],
             "name": "getClaimableProceeds",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "offset",
+                    "type": "optional<u32>",
+                    "multi_arg": true
+                },
+                {
+                    "name": "limit",
+                    "type": "optional<u32>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "variadic<multi<Address,BigUint>>",
+                    "multi_result": true
+                }
+            ],
+            "allow_multiple_var_args": true
+        },
+        {
+            "docs": [
+                "Paires du registre (ordre actif ou produits à réclamer), même",
+                "pagination que getClaimableProceeds."
+            ],
+            "name": "getOrderPairs",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "offset",
+                    "type": "optional<u32>",
+                    "multi_arg": true
+                },
+                {
+                    "name": "limit",
+                    "type": "optional<u32>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "variadic<Address>",
+                    "multi_result": true
+                }
+            ],
+            "allow_multiple_var_args": true
+        },
+        {
+            "docs": [
+                "Tokens dont les frais vont en liquidité (setLpRoute) : (token, route)."
+            ],
+            "name": "getLpRoutes",
             "mutability": "readonly",
             "inputs": [],
             "outputs": [
                 {
-                    "type": "variadic<multi<Address,BigUint>>",
+                    "type": "variadic<multi<TokenIdentifier,LpRoute>>",
                     "multi_result": true
                 }
             ]
@@ -413,6 +702,68 @@
                     "multi_result": true
                 }
             ]
+        },
+        {
+            "docs": [
+                "Absent = annulation publique désactivée."
+            ],
+            "name": "getStaleOrderConfig",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "optional<StaleOrderConfig>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Absent = stake désactivé."
+            ],
+            "name": "getStakingContract",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "optional<Address>",
+                    "multi_result": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Ordres du collecteur sur `pair` que cancelStaleOrders annulerait",
+                "maintenant (même calcul), parmi ses ordres actifs de la paire",
+                "[offset, offset + limit) — limit ≤ MAX_PAGE_SIZE (défaut), même",
+                "indexation que pair::getOrdersByOwner(collecteur, offset, limit). Vide",
+                "si l'annulation publique est désactivée."
+            ],
+            "name": "getStaleOrders",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "pair",
+                    "type": "Address"
+                },
+                {
+                    "name": "offset",
+                    "type": "optional<u32>",
+                    "multi_arg": true
+                },
+                {
+                    "name": "limit",
+                    "type": "optional<u32>",
+                    "multi_arg": true
+                }
+            ],
+            "outputs": [
+                {
+                    "type": "variadic<u64>",
+                    "multi_result": true
+                }
+            ],
+            "allow_multiple_var_args": true
         },
         {
             "name": "getFactoryAddress",
@@ -459,21 +810,6 @@
             ]
         },
         {
-            "docs": [
-                "Paires où le collecteur a posé au moins un ordre pas encore soldé",
-                "(actif ou produits à réclamer) — parcourues par claimProceeds."
-            ],
-            "name": "getOrderPairs",
-            "mutability": "readonly",
-            "inputs": [],
-            "outputs": [
-                {
-                    "type": "variadic<Address>",
-                    "multi_result": true
-                }
-            ]
-        },
-        {
             "name": "getLastOrderAt",
             "mutability": "readonly",
             "inputs": [
@@ -492,6 +828,38 @@
             "name": "getLastZapAt",
             "mutability": "readonly",
             "inputs": [],
+            "outputs": [
+                {
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Dernier dépôt de compoundQuote — distinct de lastZapAt : les deux",
+                "côtés de la paire ne s'attendent pas."
+            ],
+            "name": "getLastQuoteZapAt",
+            "mutability": "readonly",
+            "inputs": [],
+            "outputs": [
+                {
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Dernier dépôt d'un token routé — son pendant de lastOrderAt."
+            ],
+            "name": "getLastRouteZapAt",
+            "mutability": "readonly",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier"
+                }
+            ],
             "outputs": [
                 {
                     "type": "u64"
@@ -681,21 +1049,99 @@
             ]
         },
         {
-            "identifier": "withdrawn",
+            "docs": [
+                "Dépôt du token de cotation (compoundQuote), mêmes champs que",
+                "lpCompounded."
+            ],
+            "identifier": "quoteCompounded",
             "inputs": [
                 {
-                    "name": "token",
-                    "type": "EgldOrEsdtTokenIdentifier",
+                    "name": "pair",
+                    "type": "Address",
                     "indexed": true
                 },
                 {
-                    "name": "amount",
+                    "name": "amount_in",
                     "type": "BigUint",
                     "indexed": true
                 },
                 {
-                    "name": "to",
+                    "name": "lp_amount",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "receiver",
                     "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "docs": [
+                "Dépôt des frais d'un token routé (setLpRoute) par processFees, mêmes",
+                "champs que lpCompounded plus le token."
+            ],
+            "identifier": "routeCompounded",
+            "inputs": [
+                {
+                    "name": "token",
+                    "type": "TokenIdentifier",
+                    "indexed": true
+                },
+                {
+                    "name": "pair",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "amount_in",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "lp_amount",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "receiver",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp",
+                    "type": "u64",
+                    "indexed": true
+                }
+            ]
+        },
+        {
+            "identifier": "egldStaked",
+            "inputs": [
+                {
+                    "name": "staking",
+                    "type": "Address",
+                    "indexed": true
+                },
+                {
+                    "name": "egld_amount",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "target_amount",
+                    "type": "BigUint",
+                    "indexed": true
+                },
+                {
+                    "name": "timestamp",
+                    "type": "u64",
                     "indexed": true
                 }
             ]
@@ -718,7 +1164,9 @@
                 {
                     "docs": [
                         "Token de cotation de la paire de dépôt (WEGLD) — la paire",
-                        "VOXEGLD/quote est résolue via la factory à chaque appel."
+                        "VOXEGLD/quote est résolue via la factory à chaque appel. compoundQuote",
+                        "le compare au taux du liquid staking, exprimé en EGLD : il doit valoir",
+                        "un EGLD (WEGLD et rien d'autre)."
                     ],
                     "name": "quote_token",
                     "type": "TokenIdentifier"
@@ -763,6 +1211,33 @@
                 }
             ]
         },
+        "LpRoute": {
+            "type": "struct",
+            "docs": [
+                "Réorientation des frais d'un token vers la liquidité (setLpRoute) : au",
+                "lieu d'un ordre de vente sur le carnet, processFees dépose le token en",
+                "single-side sur `pair`, LP à lp_config.receiver — plafond, écart toléré",
+                "et intervalle de LpConfig."
+            ],
+            "fields": [
+                {
+                    "docs": [
+                        "Paire de la factory qui contient le token, l'autre token est libre",
+                        "(ex. USDC/VOXEGLD pour l'USDC)."
+                    ],
+                    "name": "pair",
+                    "type": "Address"
+                },
+                {
+                    "docs": [
+                        "Plancher d'un dépôt, en unités brutes du token (min_zap_amount est en",
+                        "token cible, sans rapport avec les décimales des autres tokens)."
+                    ],
+                    "name": "min_amount",
+                    "type": "BigUint"
+                }
+            ]
+        },
         "OrderConfig": {
             "type": "struct",
             "fields": [
@@ -802,13 +1277,15 @@
             "type": "enum",
             "docs": [
                 "Résultat d'un traitement — un par token pour processFees, un seul pour",
-                "compound. Aucun de ces cas ne revert : un token non traitable reste tel",
-                "quel dans le collecteur, les autres tokens du même appel continuent."
+                "compound, compoundQuote et stake. Aucun de ces cas ne revert : un token",
+                "non traitable reste tel quel dans le collecteur, les autres tokens du même",
+                "appel continuent."
             ],
             "variants": [
                 {
                     "docs": [
-                        "Ordre posé (processFees) / dépôt LP effectué (compound)."
+                        "Ordre posé (processFees ; token routé : dépôt LP effectué) / dépôt LP",
+                        "effectué (compound, compoundQuote) / EGLD staké (stake)."
                     ],
                     "name": "Done",
                     "discriminant": 0
@@ -822,21 +1299,26 @@
                 },
                 {
                     "docs": [
-                        "Token écarté par l'owner (setTokenDisabled) ; compound : config LP absente."
+                        "Token écarté par l'owner (setTokenDisabled) ; token routé et",
+                        "compound : config LP absente ; compoundQuote : config LP ou contrat de",
+                        "liquid staking absent ; stake : contrat de liquid staking non",
+                        "configuré."
                     ],
                     "name": "Disabled",
                     "discriminant": 2
                 },
                 {
                     "docs": [
-                        "Aucune paire VOXEGLD/token dans la factory."
+                        "Aucune paire VOXEGLD/token dans la factory (token routé : la paire de",
+                        "sa route ne le contient pas)."
                     ],
                     "name": "NoPair",
                     "discriminant": 3
                 },
                 {
                     "docs": [
-                        "Paire sans réserves AMM (ou sans LP pour compound)."
+                        "Paire sans réserves AMM (ou sans LP pour un dépôt : token routé,",
+                        "compound, compoundQuote)."
                     ],
                     "name": "NoAmm",
                     "discriminant": 4
@@ -857,7 +1339,9 @@
                 },
                 {
                     "docs": [
-                        "Paire en pause / inactive / createOrder en pause / carnet désactivé."
+                        "Paire en pause / inactive / createOrder en pause / carnet désactivé ;",
+                        "stake : contrat de liquid staking en pause ; compoundQuote : liquid",
+                        "staking en pause ou sans supply (pas de taux)."
                     ],
                     "name": "PairUnavailable",
                     "discriminant": 7
@@ -865,26 +1349,38 @@
                 {
                     "docs": [
                         "min_order_interval pas encore écoulé depuis le dernier ordre du token",
-                        "(compound : min_zap_interval depuis le dernier dépôt)."
+                        "(token routé, compound, compoundQuote : min_zap_interval depuis leur",
+                        "dernier dépôt, chacun le sien)."
                     ],
                     "name": "TooSoon",
                     "discriminant": 8
                 },
                 {
                     "docs": [
-                        "Montant disponible sous le minimum (paire ou configuration) ; solde",
-                        "nul : pas d'observation du prix."
+                        "Montant disponible sous le minimum (paire, configuration, plancher de",
+                        "la route ou MIN_STAKE_AMOUNT pour stake), ou dépôt que la paire",
+                        "refuserait (token routé) ; solde nul : pas d'observation du prix."
                     ],
                     "name": "BelowMinimum",
                     "discriminant": 9
                 },
                 {
                     "docs": [
-                        "processFees : prix hors du garde-fou ×factor de la paire ;",
-                        "compound : spot trop sous la référence (VOXEGLD sous pression)."
+                        "processFees : prix hors du garde-fou ×factor de la paire (token",
+                        "routé : spot trop sous la référence) ; compound : spot trop sous la",
+                        "référence (VOXEGLD sous pression) ; compoundQuote : VOXEGLD déjà à son",
+                        "taux de liquid staking ou au-dessus."
                     ],
                     "name": "PriceOutOfBounds",
                     "discriminant": 10
+                },
+                {
+                    "docs": [
+                        "processFees : le token de cotation de la paire de dépôt (WEGLD) — il",
+                        "part au dépôt LP (compoundQuote), jamais en vente."
+                    ],
+                    "name": "QuoteToken",
+                    "discriminant": 11
                 }
             ]
         },
@@ -929,7 +1425,8 @@
                 "du token reçu par unité brute du token vendu, × PRICE_SCALE (10^36).",
                 "",
                 "`pair` : paire observée. Si elle change (setFactoryAddress, autre token",
-                "de cotation via setLpConfig), l'ancienne référence est dans une autre",
+                "de cotation via setLpConfig, route LP posée ou retirée sur une autre paire",
+                "que la paire VOXEGLD/token), l'ancienne référence est dans une autre",
                 "unité : elle repart de zéro, warm-up compris."
             ],
             "fields": [
@@ -976,6 +1473,31 @@
                         "baisse plus forte exige des observations répétées dans le temps."
                     ],
                     "name": "max_decay_seconds",
+                    "type": "u64"
+                }
+            ]
+        },
+        "StaleOrderConfig": {
+            "type": "struct",
+            "docs": [
+                "Conditions de l'annulation PUBLIQUE d'un ordre du collecteur",
+                "(cancelStaleOrders) : resté trop longtemps trop loin au-dessus du marché,",
+                "il a peu de chances d'être rempli."
+            ],
+            "fields": [
+                {
+                    "docs": [
+                        "Âge minimum de l'ordre, depuis sa création dans la paire."
+                    ],
+                    "name": "min_age_seconds",
+                    "type": "u64"
+                },
+                {
+                    "docs": [
+                        "Écart minimum du prix de l'ordre au-dessus du cours AMM courant, en",
+                        "bps (5 000 = ordre à +50 % ou plus du marché)."
+                    ],
+                    "name": "min_spot_deviation_bps",
                     "type": "u64"
                 }
             ]

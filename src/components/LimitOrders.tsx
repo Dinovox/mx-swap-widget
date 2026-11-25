@@ -384,6 +384,14 @@ export const LimitOrders = () => {
     }
     if (foundIn) setTokenIn(foundIn);
     if (foundOut) setTokenOut(foundOut);
+    // Prefilled order, e.g. the review-and-sign link of the DEX MCP server
+    // (?from=MEX-455c57&to=WEGLD-bd4d79&amount=1000&price=0.0005#limit):
+    // amount of `from`, price in `to` per 1 `from`, human units.
+    const isAmount = (v: string | null): v is string => !!v && /^\d+(\.\d+)?$/.test(v);
+    const qAmount = searchParams.get("amount");
+    const qPrice = searchParams.get("price");
+    if (foundIn && isAmount(qAmount)) setAmount(qAmount);
+    if (foundIn && foundOut && isAmount(qPrice)) setPrice(qPrice);
     urlInitDone.current = true;
   }, [tokensLoading, tokensOut, walletRaw, address]); // eslint-disable-line react-hooks/exhaustive-deps
   React.useEffect(() => {
@@ -399,6 +407,9 @@ export const LimitOrders = () => {
         else next.delete("from");
         if (tokenOut) next.set("to", tokenOut.identifier);
         else next.delete("to");
+        // Read once at init: a copied URL must not carry a stale order.
+        next.delete("amount");
+        next.delete("price");
         return next;
       },
       { replace: true },

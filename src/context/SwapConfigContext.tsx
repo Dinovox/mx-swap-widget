@@ -151,7 +151,8 @@ const DEFAULT_CONFIG: ResolvedSwapConfig = {
     "erd1qqqqqqqqqqqqqpgqy4k64jchmpxrh74xxgds9wtzkz2d5r4ufm8smqsnjw",
   farmsAddress:
     "erd1qqqqqqqqqqqqqpgqqh0mhf3szafyu0j9h4gn0fc5nfa03es5fm8s9fp70y",
-  feeCollectorAddress: "",
+  feeCollectorAddress:
+    "erd1qqqqqqqqqqqqqpgqzfrhvcats3qxvw8d3vxa7cvjrqvdhy79fm8s0vuwcw",
   wegldIdentifier: "WEGLD-bd4d79",
   networkApiAddress: "https://api.multiversx.com",
   chainId: "1",
