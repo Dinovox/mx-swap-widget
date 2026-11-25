@@ -42,9 +42,9 @@ import "@dinovox/mx-swap-widget/styles.css";
 export const SwapPage = () => <SwapWidget />;
 ```
 
-No configuration required on mainnet: every contract address and the DinoVox DEX API default to mainnet, and the widget handles all its views (Swap, DCA, Liquidity, Farms…) internally.
+No configuration required on mainnet: every contract address and the DinoVox DEX API default to mainnet, and the widget handles all its views (Swap, Limit, DCA, Liquidity, Farms, Dex Fees…) internally.
 
-> **Devnet / testnet**: the defaults are mainnet-only. Pass `apiUrl`, every contract address, `wegldIdentifier`, `networkApiAddress`, `chainId` and `explorerAddress` for the target network, and `""` for `dcaEscrowAddress` / `farmsAddress` if those contracts aren't deployed there.
+> **Devnet / testnet**: the defaults are mainnet-only. Pass `apiUrl`, every contract address, `wegldIdentifier`, `networkApiAddress`, `chainId` and `explorerAddress` for the target network, and `""` for `dcaEscrowAddress` / `farmsAddress` / `feeCollectorAddress` if those contracts aren't deployed there.
 
 ---
 
@@ -79,7 +79,7 @@ export const SwapPage = () => (
 | `wrapContract`       | `string`                          | DinoVox wrap contract             | EGLD ↔ WEGLD wrap contract address                                                                                                                                                                                                                                                                              |
 | `dcaEscrowAddress`   | `string`                          | DinoVox DCA escrow (mainnet)      | `dca-escrow` contract — entry point of DCA orders. Pass `""` to disable the DCA tab (shows a "not available" state).                                                                                                                                                                                            |
 | `farmsAddress`       | `string`                          | DinoVox farms (mainnet)           | Farms contract (multi-reward LP staking). Pass `""` to disable the Farms tab (shows a "not available" state).                                                                                                                                                                                                   |
-| `feeCollectorAddress` | `string`                       | `""`                              | Fee collector contract (swapv2/fee-collector) driven by the "Dex Fees" tab (devnet only for now). Empty shows a "not available" state. |
+| `feeCollectorAddress` | `string`                       | DinoVox fee collector (mainnet)   | Fee collector contract driven by the "Dex Fees" tab (anyone can trigger the fee recycling). Pass `""` to disable the tab (shows a "not available" state). |
 | `wegldIdentifier`    | `string`                          | `WEGLD-bd4d79`                    | WEGLD token identifier                                                                                                                                                                                                                                                                                          |
 | `onConnect`          | `() => void`                      | —                                 | Called when the user clicks "Connect wallet" while unauthenticated. Pass your app's unlock handler. When omitted the button is disabled.                                                                                                                                                                        |
 | `onSignTransactions` | `(txs, info) => Promise<unknown>` | _(internal signing)_              | Called when the widget needs to sign & broadcast a transaction. Pass your app's own `signAndSendTransactions` (from sdk-dapp) so the widget never touches the signing provider directly — avoids module-scope issues in production Vite bundles. Falls back to the widget's internal signing flow when omitted. |
