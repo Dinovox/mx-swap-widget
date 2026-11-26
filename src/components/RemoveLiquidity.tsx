@@ -13,7 +13,8 @@ import strToHex from "../helpers/strToHex";
 import { useSwapConfig } from "../context/SwapConfigContext";
 import BigNumber from "bignumber.js";
 import type { DexToken, LiquidityPool } from "../types";
-import { GAS_PRICE } from "../helpers/estimateGas";
+import { estimateGasLimit, GAS_PRICE } from "../helpers/estimateGas";
+import { liquidityReceiver, useContractTokenOrder } from "../helpers/externalLiquidity";
 
 function formatUsd(priceUsd: string, amount: string): string | null {
   const value = parseFloat(priceUsd) * parseFloat(amount);
@@ -24,6 +25,15 @@ function formatUsd(priceUsd: string, amount: string): string | null {
 }
 
 const PRESETS = [25, 50, 75, 100];
+// Min amounts sent with removeLiquidity: the expected share minus 1%, never 0
+// (xExchange pairs reject a zero minimum).
+const SLIPPAGE_BPS = 100n;
+const minOut = (raw: string) => {
+  const m = (BigInt(raw) * (10_000n - SLIPPAGE_BPS)) / 10_000n;
+  return m > 0n ? m : 1n;
+};
+// Fallback only, each tx is simulated first: ~5M on JEXchange, more on xExchange.
+const REMOVE_GAS_FALLBACK = 20_000_000;
 
 export const RemoveLiquidity = () => {
   const {
@@ -101,6 +111,8 @@ export const RemoveLiquidity = () => {
   }, [apiUrl]); // eslint-disable-line
 
   const selectedPool = pools.find((p) => p.address === selectedPoolAddress);
+  // Min amounts go in the contract's token order (read on-chain for OneDex / AshSwap).
+  const contractOrder = useContractTokenOrder(networkApiAddress, selectedPool);
 
   useEffect(() => {
     if (!apiUrl || !selectedPool?.address) {
@@ -206,7 +218,7 @@ export const RemoveLiquidity = () => {
     priceB && new BigNumber(outB).gt(0) ? formatUsd(priceB, outBDisplay) : null;
 
   const handleTx = async () => {
-    if (!selectedPool || !address || percentage <= 0) return;
+    if (!selectedPool || !address || percentage <= 0 || !contractOrder) return;
     try {
       const lpAmt = BigInt(lpAmountRaw);
       const txDataParts = [
@@ -214,15 +226,25 @@ export const RemoveLiquidity = () => {
         strToHex(selectedPool.lpToken),
         bigToHex(lpAmt),
         strToHex("removeLiquidity"),
-        bigToHex(0n),
-        bigToHex(0n),
+        // Without a known LP supply the expected share is unknown: minimal floor.
+        ...(contractOrder[0] === selectedPool.tokenA ? [outA, outB] : [outB, outA]).map((out) =>
+          bigToHex(new BigNumber(trueMinted).gt(0) ? minOut(out) : 1n),
+        ),
+        // OneDex: unwrap_egld flag, required (false, empty: WEGLD stays WEGLD).
+        ...(liquidityReceiver(selectedPool) !== selectedPool.address ? [""] : []),
       ];
+      const data = txDataParts.join("@");
+      const gasLimit = await estimateGasLimit(
+        networkApiAddress,
+        { sender: address, receiver: liquidityReceiver(selectedPool), data, chainId: chainId! },
+        REMOVE_GAS_FALLBACK,
+      );
       const transaction = new Transaction({
         value: 0n,
-        data: new TextEncoder().encode(txDataParts.join("@")),
-        receiver: new Address(selectedPool.address),
+        data: new TextEncoder().encode(data),
+        receiver: new Address(liquidityReceiver(selectedPool)),
         sender: new Address(address),
-        gasLimit: 12_000_000n,
+        gasLimit: BigInt(gasLimit),
         gasPrice: BigInt(GAS_PRICE),
         chainID: chainId!,
         version: 1,
@@ -243,7 +265,7 @@ export const RemoveLiquidity = () => {
   };
 
   const canSubmit =
-    !!selectedPool && percentage > 0 && new BigNumber(lpBalanceRaw).gt(0);
+    !!selectedPool && !!contractOrder && percentage > 0 && new BigNumber(lpBalanceRaw).gt(0);
 
   return (
     <div className="dvx:flex dvx:flex-col dvx:w-full dvx:gap-6">

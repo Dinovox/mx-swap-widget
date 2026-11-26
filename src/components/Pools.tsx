@@ -17,9 +17,10 @@ import {
 import { fetchFarmPositionsApi } from "../helpers/farmsApi";
 import { RecentSwaps } from "../ui/RecentSwaps";
 // ExternalLpWithdraw (JEXchange withdraw block) is hidden for now — only the
-// tab badge is shown; render <ExternalLpWithdraw {...jexLp} /> to bring it back.
-import { useJexLpPositions } from "../ui/ExternalLpWithdraw";
-import { JexAddLiquidity } from "../ui/JexAddLiquidity";
+// tab badge is shown; render <ExternalLpWithdraw positions={jexchange positions} reload={lp.reload} />
+// to bring it back.
+import { useLpPositions } from "../ui/ExternalLpWithdraw";
+import { ExternalAddLiquidity } from "../ui/ExternalAddLiquidity";
 import { PriceChart, type BookLevel } from "../ui/PriceChart";
 import { OrderBookDepth } from "../ui/OrderBookDepth";
 import { useFeatureFlags, JEX_ADD_ENABLED } from "../featureFlags";
@@ -36,6 +37,14 @@ import { fetchAllPools } from "../helpers/fetchAllPools";
 import type { DexFilter, LiquidityPool, TokenMeta } from "../types";
 
 const VOXEGLD_IDENTIFIER = "VOXEGLD-5872e5";
+/** DEX names as their own UIs write them. */
+const DEX_LABEL: Record<DexFilter, string> = {
+  DinoVox: "DinoVox",
+  XExchange: "xExchange",
+  JExchange: "JEXchange",
+  OneDex: "OneDex",
+  AshSwapStable: "AshSwap",
+};
 
 /** Aggregate over the exact pool set /pools returns — already scoped to the dexType filter. */
 interface PoolsSummary {
@@ -199,7 +208,15 @@ export const Pools = () => {
   // Pool whose recent-swaps list is expanded.
   const [swapsPool, setSwapsPool] = React.useState<string | null>(null);
   // JEXchange shutdown: LP still held in the wallet → withdraw block + tab badge.
-  const jexLp = useJexLpPositions();
+  // LP positions held in the wallet, per external DEX tab (badge on the tab).
+  const lp = useLpPositions();
+  // DinoVox: LP in the wallet plus LP staked in the farms (DinoVox pools only), one per LP token.
+  const lpCountOf = (dex: DexFilter) => {
+    const held = lp.positions.filter((p) => p.dexType === dex).map((p) => p.lpToken);
+    if (dex !== "DinoVox") return held.length;
+    const staked = Object.entries(farmed).filter(([, raw]) => new BigNumber(raw).gt(0)).map(([lpToken]) => lpToken);
+    return new Set([...held, ...staked]).size;
+  };
   // JEXchange pool whose inline add-liquidity form is open.
   const [jexAddPool, setJexAddPool] = React.useState<string | null>(null);
 
@@ -485,8 +502,8 @@ export const Pools = () => {
                   setDexFilter(dex);
                 }}
                 title={
-                  dex === "JExchange" && jexLp.positions.length > 0
-                    ? t("ext_lp_tab_hint", { count: jexLp.positions.length })
+                  lpCountOf(dex) > 0
+                    ? t("ext_lp_tab_hint", { count: lpCountOf(dex), dex: DEX_LABEL[dex] })
                     : undefined
                 }
                 style={{ position: "relative" }}
@@ -497,7 +514,7 @@ export const Pools = () => {
                 }`}
               >
                 {dex === "AshSwapStable" ? "AshSwap" : dex}
-                {dex === "JExchange" && jexLp.positions.length > 0 && (
+                {lpCountOf(dex) > 0 && (
                   // Badge: LP to withdraw (inside the button box so truncate can't clip it).
                   <span
                     style={{
@@ -516,7 +533,7 @@ export const Pools = () => {
                       textAlign: "center",
                     }}
                   >
-                    {jexLp.positions.length}
+                    {lpCountOf(dex)}
                   </span>
                 )}
               </button>
@@ -973,8 +990,8 @@ export const Pools = () => {
                             {t("pools_add")}
                           </button>
                         )}
-                        {JEX_ADD_ENABLED &&
-                          dexFilter === "JExchange" &&
+                        {dexFilter !== "DinoVox" &&
+                          (JEX_ADD_ENABLED || dexFilter !== "JExchange") &&
                           address && (
                             <button
                               onClick={() =>
@@ -1021,8 +1038,10 @@ export const Pools = () => {
                       )}
                     </div>
                   </div>
-                  {dexFilter === "JExchange" && jexAddPool === pool.address && (
-                    <JexAddLiquidity
+                  {dexFilter !== "DinoVox" &&
+                    jexAddPool === pool.address && (
+                    <ExternalAddLiquidity
+                      dex={dexFilter}
                       pool={pool}
                       tickerA={tickerA}
                       tickerB={tickerB}

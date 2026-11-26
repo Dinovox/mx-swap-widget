@@ -10,7 +10,7 @@ import { useSwapConfig } from "./context/SwapConfigContext";
  */
 
 /**
- * JEXchange "+ Add" button on JExchange pool cards (inline JexAddLiquidity
+ * JEXchange "+ Add" button on JExchange pool cards (inline ExternalAddLiquidity
  * form, addLiquidity on the JEXchange pair) — tested OK on mainnet.
  */
 export const JEX_ADD_ENABLED = true;

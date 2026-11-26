@@ -56,11 +56,12 @@ function minOut(amount: string, live: boolean): bigint {
  * unavailable.
  */
 /**
- * JEXchange LP tokens held by the connected wallet (GET /lp-positions) —
- * shared by the withdraw block and the JExchange tab badge (one request).
- * Empty when disconnected or when the backend route is unavailable.
+ * LP tokens held by the connected wallet on every DEX (GET /lp-positions,
+ * one request) — the DEX tab badges count them, the withdraw block takes
+ * the JEXchange ones. Empty when disconnected or when the backend route is
+ * unavailable.
  */
-export function useJexLpPositions(): { positions: LpPosition[]; reload: () => void } {
+export function useLpPositions(): { positions: LpPosition[]; reload: () => void } {
   const { apiUrl, address } = useSwapConfig();
   const [positions, setPositions] = React.useState<LpPosition[]>([]);
   const reload = React.useCallback(() => {
@@ -69,7 +70,7 @@ export function useJexLpPositions(): { positions: LpPosition[]; reload: () => vo
       return;
     }
     axios
-      .get<{ positions: LpPosition[] }>(`${apiUrl}/lp-positions`, { params: { address, dexType: "JExchange" } })
+      .get<{ positions: LpPosition[] }>(`${apiUrl}/lp-positions`, { params: { address } })
       .then((res) => setPositions(res.data.positions ?? []))
       .catch(() => setPositions([]));
   }, [apiUrl, address]);

@@ -84,6 +84,24 @@ interface CollectorOrder {
 }
 const PAST_ORDERS_SHOWN = 5;
 
+/** GET /fee-collector/collected — LP the collector has deposited since deployment, per pair (all receivers). */
+interface CollectorCollected {
+  collector: string;
+  since: number | null;
+  lp: {
+    pair: string;
+    lpToken: string | null;
+    tokenA: string | null;
+    tokenB: string | null;
+    /** Raw, 18 decimals. */
+    amount: string;
+    deposits: number;
+    lastAt: number;
+    valueUsd: string | null;
+  }[];
+  totalUsd: string | null;
+}
+
 /**
  * "Dex Fees": the protocol fees collected from every DinoVox pair, and the
  * fee collector's public endpoints anyone can trigger — processFees (sell
@@ -137,6 +155,16 @@ export const DexFees = () => {
     });
   }, [apiUrl, feeCollectorAddress]);
   React.useEffect(loadOrders, [loadOrders]);
+  // All-time LP deposits (backend only, ignored when it serves another collector).
+  const [collected, setCollected] = React.useState<CollectorCollected | null>(null);
+  const loadCollected = React.useCallback(() => {
+    if (!apiUrl || !feeCollectorAddress) return;
+    axios
+      .get<CollectorCollected>(`${apiUrl}/fee-collector/collected`)
+      .then((r) => setCollected(r.data.collector === feeCollectorAddress ? r.data : null))
+      .catch(() => {});
+  }, [apiUrl, feeCollectorAddress]);
+  React.useEffect(loadCollected, [loadCollected]);
   // Order groups (one per pair and direction) unfolded by the user; closed orders folded by default.
   const [openGroups, setOpenGroups] = React.useState<Set<string>>(new Set());
   const toggleGroup = (key: string) =>
@@ -150,6 +178,7 @@ export const DexFees = () => {
   const reload = () => {
     load(true);
     loadOrders();
+    loadCollected();
   };
 
   // USD prices from the DEX token list (optional — values hidden without them).
@@ -693,6 +722,45 @@ export const DexFees = () => {
               <RefreshCw className={`dvx:w-4 dvx:h-4 ${loading ? "dvx:animate-spin" : ""}`} />
             </button>
           </div>
+
+          {collected && collected.lp.length > 0 && (
+            <div className={`${inner} dvx:space-y-2`}>
+              <div className="dvx:flex dvx:items-baseline dvx:justify-between dvx:gap-2">
+                <p className={label} style={{ margin: 0 }}>
+                  {t("fees_collected_title")}
+                </p>
+                {collected.totalUsd != null && (
+                  <span className="dvx:text-sm dvx:font-bold dvx:text-amber-600 dvx:dark:text-amber-400">
+                    ${new BigNumber(collected.totalUsd).toFormat(2)}
+                  </span>
+                )}
+              </div>
+              <ul className="dvx:space-y-1 dvx:text-xs" style={{ margin: 0, paddingLeft: 0, listStyle: "none" }}>
+                {collected.lp.map((p) => {
+                  const lp = new BigNumber(p.amount).shiftedBy(-18);
+                  return (
+                    <li key={p.pair} className="dvx:flex dvx:items-baseline dvx:justify-between dvx:gap-2">
+                      <span className="dvx:min-w-0 dvx:truncate dvx:font-semibold dvx:text-gray-700 dvx:dark:text-gray-200">
+                        {p.tokenA && p.tokenB ? `${tickerOf(p.tokenA)}/${tickerOf(p.tokenB)}` : (p.lpToken ?? p.pair).split("-")[0]}
+                        <span className="dvx:ml-1.5 dvx:font-normal dvx:text-gray-400">
+                          {t("fees_collected_deposits", { count: p.deposits })}
+                        </span>
+                      </span>
+                      <span className="dvx:shrink-0 dvx:text-gray-500 dvx:dark:text-gray-400" title={`${lp.toFixed()} LP`}>
+                        {lp.gte(1) ? lp.decimalPlaces(4, BigNumber.ROUND_DOWN).toFormat() : lp.precision(4, BigNumber.ROUND_DOWN).toFixed()} LP
+                        {p.valueUsd != null && <span className="dvx:ml-1.5 dvx:font-semibold dvx:text-gray-700 dvx:dark:text-gray-200">${new BigNumber(p.valueUsd).toFormat(2)}</span>}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {collected.since != null && (
+                <p className={hint} style={{ margin: 0 }}>
+                  {t("fees_collected_since", { date: new Date(collected.since * 1000).toLocaleDateString(i18n.language) })}
+                </p>
+              )}
+            </div>
+          )}
 
           {state?.paused && (
             <div className="dvx:rounded-xl dvx:border dvx:border-amber-300 dvx:dark:border-amber-700/60 dvx:bg-amber-50 dvx:dark:bg-amber-900/15 dvx:px-3 dvx:py-2 dvx:text-xs dvx:text-amber-700 dvx:dark:text-amber-300">
